@@ -17,7 +17,7 @@ A backup app that automatically syncs one or more folders in the background. The
 - 📂   __subfolders (optional)__
 - 🗑️   __trashbin (optional)__
 - 📎   __logging in JSON format (optional)__
-- ✂️   __auto delete (optonal)__
+- ✂️   __auto delete (optional)__
 - 🚴‍♂️   __manual operation__
  
  </br>
@@ -29,4 +29,4 @@ Background job time:
 `weekly`
 `monthly`
 
-The background job is not supported on MacOS
+The automatic background job is not supported on MacOS

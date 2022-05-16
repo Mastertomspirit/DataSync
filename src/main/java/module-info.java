@@ -1,9 +1,7 @@
 /*
  		DataSync Application
  		
- 	 	@author Tom Spirit
- 	 	@date 16.12.2021
- 		@version	0.9.2.0
+		@author Tom Spirit
 		
 		This program is free software; you can redistribute it and/or modify
 		it under the terms of the GNU General Public License as published by
@@ -19,26 +17,9 @@
 		along with this program; if not, write to the Free Software Foundation,
 		Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
-package de.spiritscorp.DataSync;
-
-import java.util.Arrays;
-
-import de.spiritscorp.DataSync.Controller.Controller;
-
-public class Main {
-	
-	public final static String VERSION = "V 0.9.2.0";
-	public static boolean debug;
-
-	/**
-	 * Launch the application.
-	 */
-	public static void main(String[] args) {
-		debug = Arrays.stream(args).anyMatch((s) -> s.equals("debug"));
-		boolean firstStart = Arrays.stream(args).anyMatch((s) -> s.equals("firstStart"));
-		if(debug) {		
-			System.getProperties().forEach((f,k) -> System.out.println(f + " " + k));
-		}
-		new Controller(firstStart);
-	}
+module de.spiritscorp.DataSync {
+	exports de.spiritscorp.DataSync;
+	opens de.spiritscorp.DataSync.Model;
+	requires java.desktop;
+	requires jakarta.json;
 }

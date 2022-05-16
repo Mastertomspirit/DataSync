@@ -29,4 +29,10 @@ Background job time:
 `weekly`
 `monthly`
 
-The automatic background job is not supported on MacOS
+The automatic background job is not supported on MacOS yet
+
+### Build:
+
+* To build the app with runtime for a specify platform, run Maven on this platform with `mvn clean compile jlink:jlink verify`
+ 
+* To use only the jar, java version 16 is required. Run `mvn package`

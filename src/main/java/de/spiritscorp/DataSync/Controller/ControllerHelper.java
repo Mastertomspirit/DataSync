@@ -32,6 +32,7 @@ import java.util.Map;
 
 import javax.swing.JOptionPane;
 
+import de.spiritscorp.DataSync.Main;
 import de.spiritscorp.DataSync.ScanType;
 import de.spiritscorp.DataSync.Gui.FileChooser;
 import de.spiritscorp.DataSync.Gui.View;
@@ -193,12 +194,19 @@ class ControllerHelper {
  */
 	public void setOSAutostart(boolean set) {
 		String javaPath = System.getProperty("sun.boot.library.path");
+		String exePath = System.getProperty("jpackage.app-path");
 		String datei = System.getProperty("sun.java.command");
 		String fullPath = Paths.get("").toAbsolutePath().toString() + System.getProperty("file.separator") + datei;
 		String os = System.getProperty("os.name").toLowerCase();
 
 		if(os.contains("win")) {
-			String value = "/t  REG_SZ /d \"\\\"" + javaPath + "\\javaw.exe\\\" -Xmx200m -jar \\\"" + datei + "\\\" firstStart\"";
+//			First value is for compile only the jar
+			String value;
+			if(exePath == null) {
+				value = "/t  REG_SZ /d \"\\\"" + javaPath + "\\javaw.exe\\\" -Xmx200m -jar \\\"" + datei + "\\\" firstStart\"";
+			}else{
+				value = "/t REG_SZ /d \"" + exePath + " firstStart\"";
+			}
 			String cmd = "HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run /v DataSync /f ";
 			try {
 				if(set)		Runtime.getRuntime().exec("cmd /c reg add " + cmd + value);
@@ -206,22 +214,32 @@ class ControllerHelper {
 			} catch (IOException e) {e.printStackTrace();}
 			
 		}else if (os.contains("nix") || os.contains("aix") || os.contains("nux")){
-//			TODO		Not working -> EOF not set  -> crontab cant close the stream
+//			TODO		Not working -> EOF not set  -> crontab can't close the stream
 //			Problem		Files.writeString()
 //						Workaround move the file directly on the linux system
-			String linx = String.format("@reboot %s/java -jar \"%s\" firstStart", javaPath, fullPath);	
+//			First value is for compile only the jar
+			String value;
+			if(exePath == null) {
+				value = String.format("@reboot %s/java -jar \"%s\" firstStart", javaPath, fullPath);	
+			}else {
+				value = String.format("@reboot %s firstStart", exePath);
+			}
 			Path pathTemp = Paths.get("linx1.txt").toAbsolutePath();
 			Path path = Paths.get("linx.txt").toAbsolutePath();
 			try {
-				Files.writeString(pathTemp, linx, StandardCharsets.UTF_8, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE);
+				Files.writeString(pathTemp, value, StandardCharsets.UTF_8, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE);
 				Runtime.getRuntime().exec("mv " + pathTemp + " " + path);
 				if(set)	{
 					Runtime.getRuntime().exec("crontab " + path.toString());
-					System.out.println("crontab " + path.toString());
+					if(Main.debug) {
+						System.out.println("crontab " + path.toString());
+					}
 				}
 				else	{
 					Runtime.getRuntime().exec("crontab -r " + path.toString());
-					System.out.println("crontab -r " + path.toString());
+					if(Main.debug) {
+						System.out.println("crontab -r " + path.toString());
+					}
 				}
 			} catch (IOException e) {e.printStackTrace();}
 			try {

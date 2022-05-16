@@ -2,7 +2,8 @@
 
 ### _Currently supported Language: German_
 
-A backup app that automatically syncs one or more folders in the background. The source paths can also be scan for duplicates.
+A synchronization app that automatically syncs one or more folders in the background. The source paths can also be scan for duplicates.
+On the x-button it minimized to tray.
 
 ### Features:
 

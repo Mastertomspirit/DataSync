@@ -59,7 +59,7 @@ public class Logger {
 				.add("erstellt", fa.getCreateTime())
 				.add("zuletzt modifiziert", fa.getModTime())
 				.add("Größe", fa.getSize())
-				.add("Fingerabdruck" , fa.getFileHash())
+				.add("Fingerabdruck" , (fa.getFileHash() == null) ? "null" : fa.getFileHash())
 				.build();	
 		JsonArray ja = Json.createArrayBuilder()
 				.add(filePath)

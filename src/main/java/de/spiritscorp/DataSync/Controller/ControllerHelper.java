@@ -290,28 +290,34 @@ class ControllerHelper {
 			sb.append("Scan abgeschlossen!" + line);
 			sb.append("Zu kopierende Dateien:" + line);
 			sb.append("----------------------" + line);
+			int displayLimit = 0;
 			for (Map.Entry<Path, FileAttributes> entry : sourceMap.entrySet()) {
 				FileAttributes value = entry.getValue();
-				sb.append(value.getFileName() + " , ");
-				sb.append(getReadableBytes(value.getSize()) + " , ");
-				sb.append(value.getModTime() + " , ");
-				sb.append(value.getCreateTime() + " , ");
-				sb.append(value.getFileHash() + "  ");
-				sb.append("       " + entry.getKey().toString());
-				sb.append(line);
+				sb.append(value.getFileName() + " , " +
+							getReadableBytes(value.getSize()) + " , " +
+							value.getModTime() + " , " +
+							value.getCreateTime() + " , " +
+							value.getFileHash() + "  " +
+							"   " + entry.getKey().toString() +
+							line);
+				displayLimit++;
+				if (displayLimit > 5000) break;
 			}
+			displayLimit = 0;
 			sb.append(line);
 			sb.append("Zu löschende Dateien:" + line);
 			sb.append("---------------------" + line);
 			for (Map.Entry<Path, FileAttributes> entry : destMap.entrySet()) {
 				FileAttributes value = entry.getValue();
-				sb.append(value.getFileName() + " , ");
-				sb.append(getReadableBytes(value.getSize()) + " , ");
-				sb.append(value.getModTime() + " , ");
-				sb.append(value.getCreateTime() + " , ");
-				sb.append(value.getFileHash() + "  ");
-				sb.append("       " + entry.getKey().toString());
-				sb.append(line);
+				sb.append(value.getFileName() + " , " +
+						getReadableBytes(value.getSize()) + " , " +
+						value.getModTime() + " , " +
+						value.getCreateTime() + " , " +
+						value.getFileHash() + "  " +
+						"   " + entry.getKey().toString() +
+						line);
+				displayLimit++;
+				if (displayLimit > 5000) break;
 			}
 		}
 		return new String(sb);

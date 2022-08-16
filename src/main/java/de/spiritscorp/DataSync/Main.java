@@ -27,7 +27,7 @@ import de.spiritscorp.DataSync.Controller.Controller;
 
 public class Main {
 	
-	public final static String VERSION = "V 0.9.2.0";
+	public final static String VERSION = "V 0.9.5.0";
 	public static boolean debug;
 
 	/**

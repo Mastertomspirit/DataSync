@@ -107,7 +107,7 @@ class IOPrefs {
 	Path getPath(String key) throws ConfigException{
 		if(job.containsKey(key)) {
 			Path convPath = Paths.get(job.getString(key));
-			if(Files.exists(convPath) || key.startsWith("destPath") || key.equals("trashbinPath"))	return convPath; 
+			if(Files.exists(convPath) || key.startsWith("destPath") || key.startsWith("startDestPath") || key.equals("trashbinPath"))	return convPath; 
 		}
 		throw new ConfigException("No valid Path found: " + key);
 	}

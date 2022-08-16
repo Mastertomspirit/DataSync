@@ -131,31 +131,36 @@ class ControllerHelper {
 				Long[] stats = new Long[4];				
 				long startTime = System.nanoTime();
 				
-				HashMap<String, Map<Path, FileAttributes>> hashMap  = model.scanSyncFiles(pref.getSourcePath(), pref.getDestPath(), stats, pref.getDeepScan(), pref.isSubDir(), pref.isTrashbin());
-				String endTimeFormatted = getEndTimeFormatted(System.nanoTime() - startTime);
-				sourceMap = hashMap.get("sourceMap");
-				destMap = hashMap.get("destMap");
-				view.setTextArea(formatMaps(deepScan));
-				view.setTextArea(String.format("Quelldateien: %d Stück und Zieldateien: %d Stück", stats[0], stats[1]));
-				view.setTextArea(String.format("Größe aller Quelldateien: %s      Größe aller Zieldateien: %s", getReadableBytes(stats[2]), getReadableBytes(stats[3])));
-				view.setTextArea(endTimeFormatted);
+				if(Files.exists(startDestPath)) {			
+					HashMap<String, Map<Path, FileAttributes>> hashMap  = model.scanSyncFiles(pref.getSourcePath(), pref.getDestPath(), stats, pref.getDeepScan(), pref.isSubDir(), pref.isTrashbin());
+					String endTimeFormatted = getEndTimeFormatted(System.nanoTime() - startTime);
+					sourceMap = hashMap.get("sourceMap");
+					destMap = hashMap.get("destMap");
+					view.setTextArea(formatMaps(deepScan));
+					view.setTextArea(String.format("Quelldateien: %d Stück und Zieldateien: %d Stück", stats[0], stats[1]));
+					view.setTextArea(String.format("Größe aller Quelldateien: %s      Größe aller Zieldateien: %s", getReadableBytes(stats[2]), getReadableBytes(stats[3])));
+					view.setTextArea(endTimeFormatted);
 
-				int del, ok;
-				if(pref.isAutoDel()) {
-					del  = 0;
-				}else {
-					del = JOptionPane.showConfirmDialog(view, "Löschen bestätigen?", "Gelöschte Dateien entfernen", 0, 0);
-				}
-				if(pref.isAutoSync()) ok = 0;
-				else ok = JOptionPane.showConfirmDialog(view, "Dateien Syncronisieren?", "Syncronisations Bestätigung", 0, 2);
-				if(ok == 0) {
-					if(model.syncFiles(del, logOn, startDestPath, trashbin, trashbinPath)) {
-						view.setTextArea("Syncronisation erfolgreich");
+					int del, ok;
+					if(pref.isAutoDel()) {
+						del  = 0;
 					}else {
-						view.setTextArea("Syncronisation fehlgeschlagen");
+						del = JOptionPane.showConfirmDialog(view, "Löschen bestätigen?", "Gelöschte Dateien entfernen", 0, 0);
+					}
+					if(pref.isAutoSync()) ok = 0;
+					else ok = JOptionPane.showConfirmDialog(view, "Dateien Syncronisieren?", "Syncronisations Bestätigung", 0, 2);
+					if(ok == 0) {
+						if(model.syncFiles(del, logOn, startDestPath, trashbin, trashbinPath)) {
+							view.setTextArea("Syncronisation erfolgreich");
+							pref.saveLastScanTime();
+						}else {
+							view.setTextArea("Syncronisation fehlgeschlagen");
+						}
+					}else {
+						view.setTextArea("Syncronisation abgebrochen!");
 					}
 				}else {
-					view.setTextArea("Syncronisation abgebrochen!");
+					view.setTextArea("Kein Ziellaufwerk vorhanden");
 				}
 				scanRun = false;
 				view.setScanRun(false);

@@ -160,7 +160,6 @@ class FileHandler {
 			Path path = destPath.resolve(entry.getValue().getRelativeFilePath());
 			try {
 				if(!Files.exists(path.getParent()))	Files.createDirectories(path.getParent());
-//		TODO		rename existing file names with different attributes
 				Files.copy(
 						entry.getKey(), 
 						path,

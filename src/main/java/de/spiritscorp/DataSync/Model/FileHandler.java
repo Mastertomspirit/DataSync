@@ -111,10 +111,10 @@ class FileHandler {
 		LinkedList<Path> sourceList = new LinkedList<>();
 		LinkedList<Path> destList = new LinkedList<>();
 		for (Map.Entry<Path, FileAttributes> source : sourceMap.entrySet()) {
-			for (Map.Entry<Path, FileAttributes> dest : destMap.entrySet()) {
-				if (source.getValue().equals(dest.getValue())) {
+			if(destMap.containsKey(source.getKey())) {
+				if (source.getValue().equals(destMap.get(source.getKey()))) {
 					sourceList.add(source.getKey());
-					destList.add(dest.getKey());
+					destList.add(source.getKey());
 					break;
 				}
 			}
@@ -184,6 +184,7 @@ class FileHandler {
 			Files.walk(dir, Integer.MAX_VALUE)
 				.filter((p) -> !Files.isDirectory(p, LinkOption.NOFOLLOW_LINKS))
 				.filter((p) -> Files.isReadable(p))
+				.filter((p) -> Files.isRegularFile(p))			
 				.filter((p) -> !path.relativize(p).startsWith("Papierkorb"))
 				.forEach((p) -> executor.execute(new FileScan(p, path, map, deepScan)));
 		} catch (AccessDeniedException ee) {}

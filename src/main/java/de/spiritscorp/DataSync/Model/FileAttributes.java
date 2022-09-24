@@ -82,6 +82,11 @@ public class FileAttributes implements Comparable<FileAttributes> {
 		if (getClass() != obj.getClass())
 			return false;
 		FileAttributes other = (FileAttributes) obj;
+		if (fileHash == null) {
+			if(other.fileHash != null)	
+				return false;
+		} else if(!other.fileHash.equals(fileHash))
+			return false;
 		if (createTime == null) {
 			if (other.createTime != null)
 				return false;
@@ -101,7 +106,6 @@ public class FileAttributes implements Comparable<FileAttributes> {
 			if (other.modTime != null)
 				return false;
 		} else if (!modTime.equals(other.modTime))
-
 			return false;
 		if (size != other.size)
 			return false;

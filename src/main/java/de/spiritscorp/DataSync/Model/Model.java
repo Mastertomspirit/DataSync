@@ -24,14 +24,16 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import de.spiritscorp.DataSync.ScanType;
+import de.spiritscorp.DataSync.IO.Debug;
+import de.spiritscorp.DataSync.IO.Logger;
 
 public class Model {
 
 	private Map<Path, FileAttributes> sourceMap, destMap;
 	private FileHandler handler;
 
-	public Model() {
-		handler = new FileHandler();
+	public Model(Logger logger) {
+		handler = new FileHandler(logger);
 	}
 	
 /**
@@ -39,7 +41,7 @@ public class Model {
  * 
  * @param sourcePathes
  * @param destPathes
- * @param stats
+ * @param stats An array with length 4, for statistics
  * @param deepScan
  * @param subDir
  * @param trashbin
@@ -58,6 +60,8 @@ public class Model {
 		stats[1] = (long) destMap.size();
 		stats[2] = getBytes(sourceMap);
 		stats[3] = getBytes(destMap);
+		Debug.PRINT_DEBUG("equalsFiles start");
+		Debug.PRINT_DEBUG("sourceMap.size = %d, destMap.size = %d", sourceMap.size(), destMap.size());
 		handler.equalsFiles(sourceMap, destMap);
 		HashMap<String, Map<Path,FileAttributes>> hashMap = new HashMap<>();
 		hashMap.put("destMap", destMap);
@@ -87,8 +91,8 @@ public class Model {
 	 * @param subDir
 	 * @return <b>Map</b> </br>Map with duplicates 
 	 */
-	public Map<Path, FileAttributes> scanDublicates(ArrayList<Path> paths, boolean subDir) {
-		sourceMap = handler.listFiles(paths, ScanType.DUBLICATE_SCAN, subDir);
+	public Map<Path, FileAttributes> scanDublicates(ArrayList<Path> paths) {
+		sourceMap = handler.listFiles(paths, ScanType.DUBLICATE_SCAN, false);
 		sourceMap = handler.findDuplicates(sourceMap);
 //		TODO View needs a way to change the entrys
 		return sourceMap;

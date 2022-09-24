@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>de.spiritscorp</groupId>
 	<artifactId>DataSync</artifactId>
-	<version>0.9.5.0</version>
+	<version>0.9.5.1</version>
 	<name>DataSync</name>
 	<description>Application to syncronize your data</description>
 	<properties>
@@ -99,7 +99,7 @@
 							<name>DataSync</name>
 							<type>IMAGE</type>
 							<runtimeimage>target/maven-jlink/default</runtimeimage>
-							<appversion>0.9.5.0</appversion>
+							<appversion>0.9.5.1</appversion>
 							<copyright>GPL 3.0</copyright>
 							<description>Data Sync  --  Software zum Syncronisieren von Ordnern</description>
 							<vendor>Tom Spirit</vendor>
@@ -132,6 +132,13 @@
 			<artifactId>junit-jupiter-engine</artifactId>
 			<version>[5.8.2,)</version>
 			<scope>test</scope>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/org.mockito/mockito-junit-jupiter -->
+		<dependency>
+		    <groupId>org.mockito</groupId>
+		    <artifactId>mockito-junit-jupiter</artifactId>
+		    <version>[4.8.0,)</version>
+		    <scope>test</scope>
 		</dependency>
 	</dependencies>
 </project>

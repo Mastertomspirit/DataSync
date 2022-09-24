@@ -32,10 +32,10 @@ import java.util.Map;
 
 import javax.swing.JOptionPane;
 
-import de.spiritscorp.DataSync.Main;
 import de.spiritscorp.DataSync.ScanType;
 import de.spiritscorp.DataSync.Gui.FileChooser;
 import de.spiritscorp.DataSync.Gui.View;
+import de.spiritscorp.DataSync.IO.Debug;
 import de.spiritscorp.DataSync.IO.Preference;
 import de.spiritscorp.DataSync.Model.FileAttributes;
 import de.spiritscorp.DataSync.Model.Model;
@@ -65,7 +65,7 @@ class ControllerHelper {
 	 * @param view The view
 	 */
 	void selectButton(View view) {
-		ArrayList<Path> sourcePaths = new ArrayList<Path>();
+		ArrayList<Path> sourcePaths = new ArrayList<>();
 		ArrayList<Path> destPaths = new ArrayList<>();
 		int i = 0;
 		int sourcePathSize = pref.getSourcePath().size();
@@ -175,7 +175,7 @@ class ControllerHelper {
 				scanRun = true;
 				view.setScanRun(true);
 				long startTime = System.nanoTime();
-				sourceMap  = model.scanDublicates(pref.getSourcePath(), pref.isSubDir());
+				sourceMap  = model.scanDublicates(pref.getSourcePath());
 				String endTimeFormatted = getEndTimeFormatted(System.nanoTime() - startTime);
 				long space = 0;
 				for(Path p : sourceMap.keySet()) {
@@ -236,15 +236,11 @@ class ControllerHelper {
 				Runtime.getRuntime().exec("mv " + pathTemp + " " + path);
 				if(set)	{
 					Runtime.getRuntime().exec("crontab " + path.toString());
-					if(Main.debug) {
-						System.out.println("crontab " + path.toString());
-					}
+					Debug.PRINT_DEBUG("crontab " + path.toString());
 				}
 				else	{
 					Runtime.getRuntime().exec("crontab -r " + path.toString());
-					if(Main.debug) {
-						System.out.println("crontab -r " + path.toString());
-					}
+					Debug.PRINT_DEBUG("crontab -r " + path.toString());
 				}
 			} catch (IOException e) {e.printStackTrace();}
 			try {
@@ -271,31 +267,36 @@ class ControllerHelper {
 	private String formatMaps(ScanType deepScan) {
 		String line = System.lineSeparator();
 		StringBuffer sb = new StringBuffer();
+		final int displayLimit = 10000;
 		if(deepScan == ScanType.DUBLICATE_SCAN) {
 			sb.append("Scan abgeschlossen!" + line);
 			sb.append("Doppelte Dateien:" + line);
 			sb.append("----------------------" + line);
-			String[] str = new String[sourceMap.size()];
+			ArrayList<String> str = new ArrayList<>();
 			int i = 0;
 			for (Map.Entry<Path, FileAttributes> entry : sourceMap.entrySet()) {
 				FileAttributes value = entry.getValue();
 
-				str[i] = value.getFileName() + " , " + 
-							getReadableBytes(value.getSize()) + " , " +
-							value.getModTime() + " , " + 
-							value.getCreateTime() + " , " + 
-							value.getFileHash() + "         " + entry.getKey().toString() + line;
+				str.add(value.getFileHash() + " , " + 
+						value.getFileName() + " , " +
+						entry.getKey().toString() + " , " + 
+						getReadableBytes(value.getSize()) + " , " +
+						value.getModTime() + " , " + 
+						value.getCreateTime() + " , " + 
+						line);
 				i++;
+				if(i > displayLimit) break;
 			}			
-			Arrays.sort(str);
-			for(String s : str) {
-				sb.append(s);
+			Object[] tempString = str.toArray();
+			Arrays.sort(tempString);
+			for(Object s : tempString) {
+				sb.append((String) s);
 			}
 		}else {
 			sb.append("Scan abgeschlossen!" + line);
 			sb.append("Zu kopierende Dateien:" + line);
 			sb.append("----------------------" + line);
-			int displayLimit = 0;
+			int limit = 0;
 			for (Map.Entry<Path, FileAttributes> entry : sourceMap.entrySet()) {
 				FileAttributes value = entry.getValue();
 				sb.append(value.getFileName() + " , " +
@@ -305,10 +306,10 @@ class ControllerHelper {
 							value.getFileHash() + "  " +
 							"   " + entry.getKey().toString() +
 							line);
-				displayLimit++;
-				if (displayLimit > 5000) break;
+				limit++;
+				if (limit > (displayLimit/ 2)) break;
 			}
-			displayLimit = 0;
+			limit = 0;
 			sb.append(line);
 			sb.append("Zu löschende Dateien:" + line);
 			sb.append("---------------------" + line);
@@ -321,8 +322,8 @@ class ControllerHelper {
 						value.getFileHash() + "  " +
 						"   " + entry.getKey().toString() +
 						line);
-				displayLimit++;
-				if (displayLimit > 5000) break;
+				limit++;
+				if (limit > (displayLimit/ 2)) break;
 			}
 		}
 		return new String(sb);

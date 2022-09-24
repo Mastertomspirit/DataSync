@@ -23,6 +23,7 @@ import java.awt.AWTException;
 import java.awt.SystemTray;
 import de.spiritscorp.DataSync.Gui.View;
 import de.spiritscorp.DataSync.Gui.BgView;
+import de.spiritscorp.DataSync.IO.Logger;
 import de.spiritscorp.DataSync.IO.Preference;
 import de.spiritscorp.DataSync.Model.BgModel;
 
@@ -31,6 +32,7 @@ class BgController  {
 	private Thread thread;
 	private final SystemTray sysTray;
 	private final Preference pref;
+	private final Logger logger;
 	private final BgView bgView;
 	
 	/**
@@ -39,9 +41,10 @@ class BgController  {
 	 * @param bgView The background view
 	 * @param pref The settings to be used
 	 */
-	BgController(final BgView bgView, final Preference pref) {
+	BgController(final BgView bgView, final Preference pref, final Logger logger) {
 		this.pref = pref;
 		this.bgView = bgView;
+		this.logger = logger;
 		sysTray = SystemTray.getSystemTray();
 	}
 	
@@ -58,7 +61,7 @@ class BgController  {
 			sysTray.add(bgView.getTrayIcon());
 		} catch (AWTException e) {e.printStackTrace();}
 		thread = new Thread( () -> {
-			BgModel bgModel = new BgModel(pref);
+			BgModel bgModel = new BgModel(pref, logger);
 			boolean bgRun = true;
 			try {
 				if(firstStart) Thread.sleep(60000);

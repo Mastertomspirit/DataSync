@@ -24,11 +24,12 @@ package de.spiritscorp.DataSync;
 import java.util.Arrays;
 
 import de.spiritscorp.DataSync.Controller.Controller;
+import de.spiritscorp.DataSync.IO.Debug;
 
 public class Main {
 	
-	public final static String VERSION = "V 0.9.5.0";
-	public static boolean debug;
+	public final static String VERSION = "V 0.9.5.1";
+	public static boolean debug = false;
 
 	/**
 	 * Launch the application.
@@ -36,9 +37,8 @@ public class Main {
 	public static void main(String[] args) {
 		debug = Arrays.stream(args).anyMatch((s) -> s.equals("debug"));
 		boolean firstStart = Arrays.stream(args).anyMatch((s) -> s.equals("firstStart"));
-		if(debug) {		
-			System.getProperties().forEach((f,k) -> System.out.println(f + " " + k));
-		}
+		if(debug)		System.getProperties().forEach((f,k) -> Debug.PRINT_DEBUG(f + ":  \" " + k + " \""));
+
 		new Controller(firstStart);
 	}
 }

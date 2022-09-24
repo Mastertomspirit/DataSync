@@ -21,13 +21,14 @@ package de.spiritscorp.DataSync.Model;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -41,12 +42,13 @@ class FileScanTest {
 
 	long size;
 	String fileHash = "1a60b9cd4c7355dc427a8f622961fa971d9401e0626e447352d701f1671423f2";
-	Path path = Paths.get(System.getProperty("user.home"), ".DataSyncTemp");
+	Path path = Paths.get(System.getProperty("user.home"), "DataSyncTemp");
 	Path file = Paths.get("testFile.txt");
 	FileTime createTime = FileTime.fromMillis(1641335618384L);
 	FileTime modTime = FileTime.fromMillis(1641335619384L);
 	FileTime accessTime = FileTime.fromMillis(1641335620384L);
 	HashMap<Path,FileAttributes> map = new HashMap<>();
+	TestHelper helper = new TestHelper();
 	
 
 	/**
@@ -79,36 +81,27 @@ class FileScanTest {
 	 * @throws InterruptedException 
 	 */
 	@Test
-	final void testFileScan() throws InterruptedException {
+	final void testFileScan() throws IOException {
+		BasicFileAttributes bfa = Files.readAttributes(path.resolve(file), BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
 		
-		Thread t1 = new Thread(new FileScan(path.resolve(file),path,map,ScanType.FLAT_SCAN));
-		t1.start();
-		t1.join();
-		
+		new FileScan(path.resolve(file),path,map,ScanType.FLAT_SCAN, bfa);		
 		for(Map.Entry<Path, FileAttributes> entry : map.entrySet()) {
 			assertEquals(path.resolve(file), entry.getKey(), "Map Key / Pfad falsch!!");
 			assertEquals(size, entry.getValue().getSize(), "File Size passt nicht");
-			assertEquals(fileTimeToString(modTime), entry.getValue().getModTime(), "ModifiedTime passt nicht");
+			assertEquals(helper.fileTimeToString(modTime), entry.getValue().getModTime(), "ModifiedTime passt nicht");
 			assertEquals(createTime, entry.getValue().getCreateTimeFileTime(), "CreateTime passt nicht");
 			assertEquals(file, entry.getValue().getRelativeFilePath(), "RelativePath passt nicht");
 			assertNull(entry.getValue().getFileHash(), "FileHash falscher Wert");
 		}
 		
-		Thread t2 = new Thread(new FileScan(path.resolve(file), path, map, ScanType.DEEP_SCAN));
-		t2.start();
-		t2.join();
-		
+		new FileScan(path.resolve(file), path, map, ScanType.DEEP_SCAN, bfa);
 		for(Map.Entry<Path, FileAttributes> entry : map.entrySet()) {
 			assertEquals(path.resolve(file), entry.getKey(), "Map Key / Pfad falsch!!");
 			assertEquals(size, entry.getValue().getSize(), "File Size passt nicht");
-			assertEquals(fileTimeToString(modTime), entry.getValue().getModTime(), "ModifiedTime passt nicht");
+			assertEquals(helper.fileTimeToString(modTime), entry.getValue().getModTime(), "ModifiedTime passt nicht");
 			assertEquals(createTime, entry.getValue().getCreateTimeFileTime(), "CreateTime passt nicht");
 			assertEquals(file, entry.getValue().getRelativeFilePath(), "RelativePath passt nicht");
 			assertEquals(fileHash, entry.getValue().getFileHash(), "FileHash falscher Wert");
 		}
-	}
-	
-	private String fileTimeToString(FileTime fileTime) {
-		return fileTime.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime().format(DateTimeFormatter.ofPattern("dd.MM.yyyy  HH:mm:ss"));
 	}
 }

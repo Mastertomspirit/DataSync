@@ -24,6 +24,8 @@ import java.nio.file.Path;
 import java.util.Map;
 
 import de.spiritscorp.DataSync.ScanType;
+import de.spiritscorp.DataSync.IO.Debug;
+import de.spiritscorp.DataSync.IO.Logger;
 import de.spiritscorp.DataSync.IO.Preference;
 
 public class BgModel {
@@ -32,9 +34,9 @@ public class BgModel {
 	private final FileHandler handler;
 	private Map<Path,FileAttributes> sourceMap, destMap;
 	
-	public BgModel(Preference pref) {
+	public BgModel(Preference pref, Logger logger) {
 		this.pref = pref;
-		handler = new FileHandler();
+		handler = new FileHandler(logger);
 	}
 
 	/**
@@ -48,7 +50,7 @@ public class BgModel {
 		Path trashbinPath = pref.getTrashbinPath();
 		boolean trashbin = pref.isTrashbin();
 		boolean autoBgDel = pref.isAutoBgDel();
-		System.out.println(System.currentTimeMillis() - pref.getLastScanTime());
+		Debug.PRINT_DEBUG(String.valueOf(System.currentTimeMillis() - pref.getLastScanTime()));
 		if(Files.exists(pref.getStartDestPath())) {
 			if(System.currentTimeMillis() - pref.getLastScanTime()  > pref.getBgTime().getTime()){
 				Thread t1 = new Thread(() -> sourceMap = handler.listFiles(pref.getSourcePath(), ScanType.FLAT_SCAN, pref.isSubDir()));
@@ -59,9 +61,9 @@ public class BgModel {
 					t1.join();
 					t2.join();
 				} catch (InterruptedException e) {e.printStackTrace();}
-				System.out.printf("Source Path Size: %d  && Destination Path Size: %d\n", sourceMap.size(), destMap.size());
+				Debug.PRINT_DEBUG("Source Path Size: %d  && Destination Path Size: %d\n", sourceMap.size(), destMap.size());
 				handler.equalsFiles(sourceMap, destMap);
-				System.out.printf("Source Path Size: %d  && Destination Path Size: %d\n", sourceMap.size(), destMap.size());
+				Debug.PRINT_DEBUG("Source Path Size: %d  && Destination Path Size: %d\n", sourceMap.size(), destMap.size());
 				if(autoBgDel && !destMap.isEmpty())		handler.deleteFiles(destMap, logOn, trashbin, trashbinPath);
 				if(!sourceMap.isEmpty())							handler.copyFiles(sourceMap, logOn, startDestPath);
 				pref.saveLastScanTime();

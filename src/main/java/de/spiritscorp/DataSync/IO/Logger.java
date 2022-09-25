@@ -24,8 +24,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
@@ -44,7 +42,6 @@ import jakarta.json.stream.JsonGenerator;
 public class Logger {
 	
 	private LinkedList<JsonValue> logList = new LinkedList<>();
-	private Path logPath = Paths.get(System.getProperty("user.home"), "DataSync", "log.json");
 	
 	/**
 	 * Set a new log entry
@@ -77,7 +74,7 @@ public class Logger {
 	public void printStatus() {
 		readLog();
 		JsonArray ja = Json.createArrayBuilder(logList).build();
-		try(FileOutputStream fos = new FileOutputStream(logPath.toFile(), false)) {
+		try(FileOutputStream fos = new FileOutputStream(Preference.LOG_PATH.toFile(), false)) {
 			HashMap<String,Boolean> config = new HashMap<>();
 			config.put(JsonGenerator.PRETTY_PRINTING, true);
 			JsonWriterFactory jwf = Json.createWriterFactory(config);
@@ -94,8 +91,8 @@ public class Logger {
 	 * Read the logfile as JsonArray
 	 */
 	private void readLog() {
-		if(Files.exists(logPath)) {
-			try(FileReader reader = new FileReader(logPath.toFile(), Charset.forName("UTF-8"))) {
+		if(Files.exists(Preference.LOG_PATH)) {
+			try(FileReader reader = new FileReader(Preference.LOG_PATH.toFile(), Charset.forName("UTF-8"))) {
 				JsonReader jr = Json.createReader(reader);
 				jr.readArray()
 					.stream()

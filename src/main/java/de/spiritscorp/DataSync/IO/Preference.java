@@ -34,10 +34,15 @@ import jakarta.json.Json;
 import jakarta.json.JsonValue;
 
 public class Preference {
+
+	private static final Path ROOT_PATH = Paths.get(System.getProperty("user.home"), "DataSync");
+	public static final Path DEBUG_PATH = ROOT_PATH.resolve("debug.log");
+	public static final Path ERROR_PATH = ROOT_PATH.resolve("debug.err");
+	public static final Path LOG_PATH = ROOT_PATH.resolve("log.json");
+	public static final Path CONFIG_PATH = ROOT_PATH.resolve("conf.json");
+	public static final Path SCAN_TIME_PATH = ROOT_PATH.resolve("lastScanTime");
 	
 	private IOPrefs ioP;
-	private Path prefDir = Paths.get(System.getProperty("user.home"), "DataSync");
-	private Path scanTimePath = Paths.get(System.getProperty("user.home"), "DataSync", "lastScanTime");
 	private ArrayList<Path> sourcePath = new ArrayList<>();
 	private ArrayList<Path> destPath = new ArrayList<>();
 	private Path startDestPath, trashbinPath;
@@ -67,7 +72,7 @@ public class Preference {
 	
 //	Check and load the preferences  
 	private void load() {
-		ioP = new IOPrefs(prefDir);
+		ioP = new IOPrefs();
 		if(ioP.readPreferences()){
 			try {
 				multiSourcePath = ioP.getMultiPath("multiSourcePath");
@@ -139,7 +144,7 @@ public class Preference {
 	 * Save the last scan time 
 	 */
 	public void saveLastScanTime() {
-		try(BufferedWriter bw = Files.newBufferedWriter(scanTimePath, StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)){
+		try(BufferedWriter bw = Files.newBufferedWriter(Preference.SCAN_TIME_PATH, StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)){
 			bw.write(String.valueOf(System.currentTimeMillis()));
 		}catch(IOException e) {	}
 	}
@@ -150,7 +155,7 @@ public class Preference {
 	 * @return <b>long</b> lastScanTime
 	 */
 	public long getLastScanTime() {
-		try(BufferedReader br = Files.newBufferedReader(scanTimePath)){
+		try(BufferedReader br = Files.newBufferedReader(Preference.SCAN_TIME_PATH)){
 			String str = br.readLine();
 			try { 
 				return Long.valueOf(str);

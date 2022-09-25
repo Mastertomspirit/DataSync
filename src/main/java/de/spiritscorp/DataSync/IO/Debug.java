@@ -19,10 +19,18 @@
 */
 package de.spiritscorp.DataSync.IO;
 
+import java.io.IOException;
+import java.io.PrintStream;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import de.spiritscorp.DataSync.Main;
 
 public class Debug {
-	
+
 	/**
 	 * A debug method to write a formatted string to this output stream using the specified format string and arguments. 
 	 * 
@@ -32,8 +40,16 @@ public class Debug {
 	 * 					by the maximum dimension of a Java array as defined by The Java Virtual Machine Specification.
 	 */
 	public static final void PRINT_DEBUG(String format,Object... args) {
-		if(Main.debug) {		
-			System.out.printf(format + "%n", args);
+		if(Main.debug) {
+			String time = LocalDateTime.now(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss.ssss"));
+			System.out.printf(time + "  " + format + "%n", args);
 		}
+	}
+	
+	public static final void SET_DEBUG_TO_FILE() {
+		try {
+			System.setOut(new PrintStream(Files.newOutputStream(Preference.DEBUG_PATH, StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.APPEND), true, Charset.forName("UTF-8")));
+			System.setErr(new PrintStream(Files.newOutputStream(Preference.ERROR_PATH, StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.APPEND), true, Charset.forName("UTF-8")));
+		} catch (IOException e) {e.printStackTrace();}
 	}
 }

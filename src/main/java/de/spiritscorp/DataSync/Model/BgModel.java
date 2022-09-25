@@ -50,9 +50,10 @@ public class BgModel {
 		Path trashbinPath = pref.getTrashbinPath();
 		boolean trashbin = pref.isTrashbin();
 		boolean autoBgDel = pref.isAutoBgDel();
-		Debug.PRINT_DEBUG(String.valueOf(System.currentTimeMillis() - pref.getLastScanTime()));
+		Debug.PRINT_DEBUG("time since last scan: %d", System.currentTimeMillis() - pref.getLastScanTime());
 		if(Files.exists(pref.getStartDestPath())) {
 			if(System.currentTimeMillis() - pref.getLastScanTime()  > pref.getBgTime().getTime()){
+				Debug.PRINT_DEBUG("bgJob started");
 				Thread t1 = new Thread(() -> sourceMap = handler.listFiles(pref.getSourcePath(), ScanType.FLAT_SCAN, pref.isSubDir()));
 				Thread t2 = new Thread(() -> destMap = handler.listFiles(pref.getDestPath(), ScanType.FLAT_SCAN, pref.isSubDir()));
 				t1.start();
@@ -61,9 +62,8 @@ public class BgModel {
 					t1.join();
 					t2.join();
 				} catch (InterruptedException e) {e.printStackTrace();}
-				Debug.PRINT_DEBUG("Source Path Size: %d  && Destination Path Size: %d\n", sourceMap.size(), destMap.size());
 				handler.equalsFiles(sourceMap, destMap);
-				Debug.PRINT_DEBUG("Source Path Size: %d  && Destination Path Size: %d\n", sourceMap.size(), destMap.size());
+				Debug.PRINT_DEBUG("unique source path size: %d  && unique destination path size: %d", sourceMap.size(), destMap.size());
 				if(autoBgDel && !destMap.isEmpty())		handler.deleteFiles(destMap, logOn, trashbin, trashbinPath);
 				if(!sourceMap.isEmpty())							handler.copyFiles(sourceMap, logOn, startDestPath);
 				pref.saveLastScanTime();

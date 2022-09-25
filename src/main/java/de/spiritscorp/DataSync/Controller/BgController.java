@@ -23,6 +23,7 @@ import java.awt.AWTException;
 import java.awt.SystemTray;
 import de.spiritscorp.DataSync.Gui.View;
 import de.spiritscorp.DataSync.Gui.BgView;
+import de.spiritscorp.DataSync.IO.Debug;
 import de.spiritscorp.DataSync.IO.Logger;
 import de.spiritscorp.DataSync.IO.Preference;
 import de.spiritscorp.DataSync.Model.BgModel;
@@ -61,6 +62,7 @@ class BgController  {
 			sysTray.add(bgView.getTrayIcon());
 		} catch (AWTException e) {e.printStackTrace();}
 		thread = new Thread( () -> {
+			Debug.PRINT_DEBUG("bgJob starts");
 			BgModel bgModel = new BgModel(pref, logger);
 			boolean bgRun = true;
 			try {

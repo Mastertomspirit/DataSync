@@ -53,12 +53,10 @@ class FileVisit implements FileVisitor<Path> {
 	public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
 		if(dir != null) {
 			if(dir.endsWith("$RECYCLE.BIN") ||
-				dir.endsWith("System Volume Information") ||
 				dir.endsWith("Papierkorb")) {
 					Debug.PRINT_DEBUG("Skip_preVisitDirectory -> " + dir);
 					return FileVisitResult.SKIP_SUBTREE;
 			}}
-		Debug.PRINT_DEBUG("visiting directory: %s", dir.toString());
 		return FileVisitResult.CONTINUE;
 	}
 
@@ -74,7 +72,7 @@ class FileVisit implements FileVisitor<Path> {
 
 	@Override
 	public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
-		Debug.PRINT_DEBUG("VisitFileFailed: " + file);
+		Debug.PRINT_DEBUG("VisitFileFailed -> " + file);
 		return FileVisitResult.CONTINUE;
 	}
 

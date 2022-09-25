@@ -41,16 +41,15 @@ import jakarta.json.stream.JsonGenerator;
 
 class IOPrefs {
 
-	private Path configDir, configPath;
+	private final Path configDir;
 	private JsonObject job;
 	private HashMap<String, JsonValue> prefTempMap;
 	
 	/**
 	 * @param configDir The directory where the config file should be saved
 	 */
-	IOPrefs(Path configDir){
-		this.configDir = configDir;
-		configPath = configDir.resolve("conf.json");
+	IOPrefs(){
+		this.configDir = Preference.CONFIG_PATH.getParent();
 		prefTempMap = new HashMap<>();
 	}
 	
@@ -58,8 +57,8 @@ class IOPrefs {
  * @return	<b>boolean</b> true if success
  */
 	boolean readPreferences() {	
-		if(Files.exists(configPath)) {
-			try(FileReader reader = new FileReader(configPath.toFile(), Charset.forName("UTF-8"))){		
+		if(Files.exists(Preference.CONFIG_PATH)) {
+			try(FileReader reader = new FileReader(Preference.CONFIG_PATH.toFile(), Charset.forName("UTF-8"))){		
 				JsonReader jr = Json.createReader(reader);	
 				job = jr.readObject();
 				jr.close();
@@ -76,7 +75,7 @@ class IOPrefs {
 		if(!Files.exists(configDir)) {
 			configDir.toFile().mkdir();
 		}
-		try(OutputStream os = Files.newOutputStream(configPath, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {	
+		try(OutputStream os = Files.newOutputStream(Preference.CONFIG_PATH, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {	
 			HashMap<String,Boolean> config = new HashMap<>();
 			config.put(JsonGenerator.PRETTY_PRINTING, true);
 			JsonWriterFactory jwf = Json.createWriterFactory(config);

@@ -21,6 +21,10 @@
 */
 package de.spiritscorp.DataSync;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 import java.util.Arrays;
 
 import de.spiritscorp.DataSync.Controller.Controller;
@@ -37,6 +41,12 @@ public class Main {
 	public static void main(String[] args) {
 		debug = Arrays.stream(args).anyMatch((s) -> s.equals("debug"));
 		boolean firstStart = Arrays.stream(args).anyMatch((s) -> s.equals("firstStart"));
+		
+		if(Arrays.stream(args).anyMatch((s) -> s.equals("debugToFile")))	{
+			debug = true;
+			Debug.SET_DEBUG_TO_FILE();
+			System.out.printf("%n%n%nDEBUG BEGIN: %s%n%n%n", LocalDateTime.now(ZoneId.systemDefault()).format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.FULL, FormatStyle.SHORT)));
+		}
 		if(debug)		System.getProperties().forEach((f,k) -> Debug.PRINT_DEBUG(f + ":  \" " + k + " \""));
 
 		new Controller(firstStart);

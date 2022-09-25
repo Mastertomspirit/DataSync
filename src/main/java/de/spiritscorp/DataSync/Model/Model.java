@@ -61,7 +61,7 @@ public class Model {
 		stats[2] = getBytes(sourceMap);
 		stats[3] = getBytes(destMap);
 		Debug.PRINT_DEBUG("equalsFiles start");
-		Debug.PRINT_DEBUG("sourceMap.size = %d, destMap.size = %d", sourceMap.size(), destMap.size());
+		Debug.PRINT_DEBUG("sourceMap size = %d, destMap size = %d", sourceMap.size(), destMap.size());
 		handler.equalsFiles(sourceMap, destMap);
 		HashMap<String, Map<Path,FileAttributes>> hashMap = new HashMap<>();
 		hashMap.put("destMap", destMap);

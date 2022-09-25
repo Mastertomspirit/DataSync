@@ -105,7 +105,7 @@
 							<vendor>Tom Spirit</vendor>
 							<icon>64x64.ico</icon>
 							<module>de.spiritscorp.DataSync/de.spiritscorp.DataSync.Main</module>
-							<javaoptions>-Dfile.encoding=UTF-8 -Xms256m -Xmx4096m</javaoptions>
+							<javaoptions>-Dfile.encoding=UTF-8 -Xms32m -Xmx4096m</javaoptions>
 						</configuration>
 					</execution>
 				</executions>

@@ -186,6 +186,7 @@ class ControllerHelper {
 				view.setTextArea("Duplicate gefunden: " + (sourceMap.size() / 2) + " Stück");
 				view.setTextArea("Doppelt belegter Speicherplatz: " + getReadableBytes(space));
 				view.setTextArea(endTimeFormatted);
+				sourceMap.clear();
 				scanRun = false;
 				view.setScanRun(false);
 	}

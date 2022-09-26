@@ -41,7 +41,7 @@ public class Debug {
 	 */
 	public static final void PRINT_DEBUG(String format,Object... args) {
 		if(Main.debug) {
-			String time = LocalDateTime.now(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss.ssss"));
+			String time = LocalDateTime.now(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss.SSSSS"));
 			System.out.printf(time + "  " + format + "%n", args);
 		}
 	}

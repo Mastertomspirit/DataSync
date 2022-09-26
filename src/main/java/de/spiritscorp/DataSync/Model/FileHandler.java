@@ -107,7 +107,7 @@ class FileHandler {
 				}
 			}
 		}
-		Debug.PRINT_DEBUG("duplicateList -> ready %nsize: %d", duplicateMap.size());		
+		Debug.PRINT_DEBUG("duplicateList -> ready : size: %d", duplicateMap.size());
 		return duplicateMap;
 	}
 	
@@ -121,10 +121,11 @@ class FileHandler {
 		if(sourceMap.size() != 0 && destMap.size() != 0) {		
 			Set<Path> sourceHitList = Collections.synchronizedSet(new HashSet<>());
 			Set<Path> destHitList = Collections.synchronizedSet(new HashSet<>());
+			int avProc = (Runtime.getRuntime().availableProcessors() > 3) ? ((int) (Runtime.getRuntime().availableProcessors() / 2 )) - 1 : 1;
 			if(sourceMap.size() > 30_000) {
-				ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-				Map<Integer, Map<Path, FileAttributes>> splitSource = splitMap(sourceMap);
-				Map<Integer, Map<Path, FileAttributes>> splitDest = splitMap(destMap);
+				ExecutorService executor = Executors.newFixedThreadPool(avProc * 2);
+				Map<Integer, Map<Path, FileAttributes>> splitSource = splitMap(sourceMap, avProc);
+				Map<Integer, Map<Path, FileAttributes>> splitDest = splitMap(destMap, avProc);
 				for(Map.Entry<Integer, Map<Path, FileAttributes>> source : splitSource.entrySet()) {
 					executor.execute(new Thread(() -> equalsMap(source.getValue(), destMap, sourceHitList)));
 				}
@@ -151,7 +152,7 @@ class FileHandler {
 			for (Path p : destHitList) {
 				destMap.remove(p);
 			}	
-			Debug.PRINT_DEBUG("sourceList.size: %d%ndestList.size: %d", sourceHitList.size(), destHitList.size());
+			Debug.PRINT_DEBUG("full source path size: %d  && full destination path size: %d", sourceHitList.size(), destHitList.size());
 		}
 	}
 
@@ -214,8 +215,9 @@ class FileHandler {
 	 * @param mapName
 	 */
 	private void equalsMap(Map<Path, FileAttributes> iterateMap, Map<Path, FileAttributes> fullMap, Set<Path> hitList) {
+		Map<Path, FileAttributes> tempMap = Map.copyOf(fullMap);
 		for (Map.Entry<Path, FileAttributes> entry : iterateMap.entrySet()) {
-			if(fullMap.containsValue(entry.getValue())) {
+			if(tempMap.containsValue(entry.getValue())) {
 				hitList.add(entry.getKey());
 			}
 		}		
@@ -227,8 +229,7 @@ class FileHandler {
 	 * @param map
 	 * @return  <b>Map</b> </br>The map with split maps
 	 */
-	private Map<Integer, Map<Path, FileAttributes>> splitMap(Map<Path, FileAttributes> map) {
-		int avProc = (Runtime.getRuntime().availableProcessors() > 1) ? (int) (Runtime.getRuntime().availableProcessors() / 2 ) : 1;
+	private Map<Integer, Map<Path, FileAttributes>> splitMap(Map<Path, FileAttributes> map, int avProc) {
 		Map<Integer, Map<Path, FileAttributes>> splitedMaps = createMap();
 		for(int i = 0; i < avProc; i++) {
 			splitedMaps.put(i, createMap());

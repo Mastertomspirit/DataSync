@@ -48,6 +48,7 @@ public class Model {
  * @return <b>HashMap</b> with source Map and destination Map
  */
 	public HashMap<String, Map<Path,FileAttributes>> scanSyncFiles(ArrayList<Path> sourcePathes, ArrayList<Path> destPathes, Long[] stats, ScanType deepScan, boolean subDir, boolean trashbin) {
+		Debug.PRINT_DEBUG("scan start");
 		Thread t1 = new Thread(() -> sourceMap = handler.listFiles(sourcePathes, deepScan, subDir));
 		Thread t2 = new Thread(() -> destMap = handler.listFiles(destPathes, deepScan, subDir));
 		t1.start();
@@ -66,6 +67,9 @@ public class Model {
 		HashMap<String, Map<Path,FileAttributes>> hashMap = new HashMap<>();
 		hashMap.put("destMap", destMap);
 		hashMap.put("sourceMap", sourceMap);
+		hashMap.put("failMap", handler.getFailtures(sourceMap, destMap));
+		Debug.PRINT_DEBUG("equalsFiles ready");
+		Debug.PRINT_DEBUG("sourceMap size = %d, destMap size = %d, failtures = %d", sourceMap.size(), destMap.size(), hashMap.get("failMap").size());
 		return hashMap;
 	}
 
@@ -91,11 +95,14 @@ public class Model {
 	 * @param subDir
 	 * @return <b>Map</b> </br>Map with duplicates 
 	 */
-	public Map<Path, FileAttributes> scanDublicates(ArrayList<Path> paths) {
+	public HashMap<String, Map<Path, FileAttributes>> scanDublicates(ArrayList<Path> paths) {
 		sourceMap = handler.listFiles(paths, ScanType.DUBLICATE_SCAN, false);
 		sourceMap = handler.findDuplicates(sourceMap);
-//		TODO View needs a way to change the entrys
-		return sourceMap;
+		HashMap<String, Map<Path,FileAttributes>> hashMap = new HashMap<>();
+		hashMap.put("sourceMap", sourceMap);
+		hashMap.put("failMap", handler.getFailtures(sourceMap, destMap));
+		//		TODO View needs a way to change the entrys
+		return hashMap;
 	}
 	
 	private Long getBytes(Map<Path, FileAttributes> map) {

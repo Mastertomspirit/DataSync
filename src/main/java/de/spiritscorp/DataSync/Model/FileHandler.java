@@ -68,7 +68,7 @@ class FileHandler {
 		try {
 			while (!executor.awaitTermination(100, TimeUnit.MILLISECONDS)) {}
 		} catch (InterruptedException e) {e.printStackTrace();}	
-		Debug.PRINT_DEBUG("listFiles() -> ready");
+		Debug.PRINT_DEBUG("listFiles() -> ready  %s -> %s", Thread.currentThread().getName(), paths.get(0).toString());
 		return map;
 	}
 
@@ -152,8 +152,27 @@ class FileHandler {
 			for (Path p : destHitList) {
 				destMap.remove(p);
 			}	
-			Debug.PRINT_DEBUG("full source path size: %d  && full destination path size: %d", sourceHitList.size(), destHitList.size());
+			Debug.PRINT_DEBUG("full source hitList size: %d  && full destination hitList size: %d", sourceHitList.size(), destHitList.size());
 		}
+	}
+	
+	Map<Path,FileAttributes> getFailtures(Map<Path,FileAttributes> sourceMap, Map<Path,FileAttributes> destMap){
+		Map<Path,FileAttributes> failMap = createMap();
+		if(sourceMap != null) {
+			for(Map.Entry<Path, FileAttributes> entry : sourceMap.entrySet()) {
+				if(entry.getValue().getFileHash().equals("Failed")) {
+					failMap.put(entry.getKey(), entry.getValue());
+				}
+			}
+		}
+		if(destMap != null) {
+			for(Map.Entry<Path, FileAttributes> entry : destMap.entrySet()) {
+				if(entry.getValue().getFileHash().equals("Failed")) {
+					failMap.put(entry.getKey(), entry.getValue());
+				}
+			}		
+		}
+		return failMap;
 	}
 
 	/**
@@ -164,16 +183,16 @@ class FileHandler {
 	 * @param trashbinPath
 	 */
 	void deleteFiles(Map<Path,FileAttributes> map, boolean logOn, boolean trashbin, Path trashbinPath) {
-		try {
-			for (Path path : map.keySet()) {
+		for (Path path : map.keySet()) {
+			try {
 				if(trashbin) {
 					Files.createDirectories(trashbinPath.resolve(map.get(path).getRelativeFilePath()));
 					Files.copy(path, trashbinPath.resolve(map.get(path).getRelativeFilePath()), StandardCopyOption.REPLACE_EXISTING);
 				}
 				Files.delete(path);
-				log.setEntry(path.toString(), "gelöscht", map.get(path));
-			}
-		}catch(IOException e) {e.printStackTrace();}
+			}catch(IOException e) {e.printStackTrace();}
+			log.setEntry(path.toString(), "gelöscht", map.get(path));
+		}
 		map.clear();
 		if(logOn) log.printStatus();	
 	}
@@ -198,7 +217,7 @@ class FileHandler {
 				log.setEntry(path.toString(), "kopiert", entry.getValue());
 			}catch(IOException e) {
 				if(logOn) log.setEntry(path.toString(), "FEHLER BEIM KOPIEREN", entry.getValue());
-				System.err.println("Fehler beim kopieren von " + path.toString());
+				Debug.PRINT_DEBUG("copy failed: %s, %s", e.getMessage(), path.toString());
 				e.printStackTrace();
 			}
 		}

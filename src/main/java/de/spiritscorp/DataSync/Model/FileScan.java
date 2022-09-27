@@ -77,7 +77,7 @@ class FileScan  implements Runnable{
 			MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
 			byte[] input;
 			while(bis.available() != 0) {
-				input = bis.readNBytes(5120);
+				input = bis.readNBytes(8192);
 				messageDigest.update(input);
 			}
 			byte[] digestByte = messageDigest.digest();
@@ -86,7 +86,9 @@ class FileScan  implements Runnable{
 			}
 		} catch (IOException | NoSuchAlgorithmException e) {
 			e.printStackTrace();
-			Debug.PRINT_DEBUG("Failed: %s", path);
+			sb.delete(0, sb.length());
+			sb.append("Failed");
+			Debug.PRINT_DEBUG("Failed: %s Message: %s", path, e.getMessage());
 		}
 		return new String(sb);
 	}
@@ -98,7 +100,7 @@ class FileScan  implements Runnable{
 		return startPath.relativize(path);
 	}
 	private String deepScan() {
-		return (scanType == ScanType.FLAT_SCAN) ? null : getSha256();
+		return (scanType == ScanType.FLAT_SCAN) ? "null" : getSha256();
 	}
 }
 

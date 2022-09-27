@@ -44,7 +44,7 @@ class ControllerHelper {
 	
 	private final Model model;
 	private final Preference pref;
-	private Map<Path,FileAttributes> sourceMap, destMap;
+	private Map<Path,FileAttributes> sourceMap, destMap, failMap;
 	private boolean scanRun;
 	
 	/**
@@ -136,9 +136,11 @@ class ControllerHelper {
 					String endTimeFormatted = getEndTimeFormatted(System.nanoTime() - startTime);
 					sourceMap = hashMap.get("sourceMap");
 					destMap = hashMap.get("destMap");
+					failMap = hashMap.get("failMap");
 					view.setTextArea(formatMaps(deepScan));
 					view.setTextArea(String.format("Quelldateien: %d Stück und Zieldateien: %d Stück", stats[0], stats[1]));
 					view.setTextArea(String.format("Größe aller Quelldateien: %s      Größe aller Zieldateien: %s", getReadableBytes(stats[2]), getReadableBytes(stats[3])));
+					view.setTextArea(String.format("Fehlerhafter Zugriff: %d", failMap.size()));
 					view.setTextArea(endTimeFormatted);
 
 					int del, ok;
@@ -175,7 +177,9 @@ class ControllerHelper {
 				scanRun = true;
 				view.setScanRun(true);
 				long startTime = System.nanoTime();
-				sourceMap  = model.scanDublicates(pref.getSourcePath());
+				HashMap<String, Map<Path, FileAttributes>> hashMap = model.scanDublicates(pref.getSourcePath());
+				sourceMap  = hashMap.get("sourceMap");
+				failMap = hashMap.get("failMap");
 				String endTimeFormatted = getEndTimeFormatted(System.nanoTime() - startTime);
 				long space = 0;
 				for(Path p : sourceMap.keySet()) {
@@ -187,6 +191,7 @@ class ControllerHelper {
 				view.setTextArea("Doppelt belegter Speicherplatz: " + getReadableBytes(space));
 				view.setTextArea(endTimeFormatted);
 				sourceMap.clear();
+				failMap.clear();
 				scanRun = false;
 				view.setScanRun(false);
 	}
@@ -275,56 +280,104 @@ class ControllerHelper {
 			sb.append("----------------------" + line);
 			ArrayList<String> str = new ArrayList<>();
 			int i = 0;
-			for (Map.Entry<Path, FileAttributes> entry : sourceMap.entrySet()) {
-				FileAttributes value = entry.getValue();
-
-				str.add(value.getFileHash() + " , " + 
-						value.getFileName() + " , " +
-						entry.getKey().toString() + " , " + 
-						getReadableBytes(value.getSize()) + " , " +
-						value.getModTime() + " , " + 
-						value.getCreateTime() + " , " + 
-						line);
-				i++;
-				if(i > displayLimit) break;
-			}			
-			Object[] tempString = str.toArray();
-			Arrays.sort(tempString);
-			for(Object s : tempString) {
-				sb.append((String) s);
+			if(sourceMap != null) {	
+				for (Map.Entry<Path, FileAttributes> entry : sourceMap.entrySet()) {
+					FileAttributes value = entry.getValue();
+	
+					str.add(value.getFileHash() + " , " + 
+							value.getFileName() + " , " +
+							entry.getKey().toString() + " , " + 
+							getReadableBytes(value.getSize()) + " , " +
+							value.getModTime() + " , " + 
+							value.getCreateTime() + " , " + 
+							line);
+					i++;
+					if(i > displayLimit) break;
+				}			
+				Object[] tempString = str.toArray();
+				Arrays.sort(tempString);
+				for(Object s : tempString) {
+					sb.append((String) s);
+				}
+			}
+			if(failMap != null && !failMap.isEmpty()) {
+				sb.append("Fehlerhafter Zugriff:" + line);
+				sb.append("----------------------" + line);
+				str = new ArrayList<>();
+				i = 0;
+				for (Map.Entry<Path, FileAttributes> entry : sourceMap.entrySet()) {
+					FileAttributes value = entry.getValue();
+	
+					str.add(value.getFileHash() + " , " + 
+							value.getFileName() + " , " +
+							entry.getKey().toString() + " , " + 
+							getReadableBytes(value.getSize()) + " , " +
+							value.getModTime() + " , " + 
+							value.getCreateTime() + " , " + 
+							line);
+					i++;
+					if(i > displayLimit) break;
+				}			
+				Object[] tempString = str.toArray();
+				Arrays.sort(tempString);
+				for(Object s : tempString) {
+					sb.append((String) s);
+				}
 			}
 		}else {
 			sb.append("Scan abgeschlossen!" + line);
 			sb.append("Zu kopierende Dateien:" + line);
 			sb.append("----------------------" + line);
 			int limit = 0;
-			for (Map.Entry<Path, FileAttributes> entry : sourceMap.entrySet()) {
-				FileAttributes value = entry.getValue();
-				sb.append(value.getFileName() + " , " +
+			if(sourceMap != null) {
+				for (Map.Entry<Path, FileAttributes> entry : sourceMap.entrySet()) {
+					FileAttributes value = entry.getValue();
+					sb.append(value.getFileName() + " , " +
+								getReadableBytes(value.getSize()) + " , " +
+								value.getModTime() + " , " +
+								value.getCreateTime() + " , " +
+								value.getFileHash() + "  " +
+								"   " + entry.getKey().toString() +
+								line);
+					limit++;
+					if (limit > (displayLimit/ 2)) break;
+				}
+			}
+			limit = 0;
+			sb.append(line);
+			sb.append("Zu löschende Dateien:" + line);
+			sb.append("---------------------" + line);
+			if(destMap != null) {	
+				for (Map.Entry<Path, FileAttributes> entry : destMap.entrySet()) {
+					FileAttributes value = entry.getValue();
+					sb.append(value.getFileName() + " , " +
 							getReadableBytes(value.getSize()) + " , " +
 							value.getModTime() + " , " +
 							value.getCreateTime() + " , " +
 							value.getFileHash() + "  " +
 							"   " + entry.getKey().toString() +
 							line);
-				limit++;
-				if (limit > (displayLimit/ 2)) break;
+					limit++;
+					if (limit > (displayLimit/ 2)) break;
+				}
 			}
-			limit = 0;
-			sb.append(line);
-			sb.append("Zu löschende Dateien:" + line);
-			sb.append("---------------------" + line);
-			for (Map.Entry<Path, FileAttributes> entry : destMap.entrySet()) {
-				FileAttributes value = entry.getValue();
-				sb.append(value.getFileName() + " , " +
-						getReadableBytes(value.getSize()) + " , " +
-						value.getModTime() + " , " +
-						value.getCreateTime() + " , " +
-						value.getFileHash() + "  " +
-						"   " + entry.getKey().toString() +
-						line);
-				limit++;
-				if (limit > (displayLimit/ 2)) break;
+			if(failMap != null && !failMap.isEmpty()) {
+				limit = 0;
+				sb.append(line);
+				sb.append("Fehlerhafter Zugriff:" + line);
+				sb.append("---------------------" + line);
+				for (Map.Entry<Path, FileAttributes> entry : failMap.entrySet()) {
+					FileAttributes value = entry.getValue();
+					sb.append(value.getFileName() + " , " +
+							getReadableBytes(value.getSize()) + " , " +
+							value.getModTime() + " , " +
+							value.getCreateTime() + " , " +
+							value.getFileHash() + "  " +
+							"   " + entry.getKey().toString() +
+							line);
+					limit++;
+					if (limit > (displayLimit/ 2)) break;
+				}
 			}
 		}
 		return new String(sb);

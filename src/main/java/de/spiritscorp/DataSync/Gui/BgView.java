@@ -40,11 +40,11 @@ public class BgView {
 	public BgView(Controller controller) {
 		popup = new PopupMenu();
 		
-		open = new MenuItem("OPEN");
+		open = new MenuItem("öffnen");
 		open.setFont(new Font("Comic Sans MS", 0, 14));
 		open.addActionListener(controller);
 
-		close = new MenuItem("CLOSE");
+		close = new MenuItem("schließen");
 		close.setFont(new Font("Comic Sans MS", 0, 14));
 		close.addActionListener(controller);
 
@@ -52,7 +52,7 @@ public class BgView {
 		popup.addSeparator();
 		popup.add(close);
 		
-		trayIcon = new TrayIcon(Toolkit.getDefaultToolkit().getImage(BgView.class.getClassLoader().getResource("16x16.png")), "ToolTip");
+		trayIcon = new TrayIcon(Toolkit.getDefaultToolkit().getImage(BgView.class.getClassLoader().getResource("16x16.png")), "DataSync");
 		trayIcon.setPopupMenu(popup);
 		trayIcon.addMouseListener(controller);
 	}

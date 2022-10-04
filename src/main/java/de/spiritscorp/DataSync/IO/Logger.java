@@ -19,26 +19,29 @@
 */
 package de.spiritscorp.DataSync.IO;
 
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.json.JSONTokener;
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.LinkedList;
 
 import de.spiritscorp.DataSync.Model.FileAttributes;
+import jakarta.json.Json;
+import jakarta.json.JsonArray;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonReader;
+import jakarta.json.JsonValue;
+import jakarta.json.JsonWriter;
+import jakarta.json.JsonWriterFactory;
+import jakarta.json.stream.JsonGenerator;
 
 public class Logger {
 	
-	private JSONArray ja = new JSONArray();
-	private Path logPath = Paths.get(System.getProperty("user.home"), "DataSync", "log.json");
+	private LinkedList<JsonValue> logList = new LinkedList<>();
 	
 	/**
 	 * Set a new log entry
@@ -48,13 +51,20 @@ public class Logger {
 	 * @param fa The attributes of the file
 	 */
 	public void setEntry(String filePath, String changeStatus, FileAttributes fa) {
-		JSONArray ja2 = new JSONArray();
-		ja2.put(filePath);
-		ja2.put(LocalDateTime.now());
-		ja2.put(changeStatus);
-		JSONObject jo = new JSONObject(fa);
-		ja2.put(jo);
-		ja.put(ja2);
+		JsonObject jo = Json.createObjectBuilder()
+				.add("Dateiname", fa.getFileName())
+				.add("erstellt", fa.getCreateTime())
+				.add("zuletzt modifiziert", fa.getModTime())
+				.add("Größe", fa.getSize())
+				.add("Fingerabdruck" , (fa.getFileHash() == null) ? "null" : fa.getFileHash())
+				.build();	
+		JsonArray ja = Json.createArrayBuilder()
+				.add(filePath)
+				.add(LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy  HH:mm:ss")))
+				.add(changeStatus)
+				.add(jo)
+				.build();
+		logList.addFirst(ja);
 	}
 	
 //	TODO	ineffizient
@@ -63,10 +73,16 @@ public class Logger {
 	 */
 	public void printStatus() {
 		readLog();
-		try {
-			Files.writeString(logPath, ja.toString(2), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-			ja.clear();
-		} catch (JSONException | IOException e) {
+		JsonArray ja = Json.createArrayBuilder(logList).build();
+		try(FileOutputStream fos = new FileOutputStream(Preference.LOG_PATH.toFile(), false)) {
+			HashMap<String,Boolean> config = new HashMap<>();
+			config.put(JsonGenerator.PRETTY_PRINTING, true);
+			JsonWriterFactory jwf = Json.createWriterFactory(config);
+			JsonWriter jw = jwf.createWriter(fos);
+			jw.write(ja);
+			jw.close();
+			logList.clear();
+		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
@@ -74,12 +90,14 @@ public class Logger {
 	/**
 	 * Read the logfile as JsonArray
 	 */
-	public void readLog() {
-		if(Files.exists(logPath)) {
-			try(FileReader fr = new FileReader(logPath.toFile(), Charset.forName("UTF-8"))) {
-				JSONTokener jt = new JSONTokener(fr);
-				JSONArray jaTemp = (JSONArray) jt.nextValue();
-				jaTemp.forEach(p -> ja.put(p));				
+	private void readLog() {
+		if(Files.exists(Preference.LOG_PATH)) {
+			try(FileReader reader = new FileReader(Preference.LOG_PATH.toFile(), Charset.forName("UTF-8"))) {
+				JsonReader jr = Json.createReader(reader);
+				jr.readArray()
+					.stream()
+					.forEach((v) -> logList.add(v));
+				jr.close();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}

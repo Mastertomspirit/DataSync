@@ -35,6 +35,7 @@ import javax.swing.JOptionPane;
 import de.spiritscorp.DataSync.ScanType;
 import de.spiritscorp.DataSync.Gui.FileChooser;
 import de.spiritscorp.DataSync.Gui.View;
+import de.spiritscorp.DataSync.IO.Debug;
 import de.spiritscorp.DataSync.IO.Preference;
 import de.spiritscorp.DataSync.Model.FileAttributes;
 import de.spiritscorp.DataSync.Model.Model;
@@ -43,7 +44,7 @@ class ControllerHelper {
 	
 	private final Model model;
 	private final Preference pref;
-	private Map<Path,FileAttributes> sourceMap, destMap;
+	private Map<Path,FileAttributes> sourceMap, destMap, failMap;
 	private boolean scanRun;
 	
 	/**
@@ -64,7 +65,7 @@ class ControllerHelper {
 	 * @param view The view
 	 */
 	void selectButton(View view) {
-		ArrayList<Path> sourcePaths = new ArrayList<Path>();
+		ArrayList<Path> sourcePaths = new ArrayList<>();
 		ArrayList<Path> destPaths = new ArrayList<>();
 		int i = 0;
 		int sourcePathSize = pref.getSourcePath().size();
@@ -130,31 +131,38 @@ class ControllerHelper {
 				Long[] stats = new Long[4];				
 				long startTime = System.nanoTime();
 				
-				HashMap<String, Map<Path, FileAttributes>> hashMap  = model.scanSyncFiles(pref.getSourcePath(), pref.getDestPath(), stats, pref.getDeepScan(), pref.isSubDir(), pref.isTrashbin());
-				String endTimeFormatted = getEndTimeFormatted(System.nanoTime() - startTime);
-				sourceMap = hashMap.get("sourceMap");
-				destMap = hashMap.get("destMap");
-				view.setTextArea(formatMaps(deepScan));
-				view.setTextArea(String.format("Quelldateien: %d Stück und Zieldateien: %d Stück", stats[0], stats[1]));
-				view.setTextArea(String.format("Größe aller Quelldateien: %s      Größe aller Zieldateien: %s", getReadableBytes(stats[2]), getReadableBytes(stats[3])));
-				view.setTextArea(endTimeFormatted);
+				if(Files.exists(startDestPath)) {			
+					HashMap<String, Map<Path, FileAttributes>> hashMap  = model.scanSyncFiles(pref.getSourcePath(), pref.getDestPath(), stats, pref.getDeepScan(), pref.isSubDir(), pref.isTrashbin());
+					String endTimeFormatted = getEndTimeFormatted(System.nanoTime() - startTime);
+					sourceMap = hashMap.get("sourceMap");
+					destMap = hashMap.get("destMap");
+					failMap = hashMap.get("failMap");
+					view.setTextArea(formatMaps(deepScan));
+					view.setTextArea(String.format("Quelldateien: %d Stück und Zieldateien: %d Stück", stats[0], stats[1]));
+					view.setTextArea(String.format("Größe aller Quelldateien: %s      Größe aller Zieldateien: %s", getReadableBytes(stats[2]), getReadableBytes(stats[3])));
+					view.setTextArea(String.format("Fehlerhafter Zugriff: %d", failMap.size()));
+					view.setTextArea(endTimeFormatted);
 
-				int del, ok;
-				if(pref.isAutoDel()) {
-					del  = 0;
-				}else {
-					del = JOptionPane.showConfirmDialog(view, "Löschen bestätigen?", "Gelöschte Dateien entfernen", 0, 0);
-				}
-				if(pref.isAutoSync()) ok = 0;
-				else ok = JOptionPane.showConfirmDialog(view, "Dateien Syncronisieren?", "Syncronisations Bestätigung", 0, 2);
-				if(ok == 0) {
-					if(model.syncFiles(del, logOn, startDestPath, trashbin, trashbinPath)) {
-						view.setTextArea("Syncronisation erfolgreich");
+					int del, ok;
+					if(pref.isAutoDel()) {
+						del  = 0;
 					}else {
-						view.setTextArea("Syncronisation fehlgeschlagen");
+						del = JOptionPane.showConfirmDialog(view, "Löschen bestätigen?", "Gelöschte Dateien entfernen", 0, 0);
+					}
+					if(pref.isAutoSync()) ok = 0;
+					else ok = JOptionPane.showConfirmDialog(view, "Dateien Syncronisieren?", "Syncronisations Bestätigung", 0, 2);
+					if(ok == 0) {
+						if(model.syncFiles(del, logOn, startDestPath, trashbin, trashbinPath)) {
+							view.setTextArea("Syncronisation erfolgreich");
+							pref.saveLastScanTime();
+						}else {
+							view.setTextArea("Syncronisation fehlgeschlagen");
+						}
+					}else {
+						view.setTextArea("Syncronisation abgebrochen!");
 					}
 				}else {
-					view.setTextArea("Syncronisation abgebrochen!");
+					view.setTextArea("Kein Ziellaufwerk vorhanden");
 				}
 				scanRun = false;
 				view.setScanRun(false);
@@ -169,7 +177,9 @@ class ControllerHelper {
 				scanRun = true;
 				view.setScanRun(true);
 				long startTime = System.nanoTime();
-				sourceMap  = model.scanDublicates(pref.getSourcePath(), pref.isSubDir());
+				HashMap<String, Map<Path, FileAttributes>> hashMap = model.scanDublicates(pref.getSourcePath());
+				sourceMap  = hashMap.get("sourceMap");
+				failMap = hashMap.get("failMap");
 				String endTimeFormatted = getEndTimeFormatted(System.nanoTime() - startTime);
 				long space = 0;
 				for(Path p : sourceMap.keySet()) {
@@ -180,6 +190,8 @@ class ControllerHelper {
 				view.setTextArea("Duplicate gefunden: " + (sourceMap.size() / 2) + " Stück");
 				view.setTextArea("Doppelt belegter Speicherplatz: " + getReadableBytes(space));
 				view.setTextArea(endTimeFormatted);
+				sourceMap.clear();
+				failMap.clear();
 				scanRun = false;
 				view.setScanRun(false);
 	}
@@ -193,12 +205,19 @@ class ControllerHelper {
  */
 	public void setOSAutostart(boolean set) {
 		String javaPath = System.getProperty("sun.boot.library.path");
+		String exePath = System.getProperty("jpackage.app-path");
 		String datei = System.getProperty("sun.java.command");
 		String fullPath = Paths.get("").toAbsolutePath().toString() + System.getProperty("file.separator") + datei;
 		String os = System.getProperty("os.name").toLowerCase();
 
 		if(os.contains("win")) {
-			String value = "/t  REG_SZ /d \"\\\"" + javaPath + "\\javaw.exe\\\" -Xmx200m -jar \\\"" + datei + "\\\" firstStart\"";
+//			First value is for compile only the jar
+			String value;
+			if(exePath == null) {
+				value = "/t  REG_SZ /d \"\\\"" + javaPath + "\\javaw.exe\\\" -Xmx200m -jar \\\"" + datei + "\\\" firstStart\"";
+			}else{
+				value = "/t REG_SZ /d \"" + exePath + " firstStart\"";
+			}
 			String cmd = "HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run /v DataSync /f ";
 			try {
 				if(set)		Runtime.getRuntime().exec("cmd /c reg add " + cmd + value);
@@ -206,22 +225,28 @@ class ControllerHelper {
 			} catch (IOException e) {e.printStackTrace();}
 			
 		}else if (os.contains("nix") || os.contains("aix") || os.contains("nux")){
-//			TODO		Not working -> EOF not set  -> crontab cant close the stream
+//			TODO		Not working -> EOF not set  -> crontab can't close the stream
 //			Problem		Files.writeString()
 //						Workaround move the file directly on the linux system
-			String linx = String.format("@reboot %s/java -jar \"%s\" firstStart", javaPath, fullPath);	
+//			First value is for compile only the jar
+			String value;
+			if(exePath == null) {
+				value = String.format("@reboot %s/java -jar \"%s\" firstStart", javaPath, fullPath);	
+			}else {
+				value = String.format("@reboot %s firstStart", exePath);
+			}
 			Path pathTemp = Paths.get("linx1.txt").toAbsolutePath();
 			Path path = Paths.get("linx.txt").toAbsolutePath();
 			try {
-				Files.writeString(pathTemp, linx, StandardCharsets.UTF_8, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE);
+				Files.writeString(pathTemp, value, StandardCharsets.UTF_8, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE);
 				Runtime.getRuntime().exec("mv " + pathTemp + " " + path);
 				if(set)	{
 					Runtime.getRuntime().exec("crontab " + path.toString());
-					System.out.println("crontab " + path.toString());
+					Debug.PRINT_DEBUG("crontab " + path.toString());
 				}
 				else	{
 					Runtime.getRuntime().exec("crontab -r " + path.toString());
-					System.out.println("crontab -r " + path.toString());
+					Debug.PRINT_DEBUG("crontab -r " + path.toString());
 				}
 			} catch (IOException e) {e.printStackTrace();}
 			try {
@@ -248,52 +273,111 @@ class ControllerHelper {
 	private String formatMaps(ScanType deepScan) {
 		String line = System.lineSeparator();
 		StringBuffer sb = new StringBuffer();
+		final int displayLimit = 10000;
 		if(deepScan == ScanType.DUBLICATE_SCAN) {
 			sb.append("Scan abgeschlossen!" + line);
 			sb.append("Doppelte Dateien:" + line);
 			sb.append("----------------------" + line);
-			String[] str = new String[sourceMap.size()];
+			ArrayList<String> str = new ArrayList<>();
 			int i = 0;
-			for (Map.Entry<Path, FileAttributes> entry : sourceMap.entrySet()) {
-				FileAttributes value = entry.getValue();
-
-				str[i] = value.getFileName() + " , " + 
+			if(sourceMap != null) {	
+				for (Map.Entry<Path, FileAttributes> entry : sourceMap.entrySet()) {
+					FileAttributes value = entry.getValue();
+	
+					str.add(value.getFileHash() + " , " + 
+							value.getFileName() + " , " +
+							entry.getKey().toString() + " , " + 
 							getReadableBytes(value.getSize()) + " , " +
 							value.getModTime() + " , " + 
 							value.getCreateTime() + " , " + 
-							value.getFileHash() + "         " + entry.getKey().toString() + line;
-				i++;
-			}			
-			Arrays.sort(str);
-			for(String s : str) {
-				sb.append(s);
+							line);
+					i++;
+					if(i > displayLimit) break;
+				}			
+				Object[] tempString = str.toArray();
+				Arrays.sort(tempString);
+				for(Object s : tempString) {
+					sb.append((String) s);
+				}
+			}
+			if(failMap != null && !failMap.isEmpty()) {
+				sb.append("Fehlerhafter Zugriff:" + line);
+				sb.append("----------------------" + line);
+				str = new ArrayList<>();
+				i = 0;
+				for (Map.Entry<Path, FileAttributes> entry : sourceMap.entrySet()) {
+					FileAttributes value = entry.getValue();
+	
+					str.add(value.getFileHash() + " , " + 
+							value.getFileName() + " , " +
+							entry.getKey().toString() + " , " + 
+							getReadableBytes(value.getSize()) + " , " +
+							value.getModTime() + " , " + 
+							value.getCreateTime() + " , " + 
+							line);
+					i++;
+					if(i > displayLimit) break;
+				}			
+				Object[] tempString = str.toArray();
+				Arrays.sort(tempString);
+				for(Object s : tempString) {
+					sb.append((String) s);
+				}
 			}
 		}else {
 			sb.append("Scan abgeschlossen!" + line);
 			sb.append("Zu kopierende Dateien:" + line);
 			sb.append("----------------------" + line);
-			for (Map.Entry<Path, FileAttributes> entry : sourceMap.entrySet()) {
-				FileAttributes value = entry.getValue();
-				sb.append(value.getFileName() + " , ");
-				sb.append(getReadableBytes(value.getSize()) + " , ");
-				sb.append(value.getModTime() + " , ");
-				sb.append(value.getCreateTime() + " , ");
-				sb.append(value.getFileHash() + "  ");
-				sb.append("       " + entry.getKey().toString());
-				sb.append(line);
+			int limit = 0;
+			if(sourceMap != null) {
+				for (Map.Entry<Path, FileAttributes> entry : sourceMap.entrySet()) {
+					FileAttributes value = entry.getValue();
+					sb.append(value.getFileName() + " , " +
+								getReadableBytes(value.getSize()) + " , " +
+								value.getModTime() + " , " +
+								value.getCreateTime() + " , " +
+								value.getFileHash() + "  " +
+								"   " + entry.getKey().toString() +
+								line);
+					limit++;
+					if (limit > (displayLimit/ 2)) break;
+				}
 			}
+			limit = 0;
 			sb.append(line);
 			sb.append("Zu löschende Dateien:" + line);
 			sb.append("---------------------" + line);
-			for (Map.Entry<Path, FileAttributes> entry : destMap.entrySet()) {
-				FileAttributes value = entry.getValue();
-				sb.append(value.getFileName() + " , ");
-				sb.append(getReadableBytes(value.getSize()) + " , ");
-				sb.append(value.getModTime() + " , ");
-				sb.append(value.getCreateTime() + " , ");
-				sb.append(value.getFileHash() + "  ");
-				sb.append("       " + entry.getKey().toString());
+			if(destMap != null) {	
+				for (Map.Entry<Path, FileAttributes> entry : destMap.entrySet()) {
+					FileAttributes value = entry.getValue();
+					sb.append(value.getFileName() + " , " +
+							getReadableBytes(value.getSize()) + " , " +
+							value.getModTime() + " , " +
+							value.getCreateTime() + " , " +
+							value.getFileHash() + "  " +
+							"   " + entry.getKey().toString() +
+							line);
+					limit++;
+					if (limit > (displayLimit/ 2)) break;
+				}
+			}
+			if(failMap != null && !failMap.isEmpty()) {
+				limit = 0;
 				sb.append(line);
+				sb.append("Fehlerhafter Zugriff:" + line);
+				sb.append("---------------------" + line);
+				for (Map.Entry<Path, FileAttributes> entry : failMap.entrySet()) {
+					FileAttributes value = entry.getValue();
+					sb.append(value.getFileName() + " , " +
+							getReadableBytes(value.getSize()) + " , " +
+							value.getModTime() + " , " +
+							value.getCreateTime() + " , " +
+							value.getFileHash() + "  " +
+							"   " + entry.getKey().toString() +
+							line);
+					limit++;
+					if (limit > (displayLimit/ 2)) break;
+				}
 			}
 		}
 		return new String(sb);

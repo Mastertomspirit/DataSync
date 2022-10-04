@@ -3,7 +3,7 @@
  		
  	 	@author Tom Spirit
  	 	@date 16.12.2021
- 		@version	0.9.0.0
+ 		@version	0.9.2.0
 		
 		This program is free software; you can redistribute it and/or modify
 		it under the terms of the GNU General Public License as published by
@@ -21,19 +21,34 @@
 */
 package de.spiritscorp.DataSync;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 import java.util.Arrays;
 
 import de.spiritscorp.DataSync.Controller.Controller;
+import de.spiritscorp.DataSync.IO.Debug;
 
 public class Main {
 	
-	public final static String VERSION = "V 0.9.0.0";
+	public final static String VERSION = "V 0.9.5.2";
+	public static boolean debug = false;
 
 	/**
 	 * Launch the application.
 	 */
 	public static void main(String[] args) {
+		debug = Arrays.stream(args).anyMatch((s) -> s.equals("debug"));
 		boolean firstStart = Arrays.stream(args).anyMatch((s) -> s.equals("firstStart"));
+		
+		if(Arrays.stream(args).anyMatch((s) -> s.equals("debugToFile")))	{
+			debug = true;
+			Debug.SET_DEBUG_TO_FILE();
+			Debug.PRINT_DEBUG("%nDEBUG BEGIN: %s%n", LocalDateTime.now(ZoneId.systemDefault()).format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.FULL, FormatStyle.SHORT)));
+		}
+//		if(debug)		System.getProperties().forEach((f,k) -> Debug.PRINT_DEBUG(f + ":  \" " + k + " \""));
+
 		new Controller(firstStart);
 	}
 }

@@ -22,7 +22,6 @@ package de.spiritscorp.DataSync.Model;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -34,12 +33,14 @@ import java.time.format.DateTimeFormatter;
 import java.util.Map;
 
 import de.spiritscorp.DataSync.ScanType;
+import de.spiritscorp.DataSync.IO.Debug;
 
 class FileScan  implements Runnable{
 
 	private Path path, startPath;
 	private Map<Path, FileAttributes> map;
 	private ScanType scanType;
+	private BasicFileAttributes bfa;
 	
 	/**
 	 * Scan the attributes of one file
@@ -49,17 +50,16 @@ class FileScan  implements Runnable{
 	 * @param map
 	 * @param scanType
 	 */
-	FileScan(Path path, Path startPath, Map<Path, FileAttributes> map, ScanType scanType){
+	FileScan(Path path, Path startPath, Map<Path, FileAttributes> map, ScanType scanType, BasicFileAttributes bfa){
 		this.path = path;
 		this.startPath = startPath;
 		this.map = map;
 		this.scanType = scanType;
+		this.bfa = bfa;
 	}
 	
 	@Override
 	public void run() {
-		try {
-			BasicFileAttributes bfa = Files.readAttributes(path, BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
 			FileAttributes fa = new FileAttributes(
 					relativePath(), 
 					fileTimeToString(bfa.creationTime()), 
@@ -68,9 +68,7 @@ class FileScan  implements Runnable{
 					bfa.size(), 
 					deepScan()
 			);
-					map.put(path, fa);
-
-		} catch (IOException e) {e.printStackTrace();}
+			map.put(path, fa);
 	}
 
 	private String getSha256() {
@@ -79,7 +77,7 @@ class FileScan  implements Runnable{
 			MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
 			byte[] input;
 			while(bis.available() != 0) {
-				input = bis.readNBytes(51200);
+				input = bis.readNBytes(8192);
 				messageDigest.update(input);
 			}
 			byte[] digestByte = messageDigest.digest();
@@ -88,6 +86,9 @@ class FileScan  implements Runnable{
 			}
 		} catch (IOException | NoSuchAlgorithmException e) {
 			e.printStackTrace();
+			sb.delete(0, sb.length());
+			sb.append("Failed");
+			Debug.PRINT_DEBUG("Failed: %s Message: %s", path, e.getMessage());
 		}
 		return new String(sb);
 	}
@@ -99,7 +100,7 @@ class FileScan  implements Runnable{
 		return startPath.relativize(path);
 	}
 	private String deepScan() {
-		return (scanType == ScanType.FLAT_SCAN) ? null : getSha256();
+		return (scanType == ScanType.FLAT_SCAN) ? "null" : getSha256();
 	}
 }
 

@@ -30,12 +30,19 @@ import java.util.ArrayList;
 
 import de.spiritscorp.DataSync.BgTime;
 import de.spiritscorp.DataSync.ScanType;
+import jakarta.json.Json;
+import jakarta.json.JsonValue;
 
 public class Preference {
+
+	private static final Path ROOT_PATH = Paths.get(System.getProperty("user.home"), "DataSync");
+	public static final Path DEBUG_PATH = ROOT_PATH.resolve("debug.log");
+	public static final Path ERROR_PATH = ROOT_PATH.resolve("debug.err");
+	public static final Path LOG_PATH = ROOT_PATH.resolve("log.json");
+	public static final Path CONFIG_PATH = ROOT_PATH.resolve("conf.json");
+	public static final Path SCAN_TIME_PATH = ROOT_PATH.resolve("lastScanTime");
 	
 	private IOPrefs ioP;
-	private Path prefDir = Paths.get(System.getProperty("user.home"), "DataSync");
-	private Path scanTimePath = Paths.get(System.getProperty("user.home"), "DataSync", "lastScanTime");
 	private ArrayList<Path> sourcePath = new ArrayList<>();
 	private ArrayList<Path> destPath = new ArrayList<>();
 	private Path startDestPath, trashbinPath;
@@ -65,7 +72,7 @@ public class Preference {
 	
 //	Check and load the preferences  
 	private void load() {
-		ioP = new IOPrefs(prefDir);
+		ioP = new IOPrefs();
 		if(ioP.readPreferences()){
 			try {
 				multiSourcePath = ioP.getMultiPath("multiSourcePath");
@@ -109,24 +116,24 @@ public class Preference {
 	public boolean savePrefs() {
 		if(destPath != null && !sourcePath.isEmpty()) {
 			for(int i = 1; i <= multiSourcePath; i++) {
-				ioP.setPreferences("sourcePath" + i, sourcePath.get(i-1));
+				ioP.setPreferences("sourcePath" + i, Json.createValue(sourcePath.get(i-1).toString()));
 			}
 			for(int i = 1; i <= multiDestPath; i++) {
-				ioP.setPreferences("destPath" + i, destPath.get(i-1));
+				ioP.setPreferences("destPath" + i, Json.createValue(destPath.get(i-1).toString()));
 			}
-			ioP.setPreferences("startDestPath", startDestPath);
-			ioP.setPreferences("trashbinPath", trashbinPath);
-			ioP.setPreferences("multiSourcePath", multiSourcePath);
-			ioP.setPreferences("multiDestPath", multiDestPath);
-			ioP.setPreferences("deepScan", deepScan);
-			ioP.setPreferences("subDir", subDir);
-			ioP.setPreferences("logOn", logOn);
-			ioP.setPreferences("autoDel", autoDel);
-			ioP.setPreferences("autoBgDel", autoBgDel);
-			ioP.setPreferences("autoSync", autoSync); 
-			ioP.setPreferences("bgSync", bgSync); 
-			ioP.setPreferences("trashbin", trashbin);
-			ioP.setPreferences("bgTime", bgTime);
+			ioP.setPreferences("startDestPath", Json.createValue(startDestPath.toString()));
+			ioP.setPreferences("trashbinPath", Json.createValue(trashbinPath.toString()));
+			ioP.setPreferences("multiSourcePath", Json.createValue(multiSourcePath));
+			ioP.setPreferences("multiDestPath", Json.createValue(multiDestPath));
+			ioP.setPreferences("deepScan", Json.createValue(deepScan.getDescription()));
+			ioP.setPreferences("subDir", (subDir) ? JsonValue.TRUE : JsonValue.FALSE);
+			ioP.setPreferences("logOn", (logOn) ? JsonValue.TRUE : JsonValue.FALSE);
+			ioP.setPreferences("autoDel", (autoDel) ? JsonValue.TRUE : JsonValue.FALSE);
+			ioP.setPreferences("autoBgDel", (autoBgDel) ? JsonValue.TRUE : JsonValue.FALSE);
+			ioP.setPreferences("autoSync", (autoSync) ? JsonValue.TRUE : JsonValue.FALSE); 
+			ioP.setPreferences("bgSync", (bgSync) ? JsonValue.TRUE : JsonValue.FALSE); 
+			ioP.setPreferences("trashbin", (trashbin) ? JsonValue.TRUE : JsonValue.FALSE);
+			ioP.setPreferences("bgTime", Json.createValue(bgTime.getName()));
 			ioP.writePreferences();
 			return true;
 		}
@@ -137,7 +144,7 @@ public class Preference {
 	 * Save the last scan time 
 	 */
 	public void saveLastScanTime() {
-		try(BufferedWriter bw = Files.newBufferedWriter(scanTimePath, StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)){
+		try(BufferedWriter bw = Files.newBufferedWriter(Preference.SCAN_TIME_PATH, StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)){
 			bw.write(String.valueOf(System.currentTimeMillis()));
 		}catch(IOException e) {	}
 	}
@@ -148,7 +155,7 @@ public class Preference {
 	 * @return <b>long</b> lastScanTime
 	 */
 	public long getLastScanTime() {
-		try(BufferedReader br = Files.newBufferedReader(scanTimePath)){
+		try(BufferedReader br = Files.newBufferedReader(Preference.SCAN_TIME_PATH)){
 			String str = br.readLine();
 			try { 
 				return Long.valueOf(str);

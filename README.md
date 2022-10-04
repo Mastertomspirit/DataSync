@@ -2,11 +2,12 @@
 
 ### _Currently supported Language: German_
 
-A backup app that automatically syncs one or more folders in the background. The source paths can also be scan for duplicates.
+A synchronization app that automatically syncs one or more folders in the background. The source paths can also be scan for duplicates.
+On the x-button it minimized to tray.
 
 ### Features:
 
-| Scan Type | Description
+| **Scan Type** | **Description**
 |---|---|
 | Deep Scan | Scan each file with sha256
 | Flat Scan | Equals file size, create and modified time, size and path
@@ -29,4 +30,19 @@ Background job time:
 `weekly`
 `monthly`
 
-The automatic background job is not supported on MacOS
+The automatic background job is not supported on MacOS yet
+
+### Build:
+
+* To build the app with runtime for a specify platform, 
+* run Maven on this platform with `mvn clean compile jlink:jlink verify`
+ 
+* To use only the jar, java version 16 is required. Run `mvn package`
+
+### Flags:
+
+| **Flag** | **Description**
+|---|---|
+| firstStart | sleeps for 10 minutes after system start
+| debug | enable the debug output
+| debugToFile |  enable the debug and error output to file at `user.home/DataSync/`

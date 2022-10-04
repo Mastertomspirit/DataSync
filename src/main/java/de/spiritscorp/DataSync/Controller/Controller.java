@@ -32,6 +32,7 @@ import javax.swing.JOptionPane;
 
 import de.spiritscorp.DataSync.Gui.BgView;
 import de.spiritscorp.DataSync.Gui.View;
+import de.spiritscorp.DataSync.IO.Logger;
 import de.spiritscorp.DataSync.IO.Preference;
 import de.spiritscorp.DataSync.Model.Model;
 import de.spiritscorp.DataSync.BgTime;
@@ -43,6 +44,7 @@ public class Controller extends WindowAdapter implements ActionListener, MouseLi
 	private final BgView bgView;
 	private final Model model;
 	private final Preference pref;	
+	private final Logger logger;
 	private final ControllerHelper helper;
 	private final BgController bgController;
 	private final Controller event = this;
@@ -53,7 +55,8 @@ public class Controller extends WindowAdapter implements ActionListener, MouseLi
  */
 	public Controller(boolean firstStart) {
 		pref = Preference.getInstance();
-		model = new Model();
+		logger = new Logger();
+		model = new Model(logger);
 		bgView = new BgView(event);
 		try {
 			EventQueue.invokeAndWait(() ->{
@@ -67,7 +70,7 @@ public class Controller extends WindowAdapter implements ActionListener, MouseLi
 			});
 		} catch (InvocationTargetException | InterruptedException e1) {e1.printStackTrace();	}	
 		helper = new ControllerHelper(model, pref);
-		bgController = new BgController(bgView, pref);
+		bgController = new BgController(bgView, pref, logger);
 		if(firstStart) {
 			new Thread(()->bgController.startBgJob(view, helper, true)).start();
 		}

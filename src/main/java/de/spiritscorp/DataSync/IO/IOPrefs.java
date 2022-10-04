@@ -21,45 +21,50 @@ package de.spiritscorp.DataSync.IO;
 
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.json.JSONTokener;
+import java.util.HashMap;
 
 import de.spiritscorp.DataSync.BgTime;
 import de.spiritscorp.DataSync.ScanType;
+import jakarta.json.Json;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonReader;
+import jakarta.json.JsonValue;
+import jakarta.json.JsonWriter;
+import jakarta.json.JsonWriterFactory;
+import jakarta.json.stream.JsonGenerator;
 
 class IOPrefs {
 
-	private Path configDir, configPath;
-	private JSONObject job;
+	private final Path configDir;
+	private JsonObject job;
+	private HashMap<String, JsonValue> prefTempMap;
 	
 	/**
-	 * 
 	 * @param configDir The directory where the config file should be saved
 	 */
-	IOPrefs(Path configDir){
-		this.configDir = configDir;
-		configPath = configDir.resolve("conf.json");
+	IOPrefs(){
+		this.configDir = Preference.CONFIG_PATH.getParent();
+		prefTempMap = new HashMap<>();
 	}
 	
 /**
  * @return	<b>boolean</b> true if success
  */
 	boolean readPreferences() {	
-		if(Files.exists(configPath)) {
-			try(FileReader reader = new FileReader(configPath.toFile(), Charset.forName("UTF-8"))){		
-				JSONTokener jt = new JSONTokener(reader);
-				job = new JSONObject(jt);	
+		if(Files.exists(Preference.CONFIG_PATH)) {
+			try(FileReader reader = new FileReader(Preference.CONFIG_PATH.toFile(), Charset.forName("UTF-8"))){		
+				JsonReader jr = Json.createReader(reader);	
+				job = jr.readObject();
+				jr.close();
 				if(job != null) return true;
-			}catch(JSONException | IOException e) {e.printStackTrace();}
+			}catch(IOException e) {e.printStackTrace();}
 		}
-		job = new JSONObject();
 		return false;
 	}
 
@@ -70,8 +75,15 @@ class IOPrefs {
 		if(!Files.exists(configDir)) {
 			configDir.toFile().mkdir();
 		}
-		try {			
-			Files.writeString(configPath, job.toString(6), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+		try(OutputStream os = Files.newOutputStream(Preference.CONFIG_PATH, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {	
+			HashMap<String,Boolean> config = new HashMap<>();
+			config.put(JsonGenerator.PRETTY_PRINTING, true);
+			JsonWriterFactory jwf = Json.createWriterFactory(config);
+			job = Json.createObjectBuilder(prefTempMap).build();
+			JsonWriter jw = jwf.createWriter(os);
+			jw.write(job);
+			jw.close();
+			prefTempMap.clear();
 		}catch(IOException e) {e.printStackTrace();}	
 	}
 	
@@ -81,52 +93,48 @@ class IOPrefs {
 	 * @param key
 	 * @param value
 	 */
-	void setPreferences(String key, Object value) {
-		job.put(key, value);
+	void setPreferences(String key, JsonValue value) {
+		prefTempMap.put(key, value);
 	}
 	
 	/**
 	 * 
-	 * @param value The value to be search
+	 * @param key The key to be search
 	 * @return <b>Path</> </br>The requested path
 	 * @throws ConfigException If path is not valid
 	 */
-	Path getPath(String value) throws ConfigException{
-		if(job.has(value)) {
-			Path convPath = Paths.get(job.getString(value));
-			if(Files.exists(convPath) || value.startsWith("destPath") || value.equals("trashbinPath"))	return convPath; 
+	Path getPath(String key) throws ConfigException{
+		if(job.containsKey(key)) {
+			Path convPath = Paths.get(job.getString(key));
+			if(Files.exists(convPath) || key.startsWith("destPath") || key.startsWith("startDestPath") || key.equals("trashbinPath"))	return convPath; 
 		}
-		throw new ConfigException("No valid Path found: " + value);
+		throw new ConfigException("No valid Path found: " + key);
 	}
 	
 	/**
 	 * 
-	 * @param value The value to be search
+	 * @param key The key to be search
 	 * @return <b>int</b> </br>The number of paths are set
 	 * @throws ConfigException 
 	 */
-	int getMultiPath(String value) throws ConfigException {
-		if(job.has(value)) {
-			try {
-				return job.getInt(value);
-			}catch(JSONException e) {e.printStackTrace();}
+	int getMultiPath(String key) throws ConfigException {
+		if(job.containsKey(key)) {
+			return job.getInt(key);
 		}
 		throw new ConfigException("No valid Multipath number found");
 	}
 
 	/**
 	 * 
-	 * @param value The value to be search
+	 * @param key The key to be search
 	 * @return <b>boolean</b>
 	 * @throws ConfigException
 	 */
-	boolean getBoolean(String value) throws ConfigException {
-		if(job.has(value)) {
-			try{
-				return job.getBoolean(value);
-			}catch(JSONException e) {e.printStackTrace();}
+	boolean getBoolean(String key) throws ConfigException {
+		if(job.containsKey(key)) {
+			return job.getBoolean(key);
 		}
-		throw new ConfigException("No valid boolean found: " + value);
+		throw new ConfigException("No valid boolean found: " + key);
 	}
 
 	/**
@@ -136,8 +144,8 @@ class IOPrefs {
 	 */
 	ScanType getScanType() throws ConfigException {
 		try {
-			return job.getEnum(ScanType.class, "deepScan");
-		}catch(JSONException e) {e.printStackTrace();}
+			return ScanType.get(job.getString("deepScan"));
+		}catch(Exception e) {}
 		throw new ConfigException("No valid ScanType found");
 	}
 
@@ -148,8 +156,8 @@ class IOPrefs {
 	 */
 	BgTime getBgTime() throws ConfigException {
 		try {
-			return job.getEnum(BgTime.class, "bgTime");
-		}catch(Exception e) {e.printStackTrace();}
+			return BgTime.get(job.getString("bgTime"));
+		}catch(Exception e) {}
 		throw new ConfigException("No valid BgTime found");
 	}
 }

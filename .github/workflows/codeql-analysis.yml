@@ -41,9 +41,10 @@ jobs:
       uses: actions/setup-java@v3.5.1
       with:
     # The Java version to set up. Takes a whole or semver Java version. See examples of supported syntax in README file
-        java-version: '17'
+        java-version: '16'
     # Java distribution. See the list of supported distributions in README file
         distribution: 'temurin'
+        cache: 'maven'
         
     - name: Checkout repository
       uses: actions/checkout@v3
@@ -62,7 +63,7 @@ jobs:
         # queries: security-extended,security-and-quality
 
     - name: Build with Maven
-      run: mvn -B clean package --file pom.xml
+      run: mvn -B clean package
     # Autobuild attempts to build any compiled languages  (C/C++, C#, or Java).
     # If this step fails, then you should remove it and run the build manually (see below)
 #    - name: Autobuild

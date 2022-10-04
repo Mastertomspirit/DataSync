@@ -39,7 +39,7 @@ jobs:
     steps: 
     - name: Checkout repository
       uses: actions/checkout@v3
-
+      
     - name: Setup Java JDK
       uses: actions/setup-java@v3.5.1
       with:
@@ -48,8 +48,6 @@ jobs:
     # Java distribution. See the list of supported distributions in README file
         distribution: 'temurin'
         cache: 'maven'
-      
-
 
     # Initializes the CodeQL tools for scanning.
  #   - name: Initialize CodeQL

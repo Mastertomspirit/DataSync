@@ -44,7 +44,6 @@ class FileScanTest {
 	String fileHash = "1a60b9cd4c7355dc427a8f622961fa971d9401e0626e447352d701f1671423f2";
 	Path path = Paths.get(System.getProperty("user.home"), "DataSyncTemp");
 	Path file = Paths.get("testFile.txt");
-	FileTime createTime = FileTime.fromMillis(1641335618384L);
 	FileTime modTime = FileTime.fromMillis(1641335619384L);
 	FileTime accessTime = FileTime.fromMillis(1641335620384L);
 	HashMap<Path,FileAttributes> map = new HashMap<>();
@@ -61,7 +60,6 @@ class FileScanTest {
 		
 		Files.writeString(path.resolve(file), "Das ist ein Teststring", StandardOpenOption.CREATE, StandardOpenOption.WRITE);
 
-		Files.setAttribute(path.resolve(file), "creationTime", createTime);
 		Files.setAttribute(path.resolve(file), "lastModifiedTime", modTime);
 		Files.setAttribute(path.resolve(file), "lastAccessTime", accessTime);
 		size = (long) Files.getAttribute(path.resolve(file), "size");	
@@ -89,7 +87,6 @@ class FileScanTest {
 			assertEquals(path.resolve(file), entry.getKey(), "Map Key / Pfad falsch!!");
 			assertEquals(size, entry.getValue().getSize(), "File Size passt nicht");
 			assertEquals(helper.fileTimeToString(modTime), entry.getValue().getModTime(), "ModifiedTime passt nicht");
-			assertEquals(createTime, entry.getValue().getCreateTimeFileTime(), "CreateTime passt nicht");
 			assertEquals(file, entry.getValue().getRelativeFilePath(), "RelativePath passt nicht");
 			assertNull(entry.getValue().getFileHash(), "FileHash falscher Wert");
 		}
@@ -99,7 +96,6 @@ class FileScanTest {
 			assertEquals(path.resolve(file), entry.getKey(), "Map Key / Pfad falsch!!");
 			assertEquals(size, entry.getValue().getSize(), "File Size passt nicht");
 			assertEquals(helper.fileTimeToString(modTime), entry.getValue().getModTime(), "ModifiedTime passt nicht");
-			assertEquals(createTime, entry.getValue().getCreateTimeFileTime(), "CreateTime passt nicht");
 			assertEquals(file, entry.getValue().getRelativeFilePath(), "RelativePath passt nicht");
 			assertEquals(fileHash, entry.getValue().getFileHash(), "FileHash falscher Wert");
 		}

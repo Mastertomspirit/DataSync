@@ -36,20 +36,20 @@ jobs:
         # CodeQL supports [ 'cpp', 'csharp', 'go', 'java', 'javascript', 'python', 'ruby' ]
         # Learn more about CodeQL language support at https://aka.ms/codeql-docs/language-support
 
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
-      
+    steps: 
     - name: Setup Java JDK
       uses: actions/setup-java@v3.5.1
       with:
     # The Java version to set up. Takes a whole or semver Java version. See examples of supported syntax in README file
-        java-version: '16'
+        java-version: '17'
     # Java distribution. See the list of supported distributions in README file
         distribution: 'temurin'
+        
+    - name: Checkout repository
+      uses: actions/checkout@v3
       
     - name: Build with Maven
-      run: mvn -B package --file pom.xml
+      run: mvn -B clean compile jlink:jlink verify --file pom.xml
       
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL

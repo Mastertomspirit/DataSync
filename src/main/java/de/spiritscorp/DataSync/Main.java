@@ -32,7 +32,7 @@ import de.spiritscorp.DataSync.IO.Debug;
 
 public class Main {
 	
-	public final static String VERSION = "V 0.9.5.1";
+	public final static String VERSION = "V 0.9.5.2";
 	public static boolean debug = false;
 
 	/**
@@ -45,9 +45,9 @@ public class Main {
 		if(Arrays.stream(args).anyMatch((s) -> s.equals("debugToFile")))	{
 			debug = true;
 			Debug.SET_DEBUG_TO_FILE();
-			System.out.printf("%n%n%nDEBUG BEGIN: %s%n%n%n", LocalDateTime.now(ZoneId.systemDefault()).format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.FULL, FormatStyle.SHORT)));
+			Debug.PRINT_DEBUG("%nDEBUG BEGIN: %s%n", LocalDateTime.now(ZoneId.systemDefault()).format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.FULL, FormatStyle.SHORT)));
 		}
-		if(debug)		System.getProperties().forEach((f,k) -> Debug.PRINT_DEBUG(f + ":  \" " + k + " \""));
+//		if(debug)		System.getProperties().forEach((f,k) -> Debug.PRINT_DEBUG(f + ":  \" " + k + " \""));
 
 		new Controller(firstStart);
 	}

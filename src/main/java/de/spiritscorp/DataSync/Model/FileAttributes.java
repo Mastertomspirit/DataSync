@@ -87,11 +87,6 @@ public class FileAttributes implements Comparable<FileAttributes> {
 				return false;
 		} else if(!other.fileHash.equals(fileHash))
 			return false;
-		if (createTime == null) {
-			if (other.createTime != null)
-				return false;
-		} else if (!createTime.equals(other.createTime))
-			return false;
 		if (fileName == null) {
 			if (other.fileName != null)
 				return false;

@@ -20,7 +20,6 @@
 package de.spiritscorp.DataSync.Model;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.attribute.FileTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -29,13 +28,14 @@ import java.util.Map;
 
 class TestHelper {
 	
-	private Path path = Paths.get(System.getProperty("user.home"), "DataSyncTemp");
+	private SyncFiles syncFiles;
 	private FileTime[] time = {FileTime.fromMillis(1641335618384L), FileTime.fromMillis(1641335619384L), FileTime.fromMillis(1641335620384L),
 						FileTime.fromMillis(1641335621384L), FileTime.fromMillis(1641335622384L), FileTime.fromMillis(1641335623384L),
 						FileTime.fromMillis(1641335624384L), FileTime.fromMillis(1641335625384L), FileTime.fromMillis(1641335626384L)};
 	private ArrayList<Path> paths, sourceList, destList;
 	
-	TestHelper(){
+	TestHelper(Path path){
+		syncFiles = new SyncFiles(path);
 		paths = new ArrayList<>();
 		sourceList = new ArrayList<>();
 		destList = new ArrayList<>();
@@ -56,27 +56,25 @@ class TestHelper {
 		}
 	}
 
-	Map<Path, FileAttributes> createSource(Map<Path, FileAttributes> map){
-		map.put(sourceList.get(0), new FileAttributes(paths.get(0).relativize(sourceList.get(0)), fileTimeToString(time[0]), time[1], fileTimeToString(time[2]), 12L, "1a60b9cd4c7355dc427a8f622961fa971d9401e0626e447352d701f1671423f2"));
-		map.put(sourceList.get(1), new FileAttributes(paths.get(0).relativize(sourceList.get(1)), fileTimeToString(time[1]), time[2], fileTimeToString(time[3]), 102L, "3330b9cd4c7355dc427a8f622961fa971d9401e0626e447352d701f1671423f2"));
-		map.put(sourceList.get(2), new FileAttributes(paths.get(0).relativize(sourceList.get(2)), fileTimeToString(time[2]), time[3], fileTimeToString(time[1]), 120L, "44b9cd4c7355dc427a8f622961fa971d9401e0626e447352d701f1671423f2"));
-		map.put(sourceList.get(3), new FileAttributes(paths.get(0).relativize(sourceList.get(3)), fileTimeToString(time[3]), time[1], fileTimeToString(time[2]), 125L, "5520b9cd4c7355dc427a8f622961fa971d9401e0626e447352d701f1671423f2"));
-		map.put(sourceList.get(4), new FileAttributes(paths.get(0).relativize(sourceList.get(4)), fileTimeToString(time[1]), time[2], fileTimeToString(time[3]), 12L, "1a60b9cd4c7355dc427a8f622961fa971d9401e0626e447352d701f1671423f2"));
-		map.put(sourceList.get(5), new FileAttributes(paths.get(0).relativize(sourceList.get(5)), fileTimeToString(time[1]), time[2], fileTimeToString(time[3]), 12L, "abb0b9cd4c7355dc427a8f622961fa971d9401e0626e447352d701f1671423f2"));
-		map.put(sourceList.get(6), new FileAttributes(paths.get(0).relativize(sourceList.get(6)), fileTimeToString(time[1]), time[2], fileTimeToString(time[4]), 12L, "abb0b9cd4c7355dc427a8f622961fa971d9401e0626e447352d701f1671423f2"));
-	return map;
+	void createSource(Map<Path, FileAttributes> map){
+		map.put(sourceList.get(0), new FileAttributes(paths.get(0).relativize(sourceList.get(0)), fileTimeToString(time[0]), time[1], fileTimeToString(time[2]), time[2], 12L, "1a60b9cd4c7355dc427a8f622961fa971d9401e0626e447352d701f1671423f2"));
+		map.put(sourceList.get(1), new FileAttributes(paths.get(0).relativize(sourceList.get(1)), fileTimeToString(time[1]), time[2], fileTimeToString(time[3]), time[3], 102L, "3330b9cd4c7355dc427a8f622961fa971d9401e0626e447352d701f1671423f2"));
+		map.put(sourceList.get(2), new FileAttributes(paths.get(0).relativize(sourceList.get(2)), fileTimeToString(time[2]), time[3], fileTimeToString(time[1]), time[1], 120L, "44b9cd4c7355dc427a8f622961fa971d9401e0626e447352d701f1671423f2"));
+		map.put(sourceList.get(3), new FileAttributes(paths.get(0).relativize(sourceList.get(3)), fileTimeToString(time[3]), time[1], fileTimeToString(time[2]), time[2], 125L, "5520b9cd4c7355dc427a8f622961fa971d9401e0626e447352d701f1671423f2"));
+		map.put(sourceList.get(4), new FileAttributes(paths.get(0).relativize(sourceList.get(4)), fileTimeToString(time[1]), time[2], fileTimeToString(time[3]), time[3], 12L, "1a60b9cd4c7355dc427a8f622961fa971d9401e0626e447352d701f1671423f2"));
+		map.put(sourceList.get(5), new FileAttributes(paths.get(0).relativize(sourceList.get(5)), fileTimeToString(time[1]), time[2], fileTimeToString(time[3]), time[3], 12L, "abb0b9cd4c7355dc427a8f622961fa971d9401e0626e447352d701f1671423f2"));
+		map.put(sourceList.get(6), new FileAttributes(paths.get(0).relativize(sourceList.get(6)), fileTimeToString(time[1]), time[2], fileTimeToString(time[4]), time[4], 12L, "abb0b9cd4c7355dc427a8f622961fa971d9401e0626e447352d701f1671423f2"));
 	}
 	
-	Map<Path, FileAttributes> createDest(Map<Path, FileAttributes> map){
-		map.put(destList.get(0), new FileAttributes(paths.get(1).relativize(destList.get(0)), fileTimeToString(time[0]), time[1], fileTimeToString(time[2]), 12L, "1a60b9cd4c7355dc427a8f622961fa971d9401e0626e447352d701f1671423f2"));
-		map.put(destList.get(1), new FileAttributes(paths.get(1).relativize(destList.get(1)), fileTimeToString(time[1]), time[2], fileTimeToString(time[3]), 102L, "3330b9cd4c7355dc427a8f622961fa971d9401e0626e447352d701f1671423f2"));
-		map.put(destList.get(2), new FileAttributes(paths.get(1).relativize(destList.get(2)), fileTimeToString(time[2]), time[3], fileTimeToString(time[1]), 120L, "aaa9cd4c7355dc427a8f622961fa971d9401e0626e447352d701f1671423f2"));
-		map.put(destList.get(3), new FileAttributes(paths.get(1).relativize(destList.get(3)), fileTimeToString(time[1]), time[2], fileTimeToString(time[3]), 12L, "1a60b9cd4c7355dc427a8f622961fa971d9401e0626e447352d701f1671423f2"));
-		map.put(destList.get(4), new FileAttributes(paths.get(1).relativize(destList.get(4)), fileTimeToString(time[1]), time[2], fileTimeToString(time[3]), 12L, "1a60b9cd4c7355dc427a8f622961fa971d9401e0626e447352d701f1671423f2"));
-		map.put(destList.get(5), new FileAttributes(paths.get(1).relativize(destList.get(5)), fileTimeToString(time[1]), time[2], fileTimeToString(time[3]), 12L, "abb0b9cd4c7355dc427a8f622961fa971d9401e0626e447352d701f1671423f2"));
-		map.put(destList.get(6), new FileAttributes(paths.get(1).relativize(destList.get(6)), fileTimeToString(time[1]), time[2], fileTimeToString(time[3]), 12L, "ccc0b9cd4c7355dc427a8f622961fa971d9401e0626e447352d701f1671423f2"));
-		map.put(destList.get(7), new FileAttributes(paths.get(1).relativize(destList.get(7)), fileTimeToString(time[1]), time[2], fileTimeToString(time[3]), 12L, "ccc0b9cd4c7355dc427a8f622961fa971d9401e0626e447352d701f1671423f2"));
-	return map;
+	void createDest(Map<Path, FileAttributes> map){
+		map.put(destList.get(0), new FileAttributes(paths.get(1).relativize(destList.get(0)), fileTimeToString(time[0]), time[1], fileTimeToString(time[2]), time[2], 12L, "1a60b9cd4c7355dc427a8f622961fa971d9401e0626e447352d701f1671423f2"));
+		map.put(destList.get(1), new FileAttributes(paths.get(1).relativize(destList.get(1)), fileTimeToString(time[1]), time[2], fileTimeToString(time[3]), time[3], 102L, "3330b9cd4c7355dc427a8f622961fa971d9401e0626e447352d701f1671423f2"));
+		map.put(destList.get(2), new FileAttributes(paths.get(1).relativize(destList.get(2)), fileTimeToString(time[2]), time[3], fileTimeToString(time[1]), time[1], 120L, "aaa9cd4c7355dc427a8f622961fa971d9401e0626e447352d701f1671423f2"));
+		map.put(destList.get(3), new FileAttributes(paths.get(1).relativize(destList.get(3)), fileTimeToString(time[1]), time[2], fileTimeToString(time[3]), time[3], 12L, "1a60b9cd4c7355dc427a8f622961fa971d9401e0626e447352d701f1671423f2"));
+		map.put(destList.get(4), new FileAttributes(paths.get(1).relativize(destList.get(4)), fileTimeToString(time[1]), time[2], fileTimeToString(time[3]), time[3], 12L, "1a60b9cd4c7355dc427a8f622961fa971d9401e0626e447352d701f1671423f2"));
+		map.put(destList.get(5), new FileAttributes(paths.get(1).relativize(destList.get(5)), fileTimeToString(time[1]), time[2], fileTimeToString(time[3]), time[3], 12L, "abb0b9cd4c7355dc427a8f622961fa971d9401e0626e447352d701f1671423f2"));
+		map.put(destList.get(6), new FileAttributes(paths.get(1).relativize(destList.get(6)), fileTimeToString(time[1]), time[2], fileTimeToString(time[3]), time[3], 12L, "ccc0b9cd4c7355dc427a8f622961fa971d9401e0626e447352d701f1671423f2"));
+		map.put(destList.get(7), new FileAttributes(paths.get(1).relativize(destList.get(7)), fileTimeToString(time[1]), time[2], fileTimeToString(time[3]), time[3], 12L, "ccc0b9cd4c7355dc427a8f622961fa971d9401e0626e447352d701f1671423f2"));
 	}
 
 	Path[] getDuplicates() {
@@ -97,4 +95,22 @@ class TestHelper {
 	String fileTimeToString(FileTime fileTime) {
 		return fileTime.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime().format(DateTimeFormatter.ofPattern("dd.MM.yyyy  HH:mm:ss"));
 	}
+
+	public ArrayList<Map<Path, FileAttributes>> createSyncMap(Map<Path, FileAttributes> sourceMap, Map<Path, FileAttributes> destMap, Map<Path, FileAttributes> syncMap) {	
+		return syncFiles.createSyncFiles(sourceMap, destMap, syncMap);
+				
+	}
+
+	public void createBackupFiles(Map<Path, FileAttributes> sourceMap, Map<Path, FileAttributes> destMap) {
+
+		sourceMap.put(sourceList.get(3), new FileAttributes(paths.get(0).relativize(sourceList.get(3)), fileTimeToString(time[3]), time[1], fileTimeToString(time[2]), time[2], 125L, "5520b9cd4c7355dc427a8f622961fa971d9401e0626e447352d701f1671423f2"));
+		sourceMap.put(sourceList.get(5), new FileAttributes(paths.get(0).relativize(sourceList.get(5)), fileTimeToString(time[1]), time[2], fileTimeToString(time[3]), time[3], 12L, "abb0b9cd4c7355dc427a8f622961fa971d9401e0626e447352d701f1671423f2"));
+
+		destMap.put(destList.get(0), new FileAttributes(paths.get(1).relativize(destList.get(3)), fileTimeToString(time[1]), time[2], fileTimeToString(time[3]), time[3], 12L, "1a60b9cd4c7355dc427a8f622961fa971d9401e0626e447352d701f1671423f2"));
+		destMap.put(destList.get(1), new FileAttributes(paths.get(1).relativize(destList.get(6)), fileTimeToString(time[1]), time[2], fileTimeToString(time[3]), time[3], 12L, "ccc0b9cd4c7355dc427a8f622961fa971d9401e0626e447352d701f1671423f2"));
+		destMap.put(destList.get(2), new FileAttributes(paths.get(1).relativize(destList.get(7)), fileTimeToString(time[3]), time[3], fileTimeToString(time[4]), time[3], 12L, "ccc0b9cd4c7355dc427a8f622961fa971d9401e0626e447352d701f1671423f2"));
+
+		
+	}
+
 }

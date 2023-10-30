@@ -65,6 +65,7 @@ class FileScan  implements Runnable{
 					fileTimeToString(bfa.creationTime()), 
 					bfa.creationTime(),
 					fileTimeToString(bfa.lastModifiedTime()), 
+					bfa.lastModifiedTime(),
 					bfa.size(), 
 					deepScan()
 			);
@@ -100,7 +101,12 @@ class FileScan  implements Runnable{
 		return startPath.relativize(path);
 	}
 	private String deepScan() {
-		return (scanType == ScanType.FLAT_SCAN) ? "null" : getSha256();
+		switch (scanType) {
+		case DEEP_SCAN: return getSha256();
+		case FLAT_SCAN: 
+		case SYNCHRONIZE:
+		default:		 return "null";
+		}
 	}
 }
 

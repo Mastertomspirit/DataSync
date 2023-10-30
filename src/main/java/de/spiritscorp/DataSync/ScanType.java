@@ -21,6 +21,7 @@ package de.spiritscorp.DataSync;
 
 public enum ScanType {
 
+	SYNCHRONIZE("Syncronisieren"),
 	FLAT_SCAN ("flacher Scan"),
 	DEEP_SCAN("tiefer Scan"),
 	DUBLICATE_SCAN("Dublikate suchen");

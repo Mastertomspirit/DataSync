@@ -3,7 +3,7 @@
  		
  	 	@author Tom Spirit
  	 	@date 16.12.2021
- 		@version	0.9.2.0
+ 		@version	0.9.6.0
 		
 		This program is free software; you can redistribute it and/or modify
 		it under the terms of the GNU General Public License as published by
@@ -32,7 +32,7 @@ import de.spiritscorp.DataSync.IO.Debug;
 
 public class Main {
 	
-	public final static String VERSION = "V 0.9.5.2";
+	public final static String VERSION = "V 0.9.6.0";
 	public static boolean debug = false;
 
 	/**
@@ -47,7 +47,6 @@ public class Main {
 			Debug.SET_DEBUG_TO_FILE();
 			Debug.PRINT_DEBUG("%nDEBUG BEGIN: %s%n", LocalDateTime.now(ZoneId.systemDefault()).format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.FULL, FormatStyle.SHORT)));
 		}
-//		if(debug)		System.getProperties().forEach((f,k) -> Debug.PRINT_DEBUG(f + ":  \" " + k + " \""));
 
 		new Controller(firstStart);
 	}

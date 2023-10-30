@@ -48,6 +48,7 @@ public class Debug {
 	
 	public static final void SET_DEBUG_TO_FILE() {
 		try {
+			if(!Files.exists(Preference.DEBUG_PATH)) Files.createDirectories(Preference.DEBUG_PATH.getParent());
 			System.setOut(new PrintStream(Files.newOutputStream(Preference.DEBUG_PATH, StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.APPEND), true, Charset.forName("UTF-8")));
 			System.setErr(new PrintStream(Files.newOutputStream(Preference.ERROR_PATH, StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.APPEND), true, Charset.forName("UTF-8")));
 		} catch (IOException e) {e.printStackTrace();}

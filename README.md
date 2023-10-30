@@ -2,13 +2,14 @@
 
 ### _Currently supported Language: German_
 
-A synchronization app that automatically syncs one or more folders in the background. The source paths can also be scan for duplicates.
+A synchronization app that automatically backup or synchronize, one or more folders, in the background. The source paths can also be scan for duplicates.
 On the x-button it minimized to tray.
 
 ### Features:
 
 | **Scan Type** | **Description**
 |---|---|
+| Synchronize | Synchronize two Folders; trashbin & subfolder are not available
 | Deep Scan | Scan each file with sha256
 | Flat Scan | Equals file size, create and modified time, size and path
 | Duplicate Scan | Scan the source directory and compares each file with the hash value
@@ -37,7 +38,7 @@ The automatic background job is not supported on MacOS yet
 * To build the app with runtime for a specify platform, 
 * run Maven on this platform with `mvn clean compile jlink:jlink verify`
  
-* To use only the jar, java version 16 is required. Run `mvn package`
+* To use only the jar, java version 17 is required. Run `mvn package`
 
 ### Flags:
 

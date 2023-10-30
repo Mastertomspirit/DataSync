@@ -21,23 +21,39 @@ package de.spiritscorp.DataSync.Model;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
+
 import de.spiritscorp.DataSync.ScanType;
 import de.spiritscorp.DataSync.IO.Debug;
 import de.spiritscorp.DataSync.IO.Logger;
+import de.spiritscorp.DataSync.IO.Preference;
 
 public class Model {
 
 	private Map<Path, FileAttributes> sourceMap, destMap;
 	private FileHandler handler;
 
-	public Model(Logger logger) {
+	public Model(Logger logger, Map<Path, FileAttributes> sourceMap, Map<Path, FileAttributes> destMap) {
+		this.sourceMap = sourceMap;
+		this.destMap = destMap;
 		handler = new FileHandler(logger);
 	}
 	
+	/**
+	 * Create a consistent Map
+	 * 
+	 * @param <K>
+	 * @param <V>
+	 * @return Collections.synchronizedSortedMap(new TreeMap<>())
+	 */
+	public static final <K, V> Map<K, V> createMap(){
+		return Collections.synchronizedSortedMap(new TreeMap<>());
+	}
 /**
- * 	Read the file attributes in both directories in a few threads, equals with each other and filter them. The remaining will give back
+ * 	Read the file attributes in both directories in a few threads, equals with each other and filter the same files out. The remaining will give back
  * 
  * @param sourcePathes
  * @param destPathes
@@ -49,8 +65,8 @@ public class Model {
  */
 	public HashMap<String, Map<Path,FileAttributes>> scanSyncFiles(ArrayList<Path> sourcePathes, ArrayList<Path> destPathes, Long[] stats, ScanType deepScan, boolean subDir, boolean trashbin) {
 		Debug.PRINT_DEBUG("scan start");
-		Thread t1 = new Thread(() -> sourceMap = handler.listFiles(sourcePathes, deepScan, subDir));
-		Thread t2 = new Thread(() -> destMap = handler.listFiles(destPathes, deepScan, subDir));
+		Thread t1 = new Thread(() -> handler.listFiles(sourcePathes, sourceMap, deepScan, subDir));
+		Thread t2 = new Thread(() -> handler.listFiles(destPathes, destMap, deepScan, subDir));
 		t1.start();
 		t2.start();
 		try {
@@ -83,10 +99,45 @@ public class Model {
  * @param trashbinPath
  * @return	<b>boolean</b> 	</br>false on an Error
  */
-	public boolean syncFiles(int del, boolean logOn, Path destPath, boolean trashbin, Path trashbinPath) {
+	public boolean backupFiles(int del, boolean logOn, Path destPath, boolean trashbin, Path trashbinPath) {
 		if (del == 0 && !destMap.isEmpty())		handler.deleteFiles(destMap, logOn, trashbin, trashbinPath);
 		if(!sourceMap.isEmpty())		handler.copyFiles(sourceMap, logOn, destPath);
 		return (sourceMap.isEmpty() && destMap.isEmpty());
+	}
+	
+	/**
+	 * Copy the newest and clear the deleted once
+	 * 
+	 * @param syncMap
+	 * @param sourcePath
+	 * @param destPath
+	 * @return <b>boolean</b> 	</br>false on an Error
+	 */
+	public boolean syncFiles(Map<Path, FileAttributes> syncMap, Path sourcePath, Path destPath) {
+		
+		if(syncMap.isEmpty()) {
+			Map<Path, FileAttributes> tempSyncMap = createMap(); 
+			handler.listFiles(Preference.getInstance().getSourcePath(), tempSyncMap, ScanType.SYNCHRONIZE, false);
+			for(Map.Entry<Path,FileAttributes>  entry : tempSyncMap.entrySet()) {
+				syncMap.put(entry.getValue().getRelativeFilePath(), entry.getValue());
+			}
+		}
+		
+		ArrayList<Map<Path,FileAttributes>> result = handler.getSyncFiles(sourceMap, destMap, sourcePath, destPath, syncMap);
+				
+		if(!result.get(0).isEmpty())	handler.copyFiles(result.get(0), false, destPath);
+		if(!result.get(1).isEmpty())	handler.copyFiles(result.get(1), false, sourcePath);
+		if(!result.get(2).isEmpty())	handler.deleteFiles(result.get(2), false, false, null);
+		
+		syncMap.clear();
+		Map<Path, FileAttributes> tempMap = createMap();
+		handler.listFiles(Preference.getInstance().getSourcePath(), tempMap, ScanType.SYNCHRONIZE, false);
+		for(Map.Entry<Path,FileAttributes>  entry : tempMap.entrySet()) {
+			syncMap.put(entry.getValue().getRelativeFilePath(), entry.getValue());
+		}
+		Preference.getInstance().writeSyncMap();
+		
+		return result.get(0).isEmpty() && result.get(1).isEmpty() && result.get(2).isEmpty();
 	}
 	
 	/**
@@ -96,7 +147,7 @@ public class Model {
 	 * @return <b>Map</b> </br>Map with duplicates 
 	 */
 	public HashMap<String, Map<Path, FileAttributes>> scanDublicates(ArrayList<Path> paths) {
-		sourceMap = handler.listFiles(paths, ScanType.DUBLICATE_SCAN, false);
+		handler.listFiles(paths, sourceMap, ScanType.DUBLICATE_SCAN, false);
 		sourceMap = handler.findDuplicates(sourceMap);
 		HashMap<String, Map<Path,FileAttributes>> hashMap = new HashMap<>();
 		hashMap.put("sourceMap", sourceMap);

@@ -28,7 +28,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
-
 import de.spiritscorp.DataSync.BgTime;
 import de.spiritscorp.DataSync.ScanType;
 import jakarta.json.Json;
@@ -45,9 +44,6 @@ class IOPrefs {
 	private JsonObject job;
 	private HashMap<String, JsonValue> prefTempMap;
 	
-	/**
-	 * @param configDir The directory where the config file should be saved
-	 */
 	IOPrefs(){
 		this.configDir = Preference.CONFIG_PATH.getParent();
 		prefTempMap = new HashMap<>();
@@ -71,7 +67,7 @@ class IOPrefs {
 /**
  * 	Write the Preferences at <i>"user-home"/DataSync/conf.json</i>
  */
-	void writePreferences() {
+	boolean writePreferences() {
 		if(!Files.exists(configDir)) {
 			configDir.toFile().mkdir();
 		}
@@ -84,7 +80,9 @@ class IOPrefs {
 			jw.write(job);
 			jw.close();
 			prefTempMap.clear();
+			return true;
 		}catch(IOException e) {e.printStackTrace();}	
+		return false;
 	}
 	
 	/**

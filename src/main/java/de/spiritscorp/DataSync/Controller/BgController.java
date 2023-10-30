@@ -27,6 +27,7 @@ import de.spiritscorp.DataSync.IO.Debug;
 import de.spiritscorp.DataSync.IO.Logger;
 import de.spiritscorp.DataSync.IO.Preference;
 import de.spiritscorp.DataSync.Model.BgModel;
+import de.spiritscorp.DataSync.Model.Model;
 
 class BgController  {
 	
@@ -63,7 +64,7 @@ class BgController  {
 		} catch (AWTException e) {e.printStackTrace();}
 		thread = new Thread( () -> {
 			Debug.PRINT_DEBUG("bgJob starts");
-			BgModel bgModel = new BgModel(pref, logger);
+			BgModel bgModel = new BgModel(pref, logger, Model.createMap(), Model.createMap());
 			boolean bgRun = true;
 			try {
 				if(firstStart) Thread.sleep(60000);

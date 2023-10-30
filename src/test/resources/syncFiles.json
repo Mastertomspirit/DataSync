@@ -1,0 +1,89 @@
+{
+	"schnurrend":{
+	
+					"relativeFilePath": "schnurrend.txt",
+					"createTime": 1641335624384,
+					"createTimeString": "04.01.2022  23:33:41",
+					"modTimeString": "04.01.2022  23:33:41",
+					"modTime": 1641335624384,
+					"size": 100,
+					"fileHash": "ccc0b9cd4c7355dc427a8f622961fa97"
+					
+	},
+	"vorsichtig":{
+					"relativeFilePath": "vorsichtig.txt",
+					"createTime": 1641335624384,
+					"createTimeString": "04.01.2022  23:33:41",
+					"modTimeString": "04.01.2022  23:33:41",
+					"modTime": 1641335624384,
+					"size": 763,
+					"fileHash": "dc427a8f622961fa971d9401e0626e44735"
+	},
+	"eiskalt":{
+					"relativeFilePath": "eiskalt.txt",
+					"createTime": 1641335624384,
+					"createTimeString": "04.01.2022  23:33:41",
+					"modTimeString": "04.01.2022  23:33:41",
+					"modTime": 1641335624384,
+					"size": 455,
+					"fileHash": "c7355dc427a8f622961fa971d940"
+	},
+	"vernünftig": {
+					"relativeFilePath": "vernünftig.txt",
+					"createTime": 1641335624384,
+					"createTimeString": "04.01.2022  23:33:41",
+					"modTimeString": "04.01.2022  23:33:41",
+					"modTime": 1641335624384,
+					"size": 656754,
+					"fileHash": "a8f622961fa971d9401e0626e4473"	
+	},
+	"elastisch":{
+					"relativeFilePath": "elastisch.txt",
+					"createTime": 1641335624384,
+					"createTimeString": "04.01.2022  23:33:41",
+					"modTimeString": "04.01.2022  23:33:41",
+					"modTime": 1641335624384,
+					"size": 475674,
+					"fileHash": "1a60b9cd4c7355dc427a8f6229"
+	},
+	"zierlich":{
+					"relativeFilePath": "zierlich.txt",
+					"createTime": 1641335624384,
+					"createTimeString": "04.01.2022  23:33:41",
+					"modTimeString": "04.01.2022  23:33:41",
+					"modTime": 1641335624384,
+					"size": 4576,
+					"fileHash": "dc427a8f622961fa971d940"	},
+	"fleißig":{
+					"relativeFilePath": "fleißig.txt",
+					"createTime": 1641335624384,
+					"createTimeString": "04.01.2022  23:33:41",
+					"modTimeString": "04.01.2022  23:33:41",
+					"modTime": 1641335624384,
+					"size": 65785687,
+					"fileHash": "971d9401e0626e447352d701f16"	},
+	"wissend":{
+					"relativeFilePath": "wissend.txt",
+					"createTime": 1641335624384,
+					"createTimeString": "04.01.2022  23:33:41",
+					"modTimeString": "04.01.2022  23:33:41",
+					"modTime": 1641335624384,
+					"size": 4567454,
+					"fileHash": "27a8f622961fa971d9401e0626e4"	},
+	"robust":{
+					"relativeFilePath": "robust.txt",
+					"createTime": 1641335624384,
+					"createTimeString": "04.01.2022  23:33:41",
+					"modTimeString": "04.01.2022  23:33:41",
+					"modTime": 1641335624384,
+					"size": 4520,
+					"fileHash": "3330b9cd4c7355dc427a8f622961fa"	},
+	"uralt":{
+					"relativeFilePath": "uralt.txt",
+					"createTime": 1641335624384,
+					"createTimeString": "04.01.2022  23:33:41",
+					"modTimeString": "04.01.2022  23:33:41",
+					"modTime": 1641335624384,
+					"size": 3434,
+					"fileHash": "e0626e447352d701f1671423f2"	}
+}

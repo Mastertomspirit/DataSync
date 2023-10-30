@@ -27,25 +27,30 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
-
+import java.util.Map;
 import de.spiritscorp.DataSync.BgTime;
 import de.spiritscorp.DataSync.ScanType;
+import de.spiritscorp.DataSync.Model.FileAttributes;
+import de.spiritscorp.DataSync.Model.Model;
 import jakarta.json.Json;
 import jakarta.json.JsonValue;
 
 public class Preference {
 
-	private static final Path ROOT_PATH = Paths.get(System.getProperty("user.home"), "DataSync");
+	private static final Path ROOT_PATH = Paths.get(System.getProperty("user.home"), "DataSync2");
 	public static final Path DEBUG_PATH = ROOT_PATH.resolve("debug.log");
 	public static final Path ERROR_PATH = ROOT_PATH.resolve("debug.err");
 	public static final Path LOG_PATH = ROOT_PATH.resolve("log.json");
 	public static final Path CONFIG_PATH = ROOT_PATH.resolve("conf.json");
+	public static final Path SYNCMAP_PATH = ROOT_PATH.resolve("syncMap.json");
 	public static final Path SCAN_TIME_PATH = ROOT_PATH.resolve("lastScanTime");
 	
 	private IOPrefs ioP;
+	private IOSyncMap ioS;
 	private ArrayList<Path> sourcePath = new ArrayList<>();
 	private ArrayList<Path> destPath = new ArrayList<>();
-	private Path startDestPath, trashbinPath;
+	private Map<Path,FileAttributes> syncMap = Model.createMap();
+	private Path startDestPath, startSourcePath, trashbinPath;
 	private String trashbinString = "Papierkorb";
 	private ScanType deepScan = ScanType.FLAT_SCAN;
 	private BgTime bgTime = BgTime.DAYLY;
@@ -53,7 +58,7 @@ public class Preference {
 	private boolean isLoaded = false;
 	private boolean logOn = true;
 	private boolean subDir = false;
-	private boolean autoDel, autoSync, bgSync, trashbin;
+	private boolean autoDel, autoSync, bgSync, trashbin, syncMapLoad;
 	private boolean autoBgDel = true;
 	
 	private final static Preference pref = new Preference();
@@ -73,6 +78,8 @@ public class Preference {
 //	Check and load the preferences  
 	private void load() {
 		ioP = new IOPrefs();
+		ioS = new IOSyncMap();
+		setSyncMapLoad(ioS.loadSyncMap(syncMap));
 		if(ioP.readPreferences()){
 			try {
 				multiSourcePath = ioP.getMultiPath("multiSourcePath");
@@ -86,14 +93,19 @@ public class Preference {
 				autoSync = ioP.getBoolean("autoSync"); 
 				bgSync = ioP.getBoolean("bgSync"); 
 				trashbin = ioP.getBoolean("trashbin");
-				startDestPath = ioP.getPath("startDestPath");
-				trashbinPath = ioP.getPath("trashbinPath");
+
 				for(int i = 1; i <= multiSourcePath; i++) {
 					sourcePath.add(ioP.getPath("sourcePath" + i));
 				}
 				for(int i = 1; i <= multiDestPath; i++) {
 					destPath.add(ioP.getPath("destPath" + i));
 				}
+//	TODO This is for aggregate older versions, will refactor in the next versions
+				try {	startSourcePath = ioP.getPath("startSourcePath");
+				}catch(ConfigException e) {		startSourcePath = sourcePath.get(0);	}				
+
+				startDestPath = ioP.getPath("startDestPath");
+				trashbinPath = ioP.getPath("trashbinPath");
 			}catch(ConfigException e) {e.printStackTrace();}
 		}
 		if(!sourcePath.isEmpty() && !destPath.isEmpty()) {
@@ -102,6 +114,7 @@ public class Preference {
 			multiSourcePath = 1;
 			multiDestPath = 1;
 			startDestPath = Paths.get(System.getProperty("user.home"));
+			startSourcePath = Paths.get(System.getProperty("user.home"));
 			destPath.add(Paths.get(System.getProperty("user.home")));
 			sourcePath.add(Paths.get(System.getProperty("user.home")));
 			trashbinPath = startDestPath.resolve(trashbinString);
@@ -122,6 +135,7 @@ public class Preference {
 				ioP.setPreferences("destPath" + i, Json.createValue(destPath.get(i-1).toString()));
 			}
 			ioP.setPreferences("startDestPath", Json.createValue(startDestPath.toString()));
+			ioP.setPreferences("startSourcePath", Json.createValue(startSourcePath.toString()));
 			ioP.setPreferences("trashbinPath", Json.createValue(trashbinPath.toString()));
 			ioP.setPreferences("multiSourcePath", Json.createValue(multiSourcePath));
 			ioP.setPreferences("multiDestPath", Json.createValue(multiDestPath));
@@ -134,8 +148,7 @@ public class Preference {
 			ioP.setPreferences("bgSync", (bgSync) ? JsonValue.TRUE : JsonValue.FALSE); 
 			ioP.setPreferences("trashbin", (trashbin) ? JsonValue.TRUE : JsonValue.FALSE);
 			ioP.setPreferences("bgTime", Json.createValue(bgTime.getName()));
-			ioP.writePreferences();
-			return true;
+			return ioP.writePreferences();
 		}
 		return false;
 	}
@@ -166,17 +179,23 @@ public class Preference {
 		return 0;
 	}
 	
+	public void setStartSourcePath(Path startSourcePath) {
+		this.startSourcePath = startSourcePath;
+	}
 	public void setStartDestPath(Path startDestPath) {
 		this.startDestPath = startDestPath;
 		this.trashbinPath = startDestPath.resolve(trashbinString);
 	}
-	public void setDestPath(ArrayList<Path> paths) {
-		multiDestPath = paths.size();
-		destPath = paths;		
+	public void writeSyncMap() {
+		ioS.writeSyncMap(syncMap);	
 	}
 	public void setSourcePath(ArrayList<Path> paths) {
 		multiSourcePath = paths.size();
 		sourcePath = paths;
+	}
+	public void setDestPath(ArrayList<Path> paths) {
+		multiDestPath = paths.size();
+		destPath = paths;		
 	}
 	public void setTrashbin(boolean trashbin) {
 		this.trashbin = trashbin;
@@ -205,6 +224,18 @@ public class Preference {
 	public void setAutoSync(boolean autoSync) {
 		this.autoSync = autoSync;
 	}
+	public void setSyncMapLoad(boolean syncMapLoad) {
+		this.syncMapLoad = syncMapLoad;
+	}
+	public Path getStartSourcePath() {
+		return startSourcePath;
+	}
+	public Path getStartDestPath() {
+		return startDestPath;
+	}
+	public Map<Path, FileAttributes> getSyncMap() {
+		return syncMap;
+	}
 	public ArrayList<Path> getSourcePath() {
 		return sourcePath;
 	}
@@ -213,9 +244,6 @@ public class Preference {
 	}
 	public ScanType getDeepScan() {
 		return deepScan;
-	}
-	public Path getStartDestPath() {
-		return startDestPath;
 	}
 	public Path getTrashbinPath() {
 		return trashbinPath;
@@ -246,5 +274,8 @@ public class Preference {
 	}
 	public BgTime getBgTime() {
 		return bgTime;
+	}
+	public boolean isSyncMapLoad() {
+		return syncMapLoad;
 	}
 }

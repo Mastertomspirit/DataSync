@@ -45,7 +45,7 @@ public class Main {
 		if(Arrays.stream(args).anyMatch((s) -> s.equals("debugToFile")))	{
 			debug = true;
 			Debug.SET_DEBUG_TO_FILE();
-			Debug.PRINT_DEBUG("%nDEBUG BEGIN: %s%n", LocalDateTime.now(ZoneId.systemDefault()).format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.FULL, FormatStyle.SHORT)));
+			Debug.PRINT_DEBUG_TIMELESS("%nDEBUG BEGIN: %s%n", LocalDateTime.now(ZoneId.systemDefault()).format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.FULL, FormatStyle.SHORT)));
 		}
 
 		new Controller(firstStart);

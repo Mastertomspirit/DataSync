@@ -118,6 +118,7 @@ class FileHandler {
 	 * @param destMap
 	 */
 	void equalsFiles(Map<Path, FileAttributes> sourceMap, Map<Path, FileAttributes> destMap) {
+		Debug.PRINT_DEBUG("max mem: %d, free mem: %d, total mem: %d", Runtime.getRuntime().maxMemory(),Runtime.getRuntime().freeMemory(), Runtime.getRuntime().totalMemory());
 		if(sourceMap.size() != 0 && destMap.size() != 0) {		
 			Set<Path> sourceHitList = Collections.synchronizedSet(new HashSet<>());
 			Set<Path> destHitList = Collections.synchronizedSet(new HashSet<>());
@@ -166,6 +167,7 @@ class FileHandler {
 	 * @return <b>ArrayList<Map<Path,FileAttributes>></b> </br>Give back the copySourceHitList, the copyDestHitList and the delHitList
 	 */
 	ArrayList<Map<Path,FileAttributes>> getSyncFiles(Map<Path, FileAttributes> sourceMap, Map<Path, FileAttributes> destMap, Path startSourcePath, Path startDestPath, Map<Path,FileAttributes> syncMap) {
+		Debug.PRINT_DEBUG("max mem: %d, free mem: %d, total mem: %d", Runtime.getRuntime().maxMemory(),Runtime.getRuntime().freeMemory(), Runtime.getRuntime().totalMemory());
 		ArrayList<Map<Path,FileAttributes>> resultValue = new ArrayList<>();
 		ArrayList<Map<Path,FileAttributes>> destValue = new ArrayList<>();
 		Map<Path, FileAttributes> copySourceHitList = Model.createMap();

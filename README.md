@@ -9,7 +9,7 @@ On the x-button it minimized to tray.
 
 | **Scan Type** | **Description**
 |---|---|
-| Synchronize | Synchronize two Folders; trashbin & subfolder are not available
+| Synchronize | Synchronize two folders; trashbin & subfolder are not available in this mode
 | Deep Scan | Scan each file with sha256
 | Flat Scan | Equals file size, create and modified time, size and path
 | Duplicate Scan | Scan the source directory and compares each file with the hash value

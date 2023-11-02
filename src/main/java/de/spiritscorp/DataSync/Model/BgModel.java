@@ -82,7 +82,10 @@ public class BgModel {
 					handler.copyFiles(result.get(1), false, startSourcePath);
 					handler.deleteFiles(result.get(2), false, false, null);
 
+					sourceMap.clear();
+					destMap.clear();
 					syncMap.clear();
+					
 					Map<Path, FileAttributes> tempMap = Model.createMap();
 					handler.listFiles(pref.getSourcePath(), tempMap, ScanType.SYNCHRONIZE, false);
 					for(Map.Entry<Path,FileAttributes>  entry : tempMap.entrySet()) {

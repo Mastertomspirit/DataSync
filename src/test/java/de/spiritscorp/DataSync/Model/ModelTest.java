@@ -39,7 +39,6 @@ import org.junit.jupiter.api.Test;
 
 import de.spiritscorp.DataSync.IO.Logger;
 
-
 /**
  * 
  */
@@ -47,9 +46,9 @@ class ModelTest {
 
 	public static final Path TEST_PATH = Paths.get(System.getProperty("user.home"), ".DataSyncTemp");
 
-	private static Map<Path,FileAttributes> sourceMap, destMap, syncMap;
-	private static TestHelper helper;
-	private static Model model;
+	private Map<Path,FileAttributes> sourceMap, destMap, syncMap;
+	private TestHelper helper;
+	private Model model;
 	
 	/**
 	 * @throws java.lang.Exception
@@ -130,7 +129,6 @@ class ModelTest {
 		List<Path> listDest = Files.walk(TEST_PATH.resolve("dest")).filter((a) -> !Files.isDirectory(a)).collect(Collectors.toList());
 		assertEquals(destFiles[0].getFileName(), listDest.get(0).getFileName(), "FileName passt nicht überein");
 		assertEquals(destFiles[1].getFileName(), listDest.get(1).getFileName(), "FileName passt nicht überein");
-	
 	}
 
 	/**
@@ -153,7 +151,5 @@ class ModelTest {
 		List<Path> destList = Files.walk(TEST_PATH.resolve("dest")).filter((a) -> !Files.isDirectory(a)).map((a) -> a.getFileName()).collect(Collectors.toList());
 		List<Path> sourceList = Files.walk(TEST_PATH.resolve("source")).filter((a) -> !Files.isDirectory(a)).map((a) -> a.getFileName()).collect(Collectors.toList());
 		assertEquals(destList, sourceList, "Quelle und Ziel passen nicht überein");
-
 	}
-
 }

@@ -32,7 +32,7 @@ import de.spiritscorp.DataSync.Main;
 public class Debug {
 
 	/**
-	 * A debug method to write a formatted string to this output stream using the specified format string and arguments. 
+	 * A debug method to write a formatted string to this output stream using a timestamp, the specified format string and arguments. 
 	 * 
 	 * @param format	A format string as described in Format string syntax
 	 * @param args		Arguments referenced by the format specifiers in the format string. If there are more arguments than format specifiers, 
@@ -43,6 +43,20 @@ public class Debug {
 		if(Main.debug) {
 			String time = LocalDateTime.now(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss.SSSSS"));
 			System.out.printf(time + "  " + format + "%n", args);
+		}
+	}
+	
+	/**
+	 * A debug method to write a formatted string to this output stream using the specified format string and arguments. 
+	 * 
+	 * @param format	A format string as described in Format string syntax
+	 * @param args		Arguments referenced by the format specifiers in the format string. If there are more arguments than format specifiers, 
+	 * 					the extra arguments are ignored. The number of arguments is variable and may be zero. The maximum number of arguments is limited 
+	 * 					by the maximum dimension of a Java array as defined by The Java Virtual Machine Specification.
+	 */
+	public static final void PRINT_DEBUG_TIMELESS(String format,Object... args) {
+		if(Main.debug) {
+			System.out.printf(format + "%n", args);
 		}
 	}
 	

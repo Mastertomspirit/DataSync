@@ -37,7 +37,7 @@ import jakarta.json.JsonValue;
 
 public class Preference {
 
-	private static final Path ROOT_PATH = Paths.get(System.getProperty("user.home"), "DataSync");
+	private static final Path ROOT_PATH = Paths.get(System.getProperty("user.home"), "DataSync2");
 	public static final Path DEBUG_PATH = ROOT_PATH.resolve("debug.log");
 	public static final Path ERROR_PATH = ROOT_PATH.resolve("debug.err");
 	public static final Path LOG_PATH = ROOT_PATH.resolve("log.json");

@@ -77,7 +77,7 @@
 			</plugin>
 			<plugin>
 				<artifactId>maven-jlink-plugin</artifactId>
-				<version>3.1.0</version>
+				<version>3.2.0</version>
 				<extensions>true</extensions>
 				<configuration>
 					<module>de.spiritscorp.DataSync/de.spiritscorp.DataSync.Main</module>

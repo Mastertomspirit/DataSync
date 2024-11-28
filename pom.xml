@@ -7,6 +7,7 @@
 	<description>Application to syncronize your data</description>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<javaVersion>21</javaVersion>
 	</properties>
 	<build>
 		<directory>target</directory>
@@ -29,7 +30,7 @@
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.9.0</version>
 				<configuration>
-					<release>17</release>
+					<release>${javaVersion}</release>
 				</configuration>
 			</plugin>
 			<plugin>

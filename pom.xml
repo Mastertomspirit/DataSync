@@ -28,7 +28,7 @@
 		<plugins>
 			<plugin>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.9.0</version>
+				<version>3.13.0</version>
 				<configuration>
 					<release>${javaVersion}</release>
 				</configuration>
@@ -36,7 +36,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>
-				<version>3.2.2</version>
+				<version>3.4.2</version>
 				<configuration>
 					<archive>
 						<manifest>
@@ -74,11 +74,11 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
-				<version>3.0.0-M5</version>
+				<version>3.5.2</version>
 			</plugin>
 			<plugin>
 				<artifactId>maven-jlink-plugin</artifactId>
-				<version>3.1.0</version>
+				<version>3.2.0</version>
 				<extensions>true</extensions>
 				<configuration>
 				</configuration>
@@ -86,7 +86,7 @@
 			<plugin>
 				<groupId>com.github.akman</groupId>
 				<artifactId>jpackage-maven-plugin</artifactId>
-				<version>0.1.3</version>
+				<version>0.1.5</version>
 				<executions>
 					<execution>
 						<phase>verify</phase>

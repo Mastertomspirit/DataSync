@@ -42,7 +42,7 @@ jobs:
     - name: Setup Java JDK
       uses: actions/setup-java@v3.5.1
       with:
-        java-version: '16'
+        java-version: '21'
     # Java distribution. See the list of supported distributions in README file
         distribution: 'temurin'
         cache: 'maven'

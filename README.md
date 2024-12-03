@@ -38,7 +38,7 @@ The automatic background job is not supported on MacOS yet
 * To build the app with runtime for a specify platform, 
 * run Maven on this platform with `mvn clean compile jlink:jlink verify`
  
-* To use only the jar, java version 17 is required. Run `mvn package`
+* To use only the jar, java version 21 is required. Run `mvn package`
 
 ### Flags:
 

@@ -8,6 +8,8 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<javaVersion>21</javaVersion>
+		<maven.compiler.source>21</maven.compiler.source>
+    	<maven.compiler.target>21</maven.compiler.target>
 	</properties>
 	<build>
 		<directory>target</directory>
@@ -76,7 +78,7 @@
 				<artifactId>maven-surefire-plugin</artifactId>
 				<version>3.5.2</version>
 				<configuration>
-                	<argLine>-javaagent:${settings.localRepository}/net/bytebuddy/byte-buddy-agent/1.15.10/byte-buddy-agent-1.15.10.jar</argLine> 
+                <argLine>-javaagent:${settings.localRepository}/net/bytebuddy/byte-buddy-agent/1.15.10/byte-buddy-agent-1.15.10.jar</argLine>
             	</configuration>
 			</plugin>
 			<plugin>
@@ -90,6 +92,14 @@
 				<groupId>com.github.akman</groupId>
 				<artifactId>jpackage-maven-plugin</artifactId>
 				<version>0.1.5</version>
+				<dependencies>
+		            <!-- need a newer version of asm to support java 21 -->
+		            <dependency>
+		            	<groupId>org.ow2.asm</groupId>
+		           		<artifactId>asm</artifactId>
+		         	    <version>9.6</version>
+		            </dependency>
+		        </dependencies>
 				<executions>
 					<execution>
 						<phase>verify</phase>
@@ -97,7 +107,7 @@
 							<goal>jpackage</goal>
 						</goals>
 						<configuration>
-							<toolhome>$‍{env.JPACKAGE_HOME}</toolhome>
+					 		<toolhome>$‍{env.JPACKAGE_HOME}</toolhome>
 							<dest>target/jpackage</dest>
 							<name>DataSync-V-${project.version}</name>
 							<type>IMAGE</type>

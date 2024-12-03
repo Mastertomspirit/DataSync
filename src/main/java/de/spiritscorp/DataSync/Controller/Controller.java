@@ -90,6 +90,10 @@ public class Controller extends WindowAdapter implements ActionListener, MouseLi
 //		START BUTTON
 		if(e.getSource() == view.getStartButton()) {	
 			if(!helper.isScanRun() && pref.getSourcePath() != null && pref.getDestPath() != null) {
+				if(pref.getDeepScan() == ScanType.SYNCHRONIZE && pref.getSourcePath().size() > 1) {
+					view.setTextArea("Die syncronisierung funktioniert nur mit einem Quellordner!");
+					return;
+				}
 				if(pref.getDeepScan() == ScanType.DUBLICATE_SCAN) 		new Thread(()-> helper.startDuplicateScan(view)).start();
 				else if(pref.getDeepScan() == ScanType.SYNCHRONIZE) 		new Thread(()-> helper.startSyncronize(view)).start();
 				else 		new Thread(()-> helper.startBackup(view)).start();

@@ -81,7 +81,7 @@ class ControllerHelper {
 				sourcePaths.add(new FileChooser("Quell", preferendPath).getSelectedFile().toPath());
 				i++;
 			}catch(NullPointerException ne) {}
-		}while(JOptionPane.showConfirmDialog(view, "Einen weiteren Ordner hinzufügen?", "Multiauswahl bestätigen", 0,3) == 0);		
+		}while((pref.getDeepScan() == ScanType.SYNCHRONIZE) ? false : (JOptionPane.showConfirmDialog(view, "Einen weiteren Ordner hinzufügen?", "Multiauswahl bestätigen", 0,3) == 0));		
 		try {
 			if(sourcePaths.isEmpty()) throw new NullPointerException();
 			if(sourcePaths.size() > 1 && (JOptionPane.showConfirmDialog(view, "Unterordner im Zielverzeichnis erstellen?", "Unterordner Erstellung", 0, 3) == 0)) {

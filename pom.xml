@@ -4,14 +4,14 @@
 	<artifactId>DataSync</artifactId>
 	<version>0.9.6.0</version>
 	<name>DataSync</name>
-	<description>Application to syncronize your data</description>
+	<description>Application to synchronize your data</description>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<javaVersion>21</javaVersion>
-		<maven.compiler.source>21</maven.compiler.source>
-    	<maven.compiler.target>21</maven.compiler.target>
+		<maven.build.timestamp.format>dd.MM.yyy - HH:mm</maven.build.timestamp.format>
 	</properties>
 	<build>
+		<finalName>${project.name}</finalName>
 		<directory>target</directory>
 		<outputDirectory>target/classes</outputDirectory>
 		<testOutputDirectory>target/test-classes</testOutputDirectory>
@@ -28,6 +28,40 @@
 			</testResource>
 		</testResources>
 		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-antrun-plugin</artifactId>
+				<version>3.1.0</version>
+				<executions>
+					<execution>
+						<id>generate-info-xml</id>
+						<phase>package</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<configuration>
+							<target>
+								<echo file="target/classes/info.xml">
+<![CDATA[<?xml version="1.0" encoding="UTF-8"?>
+<app>
+    <name>${project.name}</name>
+    <groupId>${project.groupId}</groupId>
+    <version>${project.version}</version>
+    <javaVersion>${java.version}</javaVersion>
+    <date>${maven.build.timestamp}</date>
+    <timezone>${user.timezone}</timezone>
+    <buildOS>
+        <arch>${os.arch}</arch>
+        <name>${os.name}</name>
+        <version>${os.version}</version>
+    </buildOS>
+</app>]]>
+		                      </echo>
+							</target>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 			<plugin>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.13.0</version>
@@ -78,8 +112,8 @@
 				<artifactId>maven-surefire-plugin</artifactId>
 				<version>3.5.2</version>
 				<configuration>
-                <argLine>-javaagent:${settings.localRepository}/net/bytebuddy/byte-buddy-agent/1.15.10/byte-buddy-agent-1.15.10.jar</argLine>
-            	</configuration>
+					<argLine>-javaagent:${settings.localRepository}/net/bytebuddy/byte-buddy-agent/1.15.10/byte-buddy-agent-1.15.10.jar</argLine>
+				</configuration>
 			</plugin>
 			<plugin>
 				<artifactId>maven-jlink-plugin</artifactId>
@@ -93,32 +127,57 @@
 				<artifactId>jpackage-maven-plugin</artifactId>
 				<version>0.1.5</version>
 				<dependencies>
-		            <!-- need a newer version of asm to support java 21 -->
-		            <dependency>
-		            	<groupId>org.ow2.asm</groupId>
-		           		<artifactId>asm</artifactId>
-		         	    <version>9.6</version>
-		            </dependency>
-		        </dependencies>
+					<!-- need a newer version of asm to support java 21 -->
+					<dependency>
+						<groupId>org.ow2.asm</groupId>
+						<artifactId>asm</artifactId>
+						<version>9.6</version>
+					</dependency>
+				</dependencies>
 				<executions>
 					<execution>
-						<phase>verify</phase>
+						<phase>package</phase>
 						<goals>
 							<goal>jpackage</goal>
 						</goals>
 						<configuration>
-					 		<toolhome>$‍{env.JPACKAGE_HOME}</toolhome>
+							<toolhome>$‍{env.JPACKAGE_HOME}</toolhome>
 							<dest>target/jpackage</dest>
-							<name>DataSync-V-${project.version}</name>
+							<name>DataSync</name>
 							<type>IMAGE</type>
 							<runtimeimage>target/maven-jlink/default</runtimeimage>
 							<appversion>${project.version}</appversion>
 							<copyright>GPL 3.0</copyright>
-							<description>Data Sync  --  Software zum Syncronisieren von Ordnern</description>
+							<description>Data Sync -- Software zum Syncronisieren von Dateien</description>
 							<vendor>Tom Spirit</vendor>
 							<icon>64x64.ico</icon>
 							<module>de.spiritscorp.DataSync/de.spiritscorp.DataSync.Main</module>
 							<javaoptions>-Dfile.encoding=UTF-8 -Xms32m -Xmx4096m</javaoptions>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+				<version>3.3.0</version>
+				<executions>
+					<execution>
+						<id>copy-info</id>
+						<phase>package</phase>
+						<goals>
+							<goal>copy-resources</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>target/jpackage/DataSync</outputDirectory>
+							<resources>
+								<resource>
+									<directory>target/classes</directory>
+									<includes>
+										<include>info.xml</include>
+									</includes>
+								</resource>
+							</resources>
 						</configuration>
 					</execution>
 				</executions>
@@ -148,17 +207,17 @@
 		</dependency>
 		<!-- https://mvnrepository.com/artifact/org.mockito/mockito-junit-jupiter -->
 		<dependency>
-		    <groupId>org.mockito</groupId>
-		    <artifactId>mockito-junit-jupiter</artifactId>
-		    <version>[5.14.2,)</version>
-		    <scope>test</scope>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-junit-jupiter</artifactId>
+			<version>[5.14.2,)</version>
+			<scope>test</scope>
 		</dependency>
 		<!-- https://mvnrepository.com/artifact/net.bytebuddy/byte-buddy-agent -->
 		<dependency>
-		    <groupId>net.bytebuddy</groupId>
-		    <artifactId>byte-buddy-agent</artifactId>
-		    <version>1.15.10</version>
-		    <scope>test</scope>
+			<groupId>net.bytebuddy</groupId>
+			<artifactId>byte-buddy-agent</artifactId>
+			<version>1.15.10</version>
+			<scope>test</scope>
 		</dependency>
 	</dependencies>
 </project>

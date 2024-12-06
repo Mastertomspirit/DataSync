@@ -113,7 +113,7 @@ public class Controller extends WindowAdapter implements ActionListener, MouseLi
 				view.getBgTimeComboBox().setEnabled(true);
 			}else {
 				helper.setOSAutostart(false);
-				view.getAutoSyncCheck().setEnabled(true);
+				if(pref.getDeepScan() != ScanType.SYNCHRONIZE)		 view.getAutoSyncCheck().setEnabled(true);
 				view.getAutoDelCheck().setText("automatisch löschen");
 				view.getAutoDelCheck().setSelected(pref.isAutoDel());
 				view.getBgTimeComboBox().setEnabled(false);
@@ -148,6 +148,15 @@ public class Controller extends WindowAdapter implements ActionListener, MouseLi
 //		COMBO BOX FOR SCAN MODE
 		if(e.getSource() == view.getScanModeComboBox()) {
 			pref.setScanMode(ScanType.get((String)view.getScanModeComboBox().getSelectedItem()));
+			if(pref.getDeepScan() == ScanType.SYNCHRONIZE) {
+				view.getAutoDelCheck().setEnabled(false);
+				view.getAutoSyncCheck().setEnabled(false);
+				view.getTrashbinCheck().setEnabled(false);
+			}else {
+				view.getAutoDelCheck().setEnabled(true);
+				if(!pref.isBgSync()) 		 view.getAutoSyncCheck().setEnabled(true);
+				view.getTrashbinCheck().setEnabled(true);
+			}
 		}
 		
 //		COMBO BOX FOR BACKGROUND TIME INTERVALL

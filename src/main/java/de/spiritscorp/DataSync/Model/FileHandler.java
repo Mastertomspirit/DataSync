@@ -265,7 +265,6 @@ class FileHandler {
 						path,
 						StandardCopyOption.REPLACE_EXISTING, 
 						StandardCopyOption.COPY_ATTRIBUTES);				
-				if(!path.toFile().canWrite())		path.toFile().setWritable(true);
 				Files.setAttribute(path, "creationTime", entry.getValue().getCreateTime());
 				log.setEntry(path.toString(), "kopiert", entry.getValue());
 			}catch(IOException e) {

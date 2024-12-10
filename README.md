@@ -44,6 +44,6 @@ The automatic background job is not supported on MacOS yet
 
 | **Flag** | **Description**
 |---|---|
-| firstStart | sleeps for 10 minutes after system start
+| firstStart | sleeps for 5 minutes after system start
 | debug | enable the debug output
 | debugToFile |  enable the debug and error output to file at `user.home/DataSync/`

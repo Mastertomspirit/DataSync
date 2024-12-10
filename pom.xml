@@ -143,7 +143,7 @@
 						<configuration>
 							<toolhome>$‍{env.JPACKAGE_HOME}</toolhome>
 							<dest>target/jpackage</dest>
-							<name>DataSync</name>
+							<name>${project.name}</name>
 							<type>IMAGE</type>
 							<runtimeimage>target/maven-jlink/default</runtimeimage>
 							<appversion>${project.version}</appversion>
@@ -169,7 +169,7 @@
 							<goal>copy-resources</goal>
 						</goals>
 						<configuration>
-							<outputDirectory>target/jpackage/DataSync</outputDirectory>
+							<outputDirectory>target/jpackage/${project.name}</outputDirectory>
 							<resources>
 								<resource>
 									<directory>target/classes</directory>

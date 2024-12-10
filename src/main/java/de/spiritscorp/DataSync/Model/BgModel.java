@@ -42,7 +42,7 @@ public class BgModel {
 	}
 
 	/**
-	 * List all files, equals them and make the prefer sync 
+	 * List all files, equals them and make the prefer sync in the background
 	 * 
 	 * @return <b>boolean</b> </br>true if the process ran and both maps are empty
 	 */
@@ -58,16 +58,19 @@ public class BgModel {
 		if(pref.getDeepScan() == ScanType.SYNCHRONIZE) {
 			if(Files.exists(pref.getStartDestPath())) {
 				if(System.currentTimeMillis() - pref.getLastScanTime()  > pref.getBgTime().getTime()){
-					Debug.PRINT_DEBUG("bgJob started");
-					Thread t1 = new Thread(() -> handler.listFiles(pref.getSourcePath(), sourceMap, ScanType.SYNCHRONIZE, pref.isSubDir()));
-					Thread t2 = new Thread(() -> handler.listFiles(pref.getDestPath(), destMap, ScanType.SYNCHRONIZE, pref.isSubDir()));
+					Debug.PRINT_DEBUG("bgJob running");
+					Debug.PRINT_DEBUG("list start");
+					Thread t1 = new Thread(() -> handler.listFiles(pref.getSourcePath(), sourceMap, ScanType.SYNCHRONIZE, false));
+					Thread t2 = new Thread(() -> handler.listFiles(pref.getDestPath(), destMap, ScanType.SYNCHRONIZE, false));
 					t1.start();
 					t2.start();
 					try {
 						t1.join();
 						t2.join();
 					} catch (InterruptedException e) {e.printStackTrace();}
+					Debug.PRINT_DEBUG("list ready");
 					
+					Debug.PRINT_DEBUG("getSyncFiles start");
 					if(syncMap.isEmpty()) {
 						Map<Path, FileAttributes> tempSyncMap = Model.createMap();
 						handler.listFiles(pref.getSourcePath(), tempSyncMap, ScanType.SYNCHRONIZE, false);
@@ -75,12 +78,13 @@ public class BgModel {
 							syncMap.put(entry.getValue().getRelativeFilePath(), entry.getValue());
 						}
 					}
-					
 					ArrayList<Map<Path,FileAttributes>> result = handler.getSyncFiles(sourceMap, destMap, startSourcePath, startDestPath, syncMap);
-					
-					handler.copyFiles(result.get(0), false, startDestPath);
-					handler.copyFiles(result.get(1), false, startSourcePath);
-					handler.deleteFiles(result.get(2), false, false, null);
+					Debug.PRINT_DEBUG("getSyncFiles ready");
+
+					Debug.PRINT_DEBUG("syncFiles start");
+					if(!result.get(0).isEmpty())			handler.copyFiles(result.get(0), false, startDestPath);
+					if(!result.get(1).isEmpty())			handler.copyFiles(result.get(1), false, startSourcePath);
+					if(!result.get(2).isEmpty())			handler.deleteFiles(result.get(2), false, false, null);
 
 					sourceMap.clear();
 					destMap.clear();
@@ -93,14 +97,16 @@ public class BgModel {
 					}
 					pref.writeSyncMap();
 					pref.saveLastScanTime();
-
+					Debug.PRINT_DEBUG("syncFiles ready");
+					Debug.PRINT_DEBUG("bgJob finish");
 					return result.get(0).isEmpty() && result.get(1).isEmpty() && result.get(2).isEmpty();				
 				}
 			}
 		}else {
 			if(Files.exists(pref.getStartDestPath())) {
 				if(System.currentTimeMillis() - pref.getLastScanTime()  > pref.getBgTime().getTime()){
-					Debug.PRINT_DEBUG("bgJob started");
+					Debug.PRINT_DEBUG("bgJob running");
+					Debug.PRINT_DEBUG("list start");
 					Thread t1 = new Thread(() -> handler.listFiles(pref.getSourcePath(), sourceMap, ScanType.FLAT_SCAN, pref.isSubDir()));
 					Thread t2 = new Thread(() -> handler.listFiles(pref.getDestPath(), destMap, ScanType.FLAT_SCAN, pref.isSubDir()));
 					t1.start();
@@ -109,12 +115,19 @@ public class BgModel {
 						t1.join();
 						t2.join();
 					} catch (InterruptedException e) {e.printStackTrace();}
+					Debug.PRINT_DEBUG("list ready");
+
+					Debug.PRINT_DEBUG("getEqualsFiles start");
 					handler.equalsFiles(sourceMap, destMap);
-					Debug.PRINT_DEBUG("unique source path size: %d  && unique destination path size: %d", sourceMap.size(), destMap.size());
+					Debug.PRINT_DEBUG("getEqualsFiles ready");
+
+					Debug.PRINT_DEBUG("backupFiles start");
 					if(autoBgDel && !destMap.isEmpty())		handler.deleteFiles(destMap, logOn, trashbin, trashbinPath);
 					if(!sourceMap.isEmpty())							handler.copyFiles(sourceMap, logOn, startDestPath);
 					pref.saveLastScanTime();
-					
+					Debug.PRINT_DEBUG("backupFiles ready");
+
+					Debug.PRINT_DEBUG("bgJob finish");
 					return (sourceMap.isEmpty() && destMap.isEmpty());
 				}
 			}

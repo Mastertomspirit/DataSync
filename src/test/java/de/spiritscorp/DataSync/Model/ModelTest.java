@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -132,12 +133,12 @@ class ModelTest {
 	}
 
 	/**
-	 * Testmethode für {@link de.spiritscorp.DataSync.Model.Model#syncFiles(java.util.Map, java.nio.file.Path, java.nio.file.Path)}.
+	 * Testmethode für {@link de.spiritscorp.DataSync.Model.Model#syncFiles(java.util.ArrayList, java.util.Map, java.nio.file.Path, java.nio.file.Path, boolean)}.
 	 * @throws IOException 
 	 */
 	@Test
 	final void testSyncFiles() throws IOException {
-		helper.createSyncMap(sourceMap, destMap, syncMap);
+		ArrayList<Map<Path, FileAttributes>> expectedList =  helper.createSyncMap(sourceMap, destMap, syncMap);
 		for(Entry<Path, FileAttributes> entry : sourceMap.entrySet()) {
 			Files.createDirectories(entry.getKey().getParent());
 			Files.createFile(entry.getKey());
@@ -146,10 +147,34 @@ class ModelTest {
 			Files.createDirectories(entry.getKey().getParent());
 			Files.createFile(entry.getKey());
 		}
-		
-		assertTrue(model.syncFiles(syncMap, TEST_PATH.resolve("source"), TEST_PATH.resolve("dest")), "Die listen sind nicht leer");
+		assertTrue(model.syncFiles(expectedList, syncMap, TEST_PATH.resolve("source"), TEST_PATH.resolve("dest"), true), "Die listen sind nicht leer");
 		List<Path> destList = Files.walk(TEST_PATH.resolve("dest")).filter((a) -> !Files.isDirectory(a)).map((a) -> a.getFileName()).collect(Collectors.toList());
 		List<Path> sourceList = Files.walk(TEST_PATH.resolve("source")).filter((a) -> !Files.isDirectory(a)).map((a) -> a.getFileName()).collect(Collectors.toList());
 		assertEquals(destList, sourceList, "Quelle und Ziel passen nicht überein");
+	}
+	
+	/**
+	 * Testmethode für {@link de.spiritscorp.DataSync.Model.Model#getSyncFiles(java.util.Map, java.nio.file.Path, java.nio.file.Path)}.
+	 * @throws IOException 
+	 */
+	@Test
+	final void testGetSyncFiles() throws IOException {
+		ArrayList<Map<Path, FileAttributes>> expectedLists = helper.createSyncMap(sourceMap, destMap, syncMap);
+		for(Entry<Path, FileAttributes> entry : sourceMap.entrySet()) {
+			Files.createDirectories(entry.getKey().getParent());
+			Files.createFile(entry.getKey());
+		}
+		for(Entry<Path, FileAttributes> entry : destMap.entrySet()) {
+			Files.createDirectories(entry.getKey().getParent());
+			Files.createFile(entry.getKey());
+		}
+		ArrayList<Map<Path, FileAttributes>> result = model.getSyncFiles(syncMap, TEST_PATH.resolve("source"), TEST_PATH.resolve("dest"));
+		for(int i = 0; i < expectedLists.size(); i++) {
+			assertEquals(expectedLists.get(i).size(), result.get(i).size(), "Die Größe der Liste passt nicht!");
+			for(Path path : expectedLists.get(i).keySet()) {
+				assertTrue(result.get(i).containsKey(path), "Key stimmt nicht!");
+				assertTrue(result.get(i).containsValue(expectedLists.get(i).get(path)), "Werte stimmen nicht");
+			}
+		}
 	}
 }

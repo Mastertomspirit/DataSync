@@ -40,7 +40,7 @@ import de.spiritscorp.DataSync.IO.Logger;
 class FileHandler {
 	
 	private Logger log;
-	private int avgProc;
+	private int avgProc;		//	number of threads
 	
 	FileHandler(Logger log){
 		this.log = log;
@@ -152,7 +152,7 @@ class FileHandler {
 			for (Path p : destHitList) {
 				destMap.remove(p);
 			}	
-			Debug.PRINT_DEBUG("full source hitList size: %d  && full destination hitList size: %d", sourceHitList.size(), destHitList.size());
+			Debug.PRINT_DEBUG("full source hitList size: %d  && full destination hitList size: %d",sourceMap.size(), destMap.size());
 		}
 	}
 	
@@ -198,32 +198,12 @@ class FileHandler {
 				} catch (InterruptedException e) {e.printStackTrace();}
 				
 			}else {
-				
 				syncMaps(sourceMap, destMap, resultValue, startDestPath, syncMap);
 				syncMaps(destMap, sourceMap, destValue, startSourcePath, syncMap);			
 				}
 		}
 		Debug.PRINT_DEBUG("full copySourceHitList size: %d  && full copyDestHitList size: %d  && full delHitList size: %d", copySourceHitList.size(), copyDestHitList.size(), delHitList.size());
 		return  resultValue;
-	}
-	
-	Map<Path,FileAttributes> getFailtures(Map<Path,FileAttributes> sourceMap, Map<Path,FileAttributes> destMap){
-		Map<Path,FileAttributes> failMap = Model.createMap();
-		if(sourceMap != null) {
-			for(Map.Entry<Path, FileAttributes> entry : sourceMap.entrySet()) {
-				if(entry.getValue().getFileHash().equals("Failed")) {
-					failMap.put(entry.getKey(), entry.getValue());
-				}
-			}
-		}
-		if(destMap != null) {
-			for(Map.Entry<Path, FileAttributes> entry : destMap.entrySet()) {
-				if(entry.getValue().getFileHash().equals("Failed")) {
-					failMap.put(entry.getKey(), entry.getValue());
-				}
-			}		
-		}
-		return failMap;
 	}
 
 	/**
@@ -242,8 +222,12 @@ class FileHandler {
 				}
 				if(!path.toFile().canWrite())		path.toFile().setWritable(true);
 				Files.delete(path);
-			}catch(IOException e) {e.printStackTrace();}
-			log.setEntry(path.toString(), "gelöscht", map.get(path));
+				log.setEntry(path.toString(), "gelöscht", map.get(path));
+			}catch(IOException e) {
+				log.setEntry(path.toString(), "FEHLER BEIM LÖSCHEN", map.get(path));
+				Debug.PRINT_DEBUG("delete failed: %s", path.toString());
+				e.printStackTrace();
+			}
 		}
 		map.clear();
 		if(logOn) log.printStatus();	
@@ -259,7 +243,9 @@ class FileHandler {
 		for (Map.Entry<Path, FileAttributes> entry : map.entrySet()) {
 			Path path = destPath.resolve(entry.getValue().getRelativeFilePath());
 			try {
-				if(!Files.exists(path.getParent()))	Files.createDirectories(path.getParent());
+				if(!Files.exists(path.getParent())) 									Files.createDirectories(path.getParent());
+				else 
+					if(Files.exists(path) && !path.toFile().canWrite())  		path.toFile().setWritable(true) ;	
 				Files.copy(
 						entry.getKey(), 
 						path,
@@ -268,8 +254,8 @@ class FileHandler {
 				Files.setAttribute(path, "creationTime", entry.getValue().getCreateTime());
 				log.setEntry(path.toString(), "kopiert", entry.getValue());
 			}catch(IOException e) {
-				if(logOn) log.setEntry(path.toString(), "FEHLER BEIM KOPIEREN", entry.getValue());
-				Debug.PRINT_DEBUG("copy failed: %s, %s", e.getMessage(), path.toString());
+				log.setEntry(path.toString(), "FEHLER BEIM KOPIEREN", entry.getValue());
+				Debug.PRINT_DEBUG("copy failed: %s", path.toString());
 				e.printStackTrace();
 			}
 		}
@@ -283,12 +269,11 @@ class FileHandler {
 	 * @param iterateMap The splitMap
 	 * @param fullMap 
 	 * @param hitList Set with the hits
-	 * @param mapName
 	 */
 	private void equalsMap(Map<Path, FileAttributes> iterateMap, Map<Path, FileAttributes> fullMap, Set<Path> hitList) {
-		Map<Path, FileAttributes> tempMap = Map.copyOf(fullMap);
 		for (Map.Entry<Path, FileAttributes> entry : iterateMap.entrySet()) {
-			if(tempMap.containsValue(entry.getValue())) {
+			if(fullMap.containsValue(entry.getValue())) {
+//			if(fullMap.get(entry.getKey()) != null && fullMap.get(entry.getKey()).equals(entry.getValue()) ) {
 				hitList.add(entry.getKey());
 			}
 		}		
@@ -333,6 +318,7 @@ class FileHandler {
 	 * splits the map depending on the processor cores
 	 * 
 	 * @param map
+	 * @param avProc		number of threads
 	 * @return  <b>Map</b> </br>The map with split maps
 	 */
 	private Map<Integer, Map<Path, FileAttributes>> splitMap(Map<Path, FileAttributes> map, int avProc) {

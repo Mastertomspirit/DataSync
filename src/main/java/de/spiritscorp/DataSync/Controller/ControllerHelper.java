@@ -27,7 +27,6 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Map;
 
 import javax.swing.JOptionPane;
@@ -52,10 +51,14 @@ class ControllerHelper {
 	 * 
 	 * @param model	The model
 	 * @param pref The preferences
+	 * @param sourceMap
+	 * @param destMap
 	 */
-	ControllerHelper(final Model model, final Preference pref){
+	ControllerHelper(final Model model, final Preference pref, Map<Path,FileAttributes> sourceMap, Map<Path,FileAttributes> destMap){
 		this.model = model;
 		this.pref = pref;
+		this.sourceMap = sourceMap;
+		this.destMap = destMap;
 		scanRun = false;
 	}
 
@@ -132,30 +135,29 @@ class ControllerHelper {
 		String scanTimeFormatted = "", syncTimeFormatted = "";
 
 	
-		if(Files.exists(startDestPath)) {			
-			HashMap<String, Map<Path, FileAttributes>> hashMap  = model.scanSyncFiles(pref.getSourcePath(), pref.getDestPath(), stats, pref.getDeepScan(), pref.isSubDir(), false);
+		if(Files.exists(startDestPath)) {
+			failMap = model.scanSyncFiles(pref.getSourcePath(), pref.getDestPath(), stats, pref.getDeepScan(), false, false);
+			ArrayList<Map<Path,FileAttributes>> result = model.getSyncFiles(pref.getSyncMap(), startSourcePath, startDestPath);
 			scanTimeFormatted = getEndTimeFormatted(System.nanoTime() - startTime) + " für das Scannen";
-			sourceMap = hashMap.get("sourceMap");
-			destMap = hashMap.get("destMap");
-			failMap = hashMap.get("failMap");
+			Debug.PRINT_DEBUG("sourceMap size = %d, destMap size = %d, failtures = %d", stats[0], stats[1], failMap.size());
 			view.setTextArea(formatMaps(pref.getDeepScan()));
 			view.setTextArea(String.format("Quelldateien: %d Stück und Zieldateien: %d Stück", stats[0], stats[1]));
 			view.setTextArea(String.format("Größe aller Quelldateien: %s      Größe aller Zieldateien: %s", getReadableBytes(stats[2]), getReadableBytes(stats[3])));
 			view.setTextArea(String.format("Fehlerhafter Zugriff: %d", failMap.size()));
 			
 			startTime = System.nanoTime();
-			if(model.syncFiles(pref.getSyncMap(), startSourcePath, startDestPath)) {
+			if(model.syncFiles(result, pref.getSyncMap(), startSourcePath, startDestPath, false)) {
 				syncTimeFormatted = getEndTimeFormatted(System.nanoTime() - startTime) + " für das Syncronisieren";
 				view.setTextArea(scanTimeFormatted);
 				view.setTextArea(syncTimeFormatted);
-				view.setTextArea("Syncronisation erfolgreich");
+				view.setTextArea("Syncronisation erfolgreich!");
 				pref.saveLastScanTime();
 			}else {
 				syncTimeFormatted = getEndTimeFormatted(System.nanoTime() - startTime) + " für das Syncronisieren";
 				view.setTextArea(scanTimeFormatted);
 				view.setTextArea(syncTimeFormatted);
-				view.setTextArea("Syncronisation abgebrochen!");
-			}		
+				view.setTextArea("Syncronisation fehlgeschlagen!");
+			}
 		}else {
 			view.setTextArea("Kein Ziellaufwerk vorhanden");
 		}
@@ -185,11 +187,10 @@ class ControllerHelper {
 				String scanTimeFormatted = "", backupTimeFormatted = "";
 				
 				if(Files.exists(startDestPath)) {			
-					HashMap<String, Map<Path, FileAttributes>> hashMap  = model.scanSyncFiles(pref.getSourcePath(), pref.getDestPath(), stats, pref.getDeepScan(), pref.isSubDir(), pref.isTrashbin());
+					failMap = model.scanSyncFiles(pref.getSourcePath(), pref.getDestPath(), stats, pref.getDeepScan(), pref.isSubDir(), pref.isTrashbin());
+					model.getEqualsFiles();		
 					scanTimeFormatted = getEndTimeFormatted(System.nanoTime() - startTime) + " für das Scannen";
-					sourceMap = hashMap.get("sourceMap");
-					destMap = hashMap.get("destMap");
-					failMap = hashMap.get("failMap");
+					Debug.PRINT_DEBUG("sourceMap size = %d, destMap size = %d, failtures = %d", stats[0], stats[1], failMap.size());
 					view.setTextArea(formatMaps(deepScan));
 					view.setTextArea(String.format("Quelldateien: %d Stück und Zieldateien: %d Stück", stats[0], stats[1]));
 					view.setTextArea(String.format("Größe aller Quelldateien: %s      Größe aller Zieldateien: %s", getReadableBytes(stats[2]), getReadableBytes(stats[3])));
@@ -215,7 +216,7 @@ class ControllerHelper {
 							backupTimeFormatted = getEndTimeFormatted(System.nanoTime() - startTime) + " für das Syncronisieren";
 							view.setTextArea(scanTimeFormatted);
 							view.setTextArea(backupTimeFormatted);				
-							view.setTextArea("Syncronisation fehlgeschlagen");
+							view.setTextArea("Syncronisation fehlgeschlagen!");
 						}
 					}else {
 						view.setTextArea("Syncronisation abgebrochen!");
@@ -238,10 +239,9 @@ class ControllerHelper {
 				scanRun = true;
 				view.setScanRun(true);
 				long startTime = System.nanoTime();
-				HashMap<String, Map<Path, FileAttributes>> hashMap = model.scanDublicates(pref.getSourcePath());
-				sourceMap  = hashMap.get("sourceMap");
-				failMap = hashMap.get("failMap");
+				failMap = model.scanDublicates(pref.getSourcePath());
 				String scanTimeFormatted = getEndTimeFormatted(System.nanoTime() - startTime) + " für das Scannen";
+				Debug.PRINT_DEBUG("sourceMap size = %d, destMap size = %d, failtures = %d", sourceMap.size(), destMap.size(), failMap.size());
 				long space = 0;
 				for(Path p : sourceMap.keySet()) {
 					space += sourceMap.get(p).getSize();
@@ -448,7 +448,7 @@ class ControllerHelper {
 		}
 		return new String(sb);
 	}
-	
+
 	/**
 	 * Formatting nanoseconds to hour, minutes, or seconds
 	 * 

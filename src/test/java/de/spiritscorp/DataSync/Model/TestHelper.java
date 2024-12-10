@@ -98,19 +98,14 @@ class TestHelper {
 
 	public ArrayList<Map<Path, FileAttributes>> createSyncMap(Map<Path, FileAttributes> sourceMap, Map<Path, FileAttributes> destMap, Map<Path, FileAttributes> syncMap) {	
 		return syncFiles.createSyncFiles(sourceMap, destMap, syncMap);
-				
 	}
 
 	public void createBackupFiles(Map<Path, FileAttributes> sourceMap, Map<Path, FileAttributes> destMap) {
-
 		sourceMap.put(sourceList.get(3), new FileAttributes(paths.get(0).relativize(sourceList.get(3)), fileTimeToString(time[3]), time[1], fileTimeToString(time[2]), time[2], 125L, "5520b9cd4c7355dc427a8f622961fa971d9401e0626e447352d701f1671423f2"));
 		sourceMap.put(sourceList.get(5), new FileAttributes(paths.get(0).relativize(sourceList.get(5)), fileTimeToString(time[1]), time[2], fileTimeToString(time[3]), time[3], 12L, "abb0b9cd4c7355dc427a8f622961fa971d9401e0626e447352d701f1671423f2"));
 
 		destMap.put(destList.get(0), new FileAttributes(paths.get(1).relativize(destList.get(3)), fileTimeToString(time[1]), time[2], fileTimeToString(time[3]), time[3], 12L, "1a60b9cd4c7355dc427a8f622961fa971d9401e0626e447352d701f1671423f2"));
 		destMap.put(destList.get(1), new FileAttributes(paths.get(1).relativize(destList.get(6)), fileTimeToString(time[1]), time[2], fileTimeToString(time[3]), time[3], 12L, "ccc0b9cd4c7355dc427a8f622961fa971d9401e0626e447352d701f1671423f2"));
 		destMap.put(destList.get(2), new FileAttributes(paths.get(1).relativize(destList.get(7)), fileTimeToString(time[3]), time[3], fileTimeToString(time[4]), time[3], 12L, "ccc0b9cd4c7355dc427a8f622961fa971d9401e0626e447352d701f1671423f2"));
-
-		
 	}
-
 }

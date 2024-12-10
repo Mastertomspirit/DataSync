@@ -42,6 +42,7 @@ class BgController  {
 	 * 
 	 * @param bgView The background view
 	 * @param pref The settings to be used
+	 * @param logger 
 	 */
 	BgController(final BgView bgView, final Preference pref, final Logger logger) {
 		this.pref = pref;
@@ -56,7 +57,7 @@ class BgController  {
 	 * 
 	 * @param view The view
 	 * @param helper
-	 * @param firstStart If true, the thread wait 10 minutes
+	 * @param firstStart If true, the thread wait 5 minutes
 	 */
 	void startBgJob(final View view, final ControllerHelper helper, final boolean firstStart) {
 		try {
@@ -67,7 +68,7 @@ class BgController  {
 			BgModel bgModel = new BgModel(pref, logger, Model.createMap(), Model.createMap());
 			boolean bgRun = true;
 			try {
-				if(firstStart) Thread.sleep(60000);
+				if(firstStart) Thread.sleep(30000);
 			}catch(InterruptedException e) {e.printStackTrace();}
 			while(bgRun) {
 				helper.setScanRun(true);

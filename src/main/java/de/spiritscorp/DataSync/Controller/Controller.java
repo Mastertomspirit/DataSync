@@ -27,6 +27,8 @@ import java.awt.event.MouseListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.file.Path;
+import java.util.Map;
 
 import javax.swing.JOptionPane;
 
@@ -34,6 +36,7 @@ import de.spiritscorp.DataSync.Gui.BgView;
 import de.spiritscorp.DataSync.Gui.View;
 import de.spiritscorp.DataSync.IO.Logger;
 import de.spiritscorp.DataSync.IO.Preference;
+import de.spiritscorp.DataSync.Model.FileAttributes;
 import de.spiritscorp.DataSync.Model.Model;
 import de.spiritscorp.DataSync.BgTime;
 import de.spiritscorp.DataSync.ScanType;
@@ -51,12 +54,15 @@ public class Controller extends WindowAdapter implements ActionListener, MouseLi
 
 /**
  * 		Check if a background job should execute, elsewhere the view is started 
+ * 
  * 		@param firstStart Delayed scan at system startup
  */
 	public Controller(boolean firstStart) {
+		Map<Path, FileAttributes> sourceMap = Model.createMap();
+		Map<Path, FileAttributes> destMap = Model.createMap();
 		pref = Preference.getInstance();
 		logger = new Logger();
-		model = new Model(logger, Model.createMap(), Model.createMap());
+		model = new Model(logger, sourceMap, destMap);
 		bgView = new BgView(event);
 		try {
 			EventQueue.invokeAndWait(() ->{
@@ -69,7 +75,7 @@ public class Controller extends WindowAdapter implements ActionListener, MouseLi
 				}
 			});
 		} catch (InvocationTargetException | InterruptedException e1) {e1.printStackTrace();	}	
-		helper = new ControllerHelper(model, pref);
+		helper = new ControllerHelper(model, pref, sourceMap, destMap);
 		bgController = new BgController(bgView, pref, logger);
 		if(firstStart) {
 			new Thread(()->bgController.startBgJob(view, helper, true)).start();
@@ -152,10 +158,12 @@ public class Controller extends WindowAdapter implements ActionListener, MouseLi
 				view.getAutoDelCheck().setEnabled(false);
 				view.getAutoSyncCheck().setEnabled(false);
 				view.getTrashbinCheck().setEnabled(false);
+				view.getLogOnBox().setEnabled(false);
 			}else {
 				view.getAutoDelCheck().setEnabled(true);
 				if(!pref.isBgSync()) 		 view.getAutoSyncCheck().setEnabled(true);
 				view.getTrashbinCheck().setEnabled(true);
+				view.getLogOnBox().setEnabled(true);
 			}
 		}
 		

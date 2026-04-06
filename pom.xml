@@ -117,7 +117,7 @@
 			</plugin>
 			<plugin>
 				<artifactId>maven-jlink-plugin</artifactId>
-				<version>3.2.0</version>
+				<version>3.3.0</version>
 				<extensions>true</extensions>
 				<configuration>
 				</configuration>

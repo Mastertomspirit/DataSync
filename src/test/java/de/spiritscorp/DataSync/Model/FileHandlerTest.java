@@ -22,11 +22,11 @@ package de.spiritscorp.DataSync.Model;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 
+import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.Map;
-import java.util.TreeMap;
-
+import java.util.Map.Entry;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -37,11 +37,14 @@ import de.spiritscorp.DataSync.IO.Logger;
 
 class FileHandlerTest {
 
-	private Map<Path, FileAttributes> sourceMap = Collections.synchronizedSortedMap(new TreeMap<>());
-	private Map<Path, FileAttributes> destMap = Collections.synchronizedSortedMap(new TreeMap<>());
-	private Map<Path, FileAttributes> duplicateMap = Collections.synchronizedSortedMap(new TreeMap<>());
+	private Map<Path, FileAttributes> sourceMap = Model.createMap();
+	private Map<Path, FileAttributes> destMap = Model.createMap();
+	private Map<Path, FileAttributes> duplicateMap = Model.createMap();
+	private Map<Path, FileAttributes> syncMap = Model.createMap();
+	private Path path = ModelTest.TEST_PATH;
 
-	private TestHelper helper = new TestHelper();
+
+	private TestHelper helper = new TestHelper(path);
 	private FileHandler fileHandler;
 	
 	/**
@@ -81,6 +84,7 @@ class FileHandlerTest {
 		fail("Noch nicht implementiert"); // TODO
 	}
 */
+	
 	/**
 	 * Testmethode für {@link de.spiritscorp.DataSync.Model.FileHandler#findDuplicates(java.util.Map)}.
 	 */
@@ -112,6 +116,41 @@ class FileHandlerTest {
 			assertTrue(destMap.containsKey(path), "Key is missing in destMap");
 		}
 	}
+	
+	/**
+	 * Testmethode für {@link de.spiritscorp.DataSync.Model.FileHandler#getSyncFiles(java.util.Map, java.util.Map, java.nio.file.Path, java.nio.file.Path, java.util.Map)}.
+	 * @throws IOException 
+	 */
+	@Test
+	final void testGetSyncFiles() throws IOException {
+		ArrayList<Map<Path, FileAttributes>> expectedValues = helper.createSyncMap(sourceMap, destMap, syncMap);
+		Map<Path, FileAttributes> expectedCopySource = expectedValues.get(0);
+		Map<Path, FileAttributes> expectedCopyDest = expectedValues.get(1);
+		Map<Path, FileAttributes> expectedDel = expectedValues.get(2);
+
+		ArrayList<Map<Path,FileAttributes>> syncFiles = fileHandler.getSyncFiles(sourceMap, destMap, path.resolve("source"), path.resolve("dest"), syncMap);
+		Map<Path, FileAttributes> actualCopySource = syncFiles.get(0);
+		Map<Path, FileAttributes> actualCopyDest = syncFiles.get(1);
+		Map<Path, FileAttributes> actualDel = syncFiles.get(2);
+		
+		for(Entry<Path, FileAttributes> entry : expectedCopySource.entrySet()) {
+			assertEquals(entry.getValue(), actualCopySource.get(entry.getKey()), entry.getValue().getRelativeFilePath() + " -> copySourceList is not as expected" );
+			actualCopySource.remove(entry.getKey());
+		}
+		for(Entry<Path, FileAttributes> entry : expectedCopyDest.entrySet()) {
+			assertEquals(entry.getValue(), actualCopyDest.get(entry.getKey()), entry.getValue().getRelativeFilePath() + " -> copyDestList is not as expected" );
+			actualCopyDest.remove(entry.getKey());
+		}
+		for(Entry<Path, FileAttributes> entry : expectedDel.entrySet()) {
+			assertEquals(entry.getValue(), actualDel.get(entry.getKey()), entry.getValue().getRelativeFilePath() + " -> delList is not as expected" );
+			actualDel.remove(entry.getKey());
+		}
+		
+		assertTrue(actualCopySource.isEmpty(), "sourceMap isn´t empty -> " + actualCopySource.size());
+		assertTrue(actualCopyDest.isEmpty(), "destMap isn´t empty -> " + actualCopyDest.size());
+		assertTrue(actualDel.isEmpty(), "delMap isn´t empty -> " + actualDel.size());
+	}	
+	
 
 	/**
 	 * Testmethode für {@link de.spiritscorp.DataSync.Model.FileHandler#deleteFiles(java.util.Map, boolean, boolean, java.nio.file.Path)}.

@@ -53,10 +53,13 @@ class FileVisit implements FileVisitor<Path> {
 	public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
 		if(dir != null) {
 			if(dir.endsWith("$RECYCLE.BIN") ||
-				dir.endsWith("Papierkorb")) {
-					Debug.PRINT_DEBUG("Skip_preVisitDirectory -> " + dir);
+				dir.endsWith("Papierkorb") || 
+				attrs.isSymbolicLink() ||
+				attrs.isOther()) {
+//					Debug.PRINT_DEBUG("Skip_preVisitDirectory -> " + dir);
 					return FileVisitResult.SKIP_SUBTREE;
-			}}
+			}
+		}
 		return FileVisitResult.CONTINUE;
 	}
 

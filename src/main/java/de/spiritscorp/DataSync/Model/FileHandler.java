@@ -29,7 +29,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -41,10 +40,13 @@ import de.spiritscorp.DataSync.IO.Logger;
 class FileHandler {
 	
 	private Logger log;
+	private int avgProc;		//	number of threads
 	
 	FileHandler(Logger log){
 		this.log = log;
+		avgProc = (Runtime.getRuntime().availableProcessors() > 3) ? ((int) (Runtime.getRuntime().availableProcessors() / 2 )) - 1 : 1;
 	}
+	
 	/**
 	 * List all files in the given directory and execute the filescan for attributes, and give back the results in a new Map
 	 * 
@@ -53,14 +55,13 @@ class FileHandler {
 	 * @param  subDir
 	 * @return <b>Map</b> </br>A map with FileAttributes
 	 */
-	Map<Path, FileAttributes> listFiles(ArrayList<Path> paths, ScanType deepScan, boolean subDir) {
-		Map<Path, FileAttributes> map = createMap();
+	void listFiles(ArrayList<Path> paths, Map<Path, FileAttributes> resultMap, ScanType deepScan, boolean subDir) {
 		ExecutorService executor = Executors.newSingleThreadExecutor();
 		for(Path path : paths) {
 			if(Files.exists(path)) {
 				try {	
-					if(subDir)		Files.walkFileTree(path, new FileVisit(executor, path.getParent(), map, deepScan));
-					else			Files.walkFileTree(path, new FileVisit(executor, path, map, deepScan));
+					if(subDir)		Files.walkFileTree(path, new FileVisit(executor, path.getParent(), resultMap, deepScan));
+					else			Files.walkFileTree(path, new FileVisit(executor, path, resultMap, deepScan));
 				}catch(IOException e) {e.printStackTrace();}
 			}
 		}
@@ -69,7 +70,6 @@ class FileHandler {
 			while (!executor.awaitTermination(100, TimeUnit.MILLISECONDS)) {}
 		} catch (InterruptedException e) {e.printStackTrace();}	
 		Debug.PRINT_DEBUG("listFiles() -> ready  %s -> %s", Thread.currentThread().getName(), paths.get(0).toString());
-		return map;
 	}
 
 	/**
@@ -80,7 +80,7 @@ class FileHandler {
 	 */
 	Map<Path, FileAttributes> findDuplicates(Map<Path, FileAttributes> sourceMap) {
 		Debug.PRINT_DEBUG("entryPaths -> %d", sourceMap.size());
-		Map<Path, FileAttributes> duplicateMap = createMap();
+		Map<Path, FileAttributes> duplicateMap = Model.createMap();
 
 		HashMap<Long, ArrayList<Path>> mapSize = new HashMap<>();
 		for(Map.Entry<Path, FileAttributes> entry: sourceMap.entrySet()) {
@@ -118,14 +118,14 @@ class FileHandler {
 	 * @param destMap
 	 */
 	void equalsFiles(Map<Path, FileAttributes> sourceMap, Map<Path, FileAttributes> destMap) {
+		Debug.PRINT_DEBUG("max mem: %d, free mem: %d, total mem: %d", Runtime.getRuntime().maxMemory(),Runtime.getRuntime().freeMemory(), Runtime.getRuntime().totalMemory());
 		if(sourceMap.size() != 0 && destMap.size() != 0) {		
 			Set<Path> sourceHitList = Collections.synchronizedSet(new HashSet<>());
 			Set<Path> destHitList = Collections.synchronizedSet(new HashSet<>());
-			int avProc = (Runtime.getRuntime().availableProcessors() > 3) ? ((int) (Runtime.getRuntime().availableProcessors() / 2 )) - 1 : 1;
 			if(sourceMap.size() > 30_000) {
-				ExecutorService executor = Executors.newFixedThreadPool(avProc * 2);
-				Map<Integer, Map<Path, FileAttributes>> splitSource = splitMap(sourceMap, avProc);
-				Map<Integer, Map<Path, FileAttributes>> splitDest = splitMap(destMap, avProc);
+				ExecutorService executor = Executors.newFixedThreadPool(avgProc * 2);
+				Map<Integer, Map<Path, FileAttributes>> splitSource = splitMap(sourceMap, avgProc);
+				Map<Integer, Map<Path, FileAttributes>> splitDest = splitMap(destMap, avgProc);
 				for(Map.Entry<Integer, Map<Path, FileAttributes>> source : splitSource.entrySet()) {
 					executor.execute(new Thread(() -> equalsMap(source.getValue(), destMap, sourceHitList)));
 				}
@@ -152,27 +152,58 @@ class FileHandler {
 			for (Path p : destHitList) {
 				destMap.remove(p);
 			}	
-			Debug.PRINT_DEBUG("full source hitList size: %d  && full destination hitList size: %d", sourceHitList.size(), destHitList.size());
+			Debug.PRINT_DEBUG("full source hitList size: %d  && full destination hitList size: %d",sourceMap.size(), destMap.size());
 		}
 	}
 	
-	Map<Path,FileAttributes> getFailtures(Map<Path,FileAttributes> sourceMap, Map<Path,FileAttributes> destMap){
-		Map<Path,FileAttributes> failMap = createMap();
-		if(sourceMap != null) {
-			for(Map.Entry<Path, FileAttributes> entry : sourceMap.entrySet()) {
-				if(entry.getValue().getFileHash().equals("Failed")) {
-					failMap.put(entry.getKey(), entry.getValue());
+	/**
+	 * Find out witch is the newest, or must delete and give back the result
+	 * 
+	 * @param sourceMap
+	 * @param destMap
+	 * @param startSourcePath
+	 * @param startDestPath
+	 * @param syncMap 
+	 * @return <b>ArrayList<Map<Path,FileAttributes>></b> </br>Give back the copySourceHitList, the copyDestHitList and the delHitList
+	 */
+	ArrayList<Map<Path,FileAttributes>> getSyncFiles(Map<Path, FileAttributes> sourceMap, Map<Path, FileAttributes> destMap, Path startSourcePath, Path startDestPath, Map<Path,FileAttributes> syncMap) {
+		Debug.PRINT_DEBUG("max mem: %d, free mem: %d, total mem: %d", Runtime.getRuntime().maxMemory(),Runtime.getRuntime().freeMemory(), Runtime.getRuntime().totalMemory());
+		ArrayList<Map<Path,FileAttributes>> resultValue = new ArrayList<>();
+		ArrayList<Map<Path,FileAttributes>> destValue = new ArrayList<>();
+		Map<Path, FileAttributes> copySourceHitList = Model.createMap();
+		Map<Path, FileAttributes> copyDestHitList = Model.createMap();
+		Map<Path, FileAttributes> delHitList = Model.createMap();
+
+		resultValue.add(copySourceHitList);
+		resultValue.add(copyDestHitList);
+		resultValue.add(delHitList);
+		destValue.add(copyDestHitList);
+		destValue.add(copySourceHitList);
+		destValue.add(delHitList);
+		if(sourceMap.size() > 0 || destMap.size() > 0) {
+			if(sourceMap.size() > 30.000 || destMap.size() > 30000) {
+				ExecutorService executor = Executors.newFixedThreadPool(avgProc * 2);
+				Map<Integer, Map<Path, FileAttributes>> splitSource = splitMap(sourceMap, avgProc);
+				Map<Integer, Map<Path, FileAttributes>> splitDest = splitMap(destMap, avgProc);
+			
+				for(Map.Entry<Integer, Map<Path, FileAttributes>> source : splitSource.entrySet()) {
+					executor.execute(new Thread(() -> syncMaps(source.getValue(), destMap, resultValue, startDestPath, syncMap)));
 				}
-			}
-		}
-		if(destMap != null) {
-			for(Map.Entry<Path, FileAttributes> entry : destMap.entrySet()) {
-				if(entry.getValue().getFileHash().equals("Failed")) {
-					failMap.put(entry.getKey(), entry.getValue());
+				for(Map.Entry<Integer, Map<Path, FileAttributes>> dest : splitDest.entrySet()) {
+					executor.execute(new Thread(() -> syncMaps(dest.getValue(), sourceMap, destValue, startSourcePath, syncMap)));
 				}
-			}		
+				executor.shutdown();
+				try {
+					while(!executor.awaitTermination(100, TimeUnit.MILLISECONDS)) {}
+				} catch (InterruptedException e) {e.printStackTrace();}
+				
+			}else {
+				syncMaps(sourceMap, destMap, resultValue, startDestPath, syncMap);
+				syncMaps(destMap, sourceMap, destValue, startSourcePath, syncMap);			
+				}
 		}
-		return failMap;
+		Debug.PRINT_DEBUG("full copySourceHitList size: %d  && full copyDestHitList size: %d  && full delHitList size: %d", copySourceHitList.size(), copyDestHitList.size(), delHitList.size());
+		return  resultValue;
 	}
 
 	/**
@@ -189,9 +220,14 @@ class FileHandler {
 					Files.createDirectories(trashbinPath.resolve(map.get(path).getRelativeFilePath()));
 					Files.copy(path, trashbinPath.resolve(map.get(path).getRelativeFilePath()), StandardCopyOption.REPLACE_EXISTING);
 				}
+				if(!path.toFile().canWrite())		path.toFile().setWritable(true);
 				Files.delete(path);
-			}catch(IOException e) {e.printStackTrace();}
-			log.setEntry(path.toString(), "gelöscht", map.get(path));
+				log.setEntry(path.toString(), "gelöscht", map.get(path));
+			}catch(IOException e) {
+				log.setEntry(path.toString(), "FEHLER BEIM LÖSCHEN", map.get(path));
+				Debug.PRINT_DEBUG("delete failed: %s", path.toString());
+				e.printStackTrace();
+			}
 		}
 		map.clear();
 		if(logOn) log.printStatus();	
@@ -207,17 +243,19 @@ class FileHandler {
 		for (Map.Entry<Path, FileAttributes> entry : map.entrySet()) {
 			Path path = destPath.resolve(entry.getValue().getRelativeFilePath());
 			try {
-				if(!Files.exists(path.getParent()))	Files.createDirectories(path.getParent());
+				if(!Files.exists(path.getParent())) 									Files.createDirectories(path.getParent());
+				else 
+					if(Files.exists(path) && !path.toFile().canWrite())  		path.toFile().setWritable(true) ;	
 				Files.copy(
 						entry.getKey(), 
 						path,
 						StandardCopyOption.REPLACE_EXISTING, 
 						StandardCopyOption.COPY_ATTRIBUTES);				
-				Files.setAttribute(path, "creationTime", entry.getValue().getCreateTimeFileTime());
+				Files.setAttribute(path, "creationTime", entry.getValue().getCreateTime());
 				log.setEntry(path.toString(), "kopiert", entry.getValue());
 			}catch(IOException e) {
-				if(logOn) log.setEntry(path.toString(), "FEHLER BEIM KOPIEREN", entry.getValue());
-				Debug.PRINT_DEBUG("copy failed: %s, %s", e.getMessage(), path.toString());
+				log.setEntry(path.toString(), "FEHLER BEIM KOPIEREN", entry.getValue());
+				Debug.PRINT_DEBUG("copy failed: %s", path.toString());
 				e.printStackTrace();
 			}
 		}
@@ -231,27 +269,62 @@ class FileHandler {
 	 * @param iterateMap The splitMap
 	 * @param fullMap 
 	 * @param hitList Set with the hits
-	 * @param mapName
 	 */
 	private void equalsMap(Map<Path, FileAttributes> iterateMap, Map<Path, FileAttributes> fullMap, Set<Path> hitList) {
-		Map<Path, FileAttributes> tempMap = Map.copyOf(fullMap);
 		for (Map.Entry<Path, FileAttributes> entry : iterateMap.entrySet()) {
-			if(tempMap.containsValue(entry.getValue())) {
+			if(fullMap.containsValue(entry.getValue())) {
+//			if(fullMap.get(entry.getKey()) != null && fullMap.get(entry.getKey()).equals(entry.getValue()) ) {
 				hitList.add(entry.getKey());
 			}
 		}		
 	}
 	
 	/**
+	 * the algorithm to find out witch file must be deleted, or copy
+	 * 
+	 * @param sourceMap 
+	 * @param destMap
+	 * @param resultValue
+	 * @param startDestPath
+	 * @param syncMap
+	 */
+	private void syncMaps(Map<Path, FileAttributes> sourceMap, Map<Path, FileAttributes> destMap, ArrayList<Map<Path, FileAttributes>> resultValue, Path startDestPath, Map<Path,FileAttributes> syncMap) {
+		Map<Path, FileAttributes> copySourceHitList = resultValue.get(0);
+		Map<Path, FileAttributes> copyDestHitList = resultValue.get(1);
+		Map<Path, FileAttributes> delHitList = resultValue.get(2);
+	
+		
+		for(Map.Entry<Path, FileAttributes> entry : sourceMap.entrySet()) {
+			Path relativePath = entry.getValue().getRelativeFilePath();
+			Path destPath = startDestPath.resolve(relativePath);
+			FileAttributes attributes = syncMap.get(relativePath);
+			
+
+			if(attributes == null && destMap.get(destPath) == null) {
+				copySourceHitList.put(entry.getKey(), entry.getValue());
+			}else if(attributes != null && destMap.get(destPath) == null) {
+				delHitList.put(entry.getKey(), entry.getValue());
+			}else if(attributes != null && !(entry.getValue().equals(attributes))) {
+				if(entry.getValue().getModTime().toMillis() > destMap.get(destPath).getModTime().toMillis()){
+					copySourceHitList.put(entry.getKey(), entry.getValue());
+				}else {
+					copyDestHitList.put(destPath, destMap.get(destPath));
+				}
+			}
+		}
+	}
+	
+	/**
 	 * splits the map depending on the processor cores
 	 * 
 	 * @param map
+	 * @param avProc		number of threads
 	 * @return  <b>Map</b> </br>The map with split maps
 	 */
 	private Map<Integer, Map<Path, FileAttributes>> splitMap(Map<Path, FileAttributes> map, int avProc) {
-		Map<Integer, Map<Path, FileAttributes>> splitedMaps = createMap();
+		Map<Integer, Map<Path, FileAttributes>> splitedMaps = Model.createMap();
 		for(int i = 0; i < avProc; i++) {
-			splitedMaps.put(i, createMap());
+			splitedMaps.put(i, Model.createMap());
 		}
 		int split = ((int) map.size() / avProc) + 20;
 		int i = 0;
@@ -267,15 +340,5 @@ class FileHandler {
 			}
 		}
 		return splitedMaps;
-	}
-	
-	/**
-	 * 
-	 * @param <K>
-	 * @param <V>
-	 * @return Collections.synchronizedMap(new TreeMap<>())
-	 */
-	private <K, V> Map<K, V> createMap(){
-		return Collections.synchronizedMap(new TreeMap<>());
 	}
 }

@@ -22,28 +22,29 @@ package de.spiritscorp.DataSync.Model;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 
-public class FileAttributes implements Comparable<FileAttributes> {
+public final class FileAttributes implements Comparable<FileAttributes> {
 
 	private final Path relativeFilePath;
 	private final String fileName;
-	private final String createTime, modTime;
+	private final String createTimeString, modTimeString;
 	private final long size;
 	private final String fileHash;
-	private final FileTime createTimeFileTime;
+	private final FileTime createTime, modTime;
 	
 	/**
 	 * 
 	 * @param relativeFilePath 		Relative from the begin of source or destination path
-	 * @param createTime			create time of file
-	 * @param modTime				last modified time of file
+	 * @param createTimeString		create time of file
+	 * @param modTimeString			last modified time of file
 	 * @param size					File size
 	 * @param fileHash				hash of the file with SHA 256 or higher
 	 */
-	public FileAttributes(Path relativeFilePath, String createTime, FileTime createTimeFileTime, String modTime, long size, String fileHash) {
+	public FileAttributes(Path relativeFilePath, String createTimeString, FileTime createTime, String modTimeString, FileTime modTime, long size, String fileHash) {
 		this.relativeFilePath = relativeFilePath;
 		fileName = relativeFilePath.getFileName().toString();
-		this.createTimeFileTime = createTimeFileTime;
 		this.createTime = createTime;
+		this.createTimeString = createTimeString;
+		this.modTimeString = modTimeString;
 		this.modTime = modTime;
 		this.size = size;
 		this.fileHash = fileHash;
@@ -65,10 +66,10 @@ public class FileAttributes implements Comparable<FileAttributes> {
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((createTime == null) ? 0 : createTime.hashCode());
+		result = prime * result + ((createTimeString == null) ? 0 : createTimeString.hashCode());
 		result = prime * result + ((fileName == null) ? 0 : fileName.hashCode());
 		result = prime * result + ((relativeFilePath == null) ? 0 : relativeFilePath.hashCode());
-		result = prime * result + ((modTime == null) ? 0 : modTime.hashCode());
+		result = prime * result + ((modTimeString == null) ? 0 : modTimeString.hashCode());
 		result = prime * result + (int) (size ^ (size >>> 32));
 		return result;
 	}
@@ -97,24 +98,34 @@ public class FileAttributes implements Comparable<FileAttributes> {
 				return false;
 		} else if (!relativeFilePath.equals(other.relativeFilePath))
 			return false;
-		if (modTime == null) {
-			if (other.modTime != null)
+		if (modTimeString == null) {
+			if (other.modTimeString != null)
 				return false;
-		} else if (!modTime.equals(other.modTime))
+		} else if (!modTimeString.equals(other.modTimeString))
 			return false;
 		if (size != other.size)
 			return false;
 		return true;
 	}
 	
+	@Override
+	public String toString() {
+		return "FileAttributes [fileName=" + fileName + ", relativeFilePath=" + relativeFilePath + ", createTimeString="
+				+ createTimeString + ", modTimeString=" + modTimeString + ", size=" + size + ", fileHash=" + fileHash
+				+ ", createTime=" + createTime + ", modTime=" + modTime + "]";
+	}
+
 	public Path getRelativeFilePath() {
 		return relativeFilePath;
 	}
-	public String getModTime() {
+	public String getModTimeString() {
+		return modTimeString;
+	}
+	public FileTime getModTime() {
 		return modTime;
 	}
-	public String getCreateTime() {
-		return createTime;
+	public String getCreateTimeString() {
+		return createTimeString;
 	}
 	public long getSize() {
 		return size;
@@ -125,7 +136,7 @@ public class FileAttributes implements Comparable<FileAttributes> {
 	public String getFileName() {
 		return fileName;
 	}
-	public FileTime getCreateTimeFileTime() {
-		return createTimeFileTime;
+	public FileTime getCreateTime() {
+		return createTime;
 	}	
 }

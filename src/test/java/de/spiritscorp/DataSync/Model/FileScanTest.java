@@ -47,7 +47,7 @@ class FileScanTest {
 	FileTime modTime = FileTime.fromMillis(1641335619384L);
 	FileTime accessTime = FileTime.fromMillis(1641335620384L);
 	HashMap<Path,FileAttributes> map = new HashMap<>();
-	TestHelper helper = new TestHelper();
+	TestHelper helper = new TestHelper(path);
 	
 
 	/**
@@ -86,7 +86,7 @@ class FileScanTest {
 		for(Map.Entry<Path, FileAttributes> entry : map.entrySet()) {
 			assertEquals(path.resolve(file), entry.getKey(), "Map Key / Pfad falsch!!");
 			assertEquals(size, entry.getValue().getSize(), "File Size passt nicht");
-			assertEquals(helper.fileTimeToString(modTime), entry.getValue().getModTime(), "ModifiedTime passt nicht");
+			assertEquals(helper.fileTimeToString(modTime), entry.getValue().getModTimeString(), "ModifiedTime passt nicht");
 			assertEquals(file, entry.getValue().getRelativeFilePath(), "RelativePath passt nicht");
 			assertNull(entry.getValue().getFileHash(), "FileHash falscher Wert");
 		}
@@ -95,7 +95,7 @@ class FileScanTest {
 		for(Map.Entry<Path, FileAttributes> entry : map.entrySet()) {
 			assertEquals(path.resolve(file), entry.getKey(), "Map Key / Pfad falsch!!");
 			assertEquals(size, entry.getValue().getSize(), "File Size passt nicht");
-			assertEquals(helper.fileTimeToString(modTime), entry.getValue().getModTime(), "ModifiedTime passt nicht");
+			assertEquals(helper.fileTimeToString(modTime), entry.getValue().getModTimeString(), "ModifiedTime passt nicht");
 			assertEquals(file, entry.getValue().getRelativeFilePath(), "RelativePath passt nicht");
 			assertEquals(fileHash, entry.getValue().getFileHash(), "FileHash falscher Wert");
 		}

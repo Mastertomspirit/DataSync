@@ -278,6 +278,13 @@ public class View extends JFrame {
 		if(!pref.isBgSync()) bgTimeComboBox.setEnabled(false);
 		bgTimeComboBox.addActionListener(event);
 		
+		if(pref.getDeepScan() == ScanType.SYNCHRONIZE) {
+			autoDelCheck.setEnabled(false);
+			autoSyncCheck.setEnabled(false);
+			trashbinCheck.setEnabled(false);
+			logOnBox.setEnabled(false);
+		}
+		
 		GroupLayout gl_contentPane = new GroupLayout(contentPane);
 		gl_contentPane.setHorizontalGroup(
 			gl_contentPane.createParallelGroup(Alignment.LEADING)

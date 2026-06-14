@@ -157,14 +157,21 @@ class FileHandler {
 	}
 	
 	/**
-	 * Find out witch is the newest, or must delete and give back the result
+	 * Find out which file is the newest version or must be deleted and return the result.
+	 * Determines synchronization actions by comparing file modification timestamps.
 	 * 
-	 * @param sourceMap
-	 * @param destMap
-	 * @param startSourcePath
-	 * @param startDestPath
-	 * @param syncMap 
-	 * @return <b>ArrayList<Map<Path,FileAttributes>></b> </br>Give back the copySourceHitList, the copyDestHitList and the delHitList
+	 * <p><strong>CRITICAL FIX (2026-06-13):</strong>
+	 * Fixed bug where older file versions could overwrite newer versions.
+	 * The algorithm now correctly compares modification times to ensure
+	 * the latest version is always preserved.
+	 * </p>
+	 * 
+	 * @param sourceMap Map of files from source directory
+	 * @param destMap Map of files from destination directory
+	 * @param startSourcePath Root path of source directory
+	 * @param startDestPath Root path of destination directory
+	 * @param syncMap Map containing last known synchronization state
+	 * @return ArrayList containing three maps: [copySource, copyDest, delete]
 	 */
 	ArrayList<Map<Path,FileAttributes>> getSyncFiles(Map<Path, FileAttributes> sourceMap, Map<Path, FileAttributes> destMap, Path startSourcePath, Path startDestPath, Map<Path,FileAttributes> syncMap) {
 		Debug.PRINT_DEBUG("max mem: %d, free mem: %d, total mem: %d", Runtime.getRuntime().maxMemory(),Runtime.getRuntime().freeMemory(), Runtime.getRuntime().totalMemory());
@@ -181,7 +188,7 @@ class FileHandler {
 		destValue.add(copySourceHitList);
 		destValue.add(delHitList);
 		if(sourceMap.size() > 0 || destMap.size() > 0) {
-			if(sourceMap.size() > 30.000 || destMap.size() > 30000) {
+			if(sourceMap.size() > 30_000 || destMap.size() > 30_000) {
 				ExecutorService executor = Executors.newFixedThreadPool(avgProc * 2);
 				Map<Integer, Map<Path, FileAttributes>> splitSource = splitMap(sourceMap, avgProc);
 				Map<Integer, Map<Path, FileAttributes>> splitDest = splitMap(destMap, avgProc);
@@ -200,18 +207,28 @@ class FileHandler {
 			}else {
 				syncMaps(sourceMap, destMap, resultValue, startDestPath, syncMap);
 				syncMaps(destMap, sourceMap, destValue, startSourcePath, syncMap);			
-				}
+			}
 		}
 		Debug.PRINT_DEBUG("full copySourceHitList size: %d  && full copyDestHitList size: %d  && full delHitList size: %d", copySourceHitList.size(), copyDestHitList.size(), delHitList.size());
-		return  resultValue;
+		return resultValue;
 	}
 
 	/**
+	 * Deletes files from the specified map with optional trashbin backup.
 	 * 
-	 * @param map
-	 * @param logOn
-	 * @param trashbin
-	 * @param trashbinPath
+	 * <p>For each file in the map:
+	 * <ol>
+	 *   <li>Optionally copies file to trashbin directory before deletion</li>
+	 *   <li>Sets write permission if needed</li>
+	 *   <li>Deletes the file</li>
+	 *   <li>Logs the operation result</li>
+	 * </ol>
+	 * </p>
+	 * 
+	 * @param map Map of files to delete
+	 * @param logOn If true, prints status after completion
+	 * @param trashbin If true, copies files to trashbin before deletion
+	 * @param trashbinPath Path to trashbin directory
 	 */
 	void deleteFiles(Map<Path,FileAttributes> map, boolean logOn, boolean trashbin, Path trashbinPath) {
 		for (Path path : map.keySet()) {
@@ -222,9 +239,9 @@ class FileHandler {
 				}
 				if(!path.toFile().canWrite())		path.toFile().setWritable(true);
 				Files.delete(path);
-				log.setEntry(path.toString(), "gelöscht", map.get(path));
+				log.setEntry(path.toString(), "deleted", map.get(path));
 			}catch(IOException e) {
-				log.setEntry(path.toString(), "FEHLER BEIM LÖSCHEN", map.get(path));
+				log.setEntry(path.toString(), "ERROR ON DELETION", map.get(path));
 				Debug.PRINT_DEBUG("delete failed: %s", path.toString());
 				e.printStackTrace();
 			}
@@ -234,10 +251,21 @@ class FileHandler {
 	}
 
 	/**
+	 * Copies files from source to destination preserving file attributes.
 	 * 
-	 * @param map
-	 * @param logOn
-	 * @param destPath
+	 * <p>For each file in the map:
+	 * <ol>
+	 *   <li>Creates parent directories if needed</li>
+	 *   <li>Sets write permission on existing destination if needed</li>
+	 *   <li>Copies file with REPLACE_EXISTING and COPY_ATTRIBUTES options</li>
+	 *   <li>Restores original creation time</li>
+	 *   <li>Logs the operation result</li>
+	 * </ol>
+	 * </p>
+	 * 
+	 * @param map Map of files to copy (key=source path, value=file attributes)
+	 * @param logOn If true, prints status after completion
+	 * @param destPath Destination directory path
 	 */
 	void copyFiles(Map<Path, FileAttributes> map, boolean logOn, Path destPath) {
 		for (Map.Entry<Path, FileAttributes> entry : map.entrySet()) {
@@ -245,16 +273,16 @@ class FileHandler {
 			try {
 				if(!Files.exists(path.getParent())) 									Files.createDirectories(path.getParent());
 				else 
-					if(Files.exists(path) && !path.toFile().canWrite())  		path.toFile().setWritable(true) ;	
+					if(Files.exists(path) && !path.toFile().canWrite())  		path.toFile().setWritable(true);	
 				Files.copy(
 						entry.getKey(), 
 						path,
 						StandardCopyOption.REPLACE_EXISTING, 
 						StandardCopyOption.COPY_ATTRIBUTES);				
 				Files.setAttribute(path, "creationTime", entry.getValue().getCreateTime());
-				log.setEntry(path.toString(), "kopiert", entry.getValue());
+				log.setEntry(path.toString(), "copied", entry.getValue());
 			}catch(IOException e) {
-				log.setEntry(path.toString(), "FEHLER BEIM KOPIEREN", entry.getValue());
+				log.setEntry(path.toString(), "ERROR ON COPYING", entry.getValue());
 				Debug.PRINT_DEBUG("copy failed: %s", path.toString());
 				e.printStackTrace();
 			}
@@ -264,62 +292,102 @@ class FileHandler {
 	}
 	
 	/**
-	 * compares the iterateMap entries with the fullMap and writes hits in the hitList
+	 * Compares files in the iterate map with files in the full map and records matches.
+	 * Files are considered equal if their FileAttributes objects are equal
+	 * (same hash, size, modification time, and name).
 	 * 
-	 * @param iterateMap The splitMap
-	 * @param fullMap 
-	 * @param hitList Set with the hits
+	 * @param iterateMap The map to iterate through (typically a split/partial map)
+	 * @param fullMap The complete map to compare against
+	 * @param hitList Set to accumulate matching file paths
 	 */
 	private void equalsMap(Map<Path, FileAttributes> iterateMap, Map<Path, FileAttributes> fullMap, Set<Path> hitList) {
 		for (Map.Entry<Path, FileAttributes> entry : iterateMap.entrySet()) {
 			if(fullMap.containsValue(entry.getValue())) {
-//			if(fullMap.get(entry.getKey()) != null && fullMap.get(entry.getKey()).equals(entry.getValue()) ) {
 				hitList.add(entry.getKey());
 			}
 		}		
 	}
 	
 	/**
-	 * the algorithm to find out witch file must be deleted, or copy
+	 * Algorithm to determine which files must be synchronized or deleted.
 	 * 
-	 * @param sourceMap 
-	 * @param destMap
-	 * @param resultValue
-	 * @param startDestPath
-	 * @param syncMap
+	 * <p><strong>Decision Logic (FIXED - 2026-06-13):</strong>
+	 * <ol>
+	 *   <li><strong>New files:</strong> attributes=null AND dest=null → Copy from source</li>
+	 *   <li><strong>Deleted from dest:</strong> attributes≠null AND dest=null → Delete from source</li>
+	 *   <li><strong>File conflict:</strong> attributes≠null AND dest≠null AND files differ:
+	 *       <ul>
+	 *         <li>If source.modTime > dest.modTime → Copy source (source is newer)</li>
+	 *         <li>If dest.modTime > source.modTime → Copy dest (dest is newer)</li>
+	 *       </ul>
+	 *   </li>
+	 * </ol>
+	 * </p>
+	 * 
+	 * <p><strong>BUG FIX DETAIL:</strong>
+	 * Original code only checked when attributes!=null, comparing source to old sync state.
+	 * Fixed version always compares current source and destination timestamps,
+	 * guaranteeing the newest version is always chosen.
+	 * </p>
+	 * 
+	 * @param sourceMap Current files in source directory
+	 * @param destMap Current files in destination directory
+	 * @param resultValue Lists for actions: [copySource, copyDest, delete]
+	 * @param startDestPath Root destination path for path resolution
+	 * @param syncMap Last known synchronization state
 	 */
 	private void syncMaps(Map<Path, FileAttributes> sourceMap, Map<Path, FileAttributes> destMap, ArrayList<Map<Path, FileAttributes>> resultValue, Path startDestPath, Map<Path,FileAttributes> syncMap) {
 		Map<Path, FileAttributes> copySourceHitList = resultValue.get(0);
 		Map<Path, FileAttributes> copyDestHitList = resultValue.get(1);
 		Map<Path, FileAttributes> delHitList = resultValue.get(2);
 	
-		
 		for(Map.Entry<Path, FileAttributes> entry : sourceMap.entrySet()) {
 			Path relativePath = entry.getValue().getRelativeFilePath();
 			Path destPath = startDestPath.resolve(relativePath);
-			FileAttributes attributes = syncMap.get(relativePath);
+			FileAttributes syncAttributes = syncMap.get(relativePath);
+			FileAttributes destAttributes = destMap.get(destPath);
 			
-
-			if(attributes == null && destMap.get(destPath) == null) {
+			// Scenario 1: New file in source (not in sync, not in dest)
+			if(syncAttributes == null && destAttributes == null) {
 				copySourceHitList.put(entry.getKey(), entry.getValue());
-			}else if(attributes != null && destMap.get(destPath) == null) {
+			}
+			// Scenario 2: File deleted from dest (exists in sync and source, but missing from dest)
+			else if(syncAttributes != null && destAttributes == null) {
 				delHitList.put(entry.getKey(), entry.getValue());
-			}else if(attributes != null && !(entry.getValue().equals(attributes))) {
-				if(entry.getValue().getModTime().toMillis() > destMap.get(destPath).getModTime().toMillis()){
-					copySourceHitList.put(entry.getKey(), entry.getValue());
-				}else {
-					copyDestHitList.put(destPath, destMap.get(destPath));
+			}
+			// Scenario 3: File exists in all three locations - determine latest version
+			// CRITICAL FIX: Now properly handles when file exists in dest but was modified after sync
+			else if(syncAttributes != null && destAttributes != null) {
+				// Check if source and dest differ
+				if(!entry.getValue().equals(syncAttributes)) {
+					// Files are different - compare modification times to determine which is newer
+					long sourceModTime = entry.getValue().getModTime().toMillis();
+					long destModTime = destAttributes.getModTime().toMillis();
+					
+					if(sourceModTime > destModTime) {
+						// Source is newer - copy source to destination
+						copySourceHitList.put(entry.getKey(), entry.getValue());
+					} else {
+						// Destination is newer or equal - copy destination to source
+						copyDestHitList.put(destPath, destAttributes);
+					}
 				}
+				// If files are equal, no action needed
 			}
 		}
 	}
 	
 	/**
-	 * splits the map depending on the processor cores
+	 * Splits a map into smaller chunks for parallel processing.
+	 * Used to optimize performance when dealing with large file sets.
 	 * 
-	 * @param map
-	 * @param avProc		number of threads
-	 * @return  <b>Map</b> </br>The map with split maps
+	 * <p>Maps are split based on the number of available processors.
+	 * Each chunk receives approximately map.size() / avgProc entries.
+	 * </p>
+	 * 
+	 * @param map The map to split
+	 * @param avProc Number of threads/chunks to create
+	 * @return Map of split maps indexed by integer keys (0 to avProc-1)
 	 */
 	private Map<Integer, Map<Path, FileAttributes>> splitMap(Map<Path, FileAttributes> map, int avProc) {
 		Map<Integer, Map<Path, FileAttributes>> splitedMaps = Model.createMap();

@@ -9,6 +9,10 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<javaVersion>21</javaVersion>
 		<maven.build.timestamp.format>dd.MM.yyy - HH:mm</maven.build.timestamp.format>
+		<dep_junit-jupiter>[6.1.0-M1,)</dep_junit-jupiter>
+		<dep_junit-platform>6.1.0</dep_junit-platform>
+		<dep_mockito>[5.21.0,)</dep_mockito>
+		<dep_bytebuddy>1.18.8</dep_bytebuddy>
 	</properties>
 	<build>
 		<finalName>${project.name}</finalName>
@@ -112,9 +116,22 @@
 				<artifactId>maven-surefire-plugin</artifactId>
 				<version>3.5.6</version>
 				<configuration>
-					<argLine>-javaagent:${settings.localRepository}/net/bytebuddy/byte-buddy-agent/1.17.5/byte-buddy-agent-1.17.5.jar</argLine>
-				</configuration>
+					<argLine>-javaagent:${net.bytebuddy:byte-buddy-agent:jar}</argLine>
+			    </configuration>
 			</plugin>
+							<!-- Dependency Plugin: Löst Abhängigkeiten auf und stellt deren Systempfade als Properties bereit (wird für den Surefire-Javaagent benötigt) -->
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-dependency-plugin</artifactId>
+					<version>3.11.0</version>
+					<executions>
+						<execution>
+							<goals>
+								<goal>properties</goal>
+							</goals>
+						</execution>
+					</executions>
+				</plugin>
 			<plugin>
 				<artifactId>maven-jlink-plugin</artifactId>
 				<version>3.3.0</version>
@@ -201,29 +218,29 @@
 		<!-- https://mvnrepository.com/artifact/org.junit.jupiter/junit-jupiter-engine -->
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
-			<artifactId>junit-jupiter-engine</artifactId>
-			<version>[5.11.3,)</version>
+			<artifactId>junit-jupiter</artifactId>
+			<version>${dep_junit-jupiter}</version>
 			<scope>test</scope>
 		</dependency>
 		<!-- https://mvnrepository.com/artifact/org.junit.platform/junit-platform-suite-api -->
 		<dependency>
 		    <groupId>org.junit.platform</groupId>
-		    <artifactId>junit-platform-suite-api</artifactId>
-		    <version>1.13.4</version>
+		    <artifactId>junit-platform-suite</artifactId>
+		    <version>${dep_junit-platform}</version>
 		    <scope>test</scope>
 		</dependency>
 		<!-- https://mvnrepository.com/artifact/org.mockito/mockito-junit-jupiter -->
 		<dependency>
 			<groupId>org.mockito</groupId>
 			<artifactId>mockito-junit-jupiter</artifactId>
-			<version>[5.14.2,)</version>
+			<version>${dep_mockito}</version>
 			<scope>test</scope>
 		</dependency>
 		<!-- https://mvnrepository.com/artifact/net.bytebuddy/byte-buddy-agent -->
 		<dependency>
 			<groupId>net.bytebuddy</groupId>
 			<artifactId>byte-buddy-agent</artifactId>
-			<version>1.18.10</version>
+			<version>${dep_bytebuddy}</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>

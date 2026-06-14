@@ -27,7 +27,6 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Map;
 
 import javax.swing.JOptionPane;
@@ -52,10 +51,14 @@ class ControllerHelper {
 	 * 
 	 * @param model	The model
 	 * @param pref The preferences
+	 * @param sourceMap
+	 * @param destMap
 	 */
-	ControllerHelper(final Model model, final Preference pref){
+	ControllerHelper(final Model model, final Preference pref, Map<Path,FileAttributes> sourceMap, Map<Path,FileAttributes> destMap){
 		this.model = model;
 		this.pref = pref;
+		this.sourceMap = sourceMap;
+		this.destMap = destMap;
 		scanRun = false;
 	}
 
@@ -81,7 +84,7 @@ class ControllerHelper {
 				sourcePaths.add(new FileChooser("Quell", preferendPath).getSelectedFile().toPath());
 				i++;
 			}catch(NullPointerException ne) {}
-		}while(JOptionPane.showConfirmDialog(view, "Einen weiteren Ordner hinzufügen?", "Multiauswahl bestätigen", 0,3) == 0);		
+		}while((pref.getDeepScan() == ScanType.SYNCHRONIZE) ? false : (JOptionPane.showConfirmDialog(view, "Einen weiteren Ordner hinzufügen?", "Multiauswahl bestätigen", 0,3) == 0));		
 		try {
 			if(sourcePaths.isEmpty()) throw new NullPointerException();
 			if(sourcePaths.size() > 1 && (JOptionPane.showConfirmDialog(view, "Unterordner im Zielverzeichnis erstellen?", "Unterordner Erstellung", 0, 3) == 0)) {
@@ -108,6 +111,7 @@ class ControllerHelper {
 			pref.setDestPath(destPaths);
 			view.setDestLabel(path.toAbsolutePath().toString());
 			pref.setStartDestPath(path);
+			pref.setStartSourcePath(sourcePaths.get(0));
 			view.getTrashbinCheck().setToolTipText(pref.getTrashbinPath().toString());
 		}catch(NullPointerException ne) {
 			view.setTextArea("Auswählen abgebrochen");
@@ -115,11 +119,61 @@ class ControllerHelper {
 	}
 	
 	/**
-	 * Scan the directories and synchronize it
+	 * 
+	 * Scan the directories and synchronize the newest and deleted files between start and dest 
+	 * 
+	 * @param view
+	 */
+	void startSyncronize(View view) {
+		scanRun = true;
+		view.setScanRun(true);
+
+		Path startDestPath = pref.getStartDestPath();
+		Path startSourcePath = pref.getStartSourcePath();
+		Long[] stats = new Long[4];				
+		long startTime = System.nanoTime();
+		String scanTimeFormatted = "", syncTimeFormatted = "";
+
+	
+		if(Files.exists(startDestPath)) {
+			failMap = model.scanSyncFiles(pref.getSourcePath(), pref.getDestPath(), stats, pref.getDeepScan(), false, false);
+			ArrayList<Map<Path,FileAttributes>> result = model.getSyncFiles(pref.getSyncMap(), startSourcePath, startDestPath);
+			scanTimeFormatted = getEndTimeFormatted(System.nanoTime() - startTime) + " für das Scannen";
+			Debug.PRINT_DEBUG("sourceMap size = %d, destMap size = %d, failtures = %d", stats[0], stats[1], failMap.size());
+			view.setTextArea(formatMaps(pref.getDeepScan()));
+			view.setTextArea(String.format("Quelldateien: %d Stück und Zieldateien: %d Stück", stats[0], stats[1]));
+			view.setTextArea(String.format("Größe aller Quelldateien: %s      Größe aller Zieldateien: %s", getReadableBytes(stats[2]), getReadableBytes(stats[3])));
+			view.setTextArea(String.format("Fehlerhafter Zugriff: %d", failMap.size()));
+			
+			startTime = System.nanoTime();
+			if(model.syncFiles(result, pref.getSyncMap(), startSourcePath, startDestPath, false)) {
+				syncTimeFormatted = getEndTimeFormatted(System.nanoTime() - startTime) + " für das Syncronisieren";
+				view.setTextArea(scanTimeFormatted);
+				view.setTextArea(syncTimeFormatted);
+				view.setTextArea("Syncronisation erfolgreich!");
+				pref.saveLastScanTime();
+			}else {
+				syncTimeFormatted = getEndTimeFormatted(System.nanoTime() - startTime) + " für das Syncronisieren";
+				view.setTextArea(scanTimeFormatted);
+				view.setTextArea(syncTimeFormatted);
+				view.setTextArea("Syncronisation fehlgeschlagen!");
+			}
+		}else {
+			view.setTextArea("Kein Ziellaufwerk vorhanden");
+		}
+		Debug.PRINT_DEBUG(scanTimeFormatted);
+		Debug.PRINT_DEBUG(syncTimeFormatted);
+		scanRun = false;
+		view.setScanRun(false);
+	}
+	
+	
+	/**
+	 * Scan the directories and backup it
 	 * 
 	 * @param view The view
 	 */
-	void startSync(View view) {
+	void startBackup(View view) {
 				scanRun = true;
 				view.setScanRun(true);
 
@@ -130,18 +184,17 @@ class ControllerHelper {
 				boolean logOn = pref.isLogOn();
 				Long[] stats = new Long[4];				
 				long startTime = System.nanoTime();
+				String scanTimeFormatted = "", backupTimeFormatted = "";
 				
 				if(Files.exists(startDestPath)) {			
-					HashMap<String, Map<Path, FileAttributes>> hashMap  = model.scanSyncFiles(pref.getSourcePath(), pref.getDestPath(), stats, pref.getDeepScan(), pref.isSubDir(), pref.isTrashbin());
-					String endTimeFormatted = getEndTimeFormatted(System.nanoTime() - startTime);
-					sourceMap = hashMap.get("sourceMap");
-					destMap = hashMap.get("destMap");
-					failMap = hashMap.get("failMap");
+					failMap = model.scanSyncFiles(pref.getSourcePath(), pref.getDestPath(), stats, pref.getDeepScan(), pref.isSubDir(), pref.isTrashbin());
+					model.getEqualsFiles();		
+					scanTimeFormatted = getEndTimeFormatted(System.nanoTime() - startTime) + " für das Scannen";
+					Debug.PRINT_DEBUG("sourceMap size = %d, destMap size = %d, failtures = %d", stats[0], stats[1], failMap.size());
 					view.setTextArea(formatMaps(deepScan));
 					view.setTextArea(String.format("Quelldateien: %d Stück und Zieldateien: %d Stück", stats[0], stats[1]));
 					view.setTextArea(String.format("Größe aller Quelldateien: %s      Größe aller Zieldateien: %s", getReadableBytes(stats[2]), getReadableBytes(stats[3])));
 					view.setTextArea(String.format("Fehlerhafter Zugriff: %d", failMap.size()));
-					view.setTextArea(endTimeFormatted);
 
 					int del, ok;
 					if(pref.isAutoDel()) {
@@ -152,11 +205,18 @@ class ControllerHelper {
 					if(pref.isAutoSync()) ok = 0;
 					else ok = JOptionPane.showConfirmDialog(view, "Dateien Syncronisieren?", "Syncronisations Bestätigung", 0, 2);
 					if(ok == 0) {
-						if(model.syncFiles(del, logOn, startDestPath, trashbin, trashbinPath)) {
+						startTime = System.nanoTime();
+						if(model.backupFiles(del, logOn, startDestPath, trashbin, trashbinPath)) {
+							backupTimeFormatted = getEndTimeFormatted(System.nanoTime() - startTime) + " für das Syncronisieren";
+							view.setTextArea(scanTimeFormatted);
+							view.setTextArea(backupTimeFormatted);				
 							view.setTextArea("Syncronisation erfolgreich");
 							pref.saveLastScanTime();
 						}else {
-							view.setTextArea("Syncronisation fehlgeschlagen");
+							backupTimeFormatted = getEndTimeFormatted(System.nanoTime() - startTime) + " für das Syncronisieren";
+							view.setTextArea(scanTimeFormatted);
+							view.setTextArea(backupTimeFormatted);				
+							view.setTextArea("Syncronisation fehlgeschlagen!");
 						}
 					}else {
 						view.setTextArea("Syncronisation abgebrochen!");
@@ -164,6 +224,8 @@ class ControllerHelper {
 				}else {
 					view.setTextArea("Kein Ziellaufwerk vorhanden");
 				}
+				Debug.PRINT_DEBUG(scanTimeFormatted);
+				Debug.PRINT_DEBUG(backupTimeFormatted);
 				scanRun = false;
 				view.setScanRun(false);
 	}
@@ -177,10 +239,9 @@ class ControllerHelper {
 				scanRun = true;
 				view.setScanRun(true);
 				long startTime = System.nanoTime();
-				HashMap<String, Map<Path, FileAttributes>> hashMap = model.scanDublicates(pref.getSourcePath());
-				sourceMap  = hashMap.get("sourceMap");
-				failMap = hashMap.get("failMap");
-				String endTimeFormatted = getEndTimeFormatted(System.nanoTime() - startTime);
+				failMap = model.scanDublicates(pref.getSourcePath());
+				String scanTimeFormatted = getEndTimeFormatted(System.nanoTime() - startTime) + " für das Scannen";
+				Debug.PRINT_DEBUG("sourceMap size = %d, destMap size = %d, failtures = %d", sourceMap.size(), destMap.size(), failMap.size());
 				long space = 0;
 				for(Path p : sourceMap.keySet()) {
 					space += sourceMap.get(p).getSize();
@@ -189,9 +250,10 @@ class ControllerHelper {
 				view.setTextArea(formatMaps(ScanType.DUBLICATE_SCAN));
 				view.setTextArea("Duplicate gefunden: " + (sourceMap.size() / 2) + " Stück");
 				view.setTextArea("Doppelt belegter Speicherplatz: " + getReadableBytes(space));
-				view.setTextArea(endTimeFormatted);
+				view.setTextArea(scanTimeFormatted);
 				sourceMap.clear();
 				failMap.clear();
+				Debug.PRINT_DEBUG(scanTimeFormatted);
 				scanRun = false;
 				view.setScanRun(false);
 	}
@@ -238,6 +300,7 @@ class ControllerHelper {
 			Path pathTemp = Paths.get("linx1.txt").toAbsolutePath();
 			Path path = Paths.get("linx.txt").toAbsolutePath();
 			try {
+//		TODO
 				Files.writeString(pathTemp, value, StandardCharsets.UTF_8, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE);
 				Runtime.getRuntime().exec("mv " + pathTemp + " " + path);
 				if(set)	{
@@ -274,7 +337,10 @@ class ControllerHelper {
 		String line = System.lineSeparator();
 		StringBuffer sb = new StringBuffer();
 		final int displayLimit = 10000;
-		if(deepScan == ScanType.DUBLICATE_SCAN) {
+		if(deepScan == ScanType.SYNCHRONIZE) {
+			sb.append("Scan abgeschlossen!" + line);
+			sb.append("----------------------" + line);	
+		}else if(deepScan == ScanType.DUBLICATE_SCAN) {
 			sb.append("Scan abgeschlossen!" + line);
 			sb.append("Doppelte Dateien:" + line);
 			sb.append("----------------------" + line);
@@ -288,8 +354,8 @@ class ControllerHelper {
 							value.getFileName() + " , " +
 							entry.getKey().toString() + " , " + 
 							getReadableBytes(value.getSize()) + " , " +
-							value.getModTime() + " , " + 
-							value.getCreateTime() + " , " + 
+							value.getModTimeString() + " , " + 
+							value.getCreateTimeString() + " , " + 
 							line);
 					i++;
 					if(i > displayLimit) break;
@@ -312,8 +378,8 @@ class ControllerHelper {
 							value.getFileName() + " , " +
 							entry.getKey().toString() + " , " + 
 							getReadableBytes(value.getSize()) + " , " +
-							value.getModTime() + " , " + 
-							value.getCreateTime() + " , " + 
+							value.getModTimeString() + " , " + 
+							value.getCreateTimeString() + " , " + 
 							line);
 					i++;
 					if(i > displayLimit) break;
@@ -334,8 +400,8 @@ class ControllerHelper {
 					FileAttributes value = entry.getValue();
 					sb.append(value.getFileName() + " , " +
 								getReadableBytes(value.getSize()) + " , " +
-								value.getModTime() + " , " +
-								value.getCreateTime() + " , " +
+								value.getModTimeString() + " , " +
+								value.getCreateTimeString() + " , " +
 								value.getFileHash() + "  " +
 								"   " + entry.getKey().toString() +
 								line);
@@ -352,8 +418,8 @@ class ControllerHelper {
 					FileAttributes value = entry.getValue();
 					sb.append(value.getFileName() + " , " +
 							getReadableBytes(value.getSize()) + " , " +
-							value.getModTime() + " , " +
-							value.getCreateTime() + " , " +
+							value.getModTimeString() + " , " +
+							value.getCreateTimeString() + " , " +
 							value.getFileHash() + "  " +
 							"   " + entry.getKey().toString() +
 							line);
@@ -370,8 +436,8 @@ class ControllerHelper {
 					FileAttributes value = entry.getValue();
 					sb.append(value.getFileName() + " , " +
 							getReadableBytes(value.getSize()) + " , " +
-							value.getModTime() + " , " +
-							value.getCreateTime() + " , " +
+							value.getModTimeString() + " , " +
+							value.getCreateTimeString() + " , " +
 							value.getFileHash() + "  " +
 							"   " + entry.getKey().toString() +
 							line);
@@ -382,7 +448,7 @@ class ControllerHelper {
 		}
 		return new String(sb);
 	}
-	
+
 	/**
 	 * Formatting nanoseconds to hour, minutes, or seconds
 	 * 
@@ -410,5 +476,5 @@ class ControllerHelper {
 		else if(bytes > 1024)		return (bytes / 1024) + " KiB";
 		else if(bytes > 1)			return bytes + " bytes";
 		else						return bytes + " byte";
-	}	
+	}
 }

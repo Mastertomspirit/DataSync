@@ -53,8 +53,8 @@ public class Logger {
 	public void setEntry(String filePath, String changeStatus, FileAttributes fa) {
 		JsonObject jo = Json.createObjectBuilder()
 				.add("Dateiname", fa.getFileName())
-				.add("erstellt", fa.getCreateTime())
-				.add("zuletzt modifiziert", fa.getModTime())
+				.add("erstellt", fa.getCreateTimeString())
+				.add("zuletzt modifiziert", fa.getModTimeString())
 				.add("Größe", fa.getSize())
 				.add("Fingerabdruck" , (fa.getFileHash() == null) ? "null" : fa.getFileHash())
 				.build();	

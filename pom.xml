@@ -2,18 +2,35 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>de.spiritscorp</groupId>
 	<artifactId>DataSync</artifactId>
-	<version>0.9.6.0</version>
-	<name>DataSync</name>
+	<version>0.9.6.3</version>
+	<name>Data Sync</name>
 	<description>Application to synchronize your data</description>
+
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<javaVersion>21</javaVersion>
 		<maven.build.timestamp.format>dd.MM.yyy - HH:mm</maven.build.timestamp.format>
-		<dep_junit-jupiter>[6.1.0-M1,)</dep_junit-jupiter>
+
+        <!-- Plugin versions -->
+        <pl_antrun.version>3.2.0</pl_antrun.version>
+        <pl_compiler.version>3.15.0</pl_compiler.version>
+        <pl_jar.version>3.5.0</pl_jar.version>
+        <pl_assembly.version>3.8.0</pl_assembly.version>
+        <pl_surefire.version>3.5.6</pl_surefire.version>
+        <pl_dependency.version>3.11.0</pl_dependency.version>
+        <pl_jlink.version>3.3.0</pl_jlink.version>
+        <pl_jpackage.version>0.1.5</pl_jpackage.version>
+        <pl_resources.version>3.5.0</pl_resources.version>
+
+        <!-- Dependency versions -->
+        <dep_jakarta.json.api.version>2.1.0</dep_jakarta.json.api.version>
+        <dep_glassfish.jakarta.json.version>2.0.1</dep_glassfish.jakarta.json.version>
+        <dep_junit-jupiter>6.1.0-M1</dep_junit-jupiter>
 		<dep_junit-platform>6.1.0</dep_junit-platform>
-		<dep_mockito>[5.21.0,)</dep_mockito>
+		<dep_mockito>5.21.0</dep_mockito>
 		<dep_bytebuddy>1.18.8</dep_bytebuddy>
 	</properties>
+
 	<build>
 		<finalName>${project.name}</finalName>
 		<directory>target</directory>
@@ -35,7 +52,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-antrun-plugin</artifactId>
-				<version>3.2.0</version>
+				<version>${pl_antrun.version}</version>
 				<executions>
 					<execution>
 						<id>generate-info-xml</id>
@@ -50,6 +67,7 @@
 <app>
     <name>${project.name}</name>
     <groupId>${project.groupId}</groupId>
+	<artifactId>${project.artifactId}</artifactId>
     <version>${project.version}</version>
     <javaVersion>${java.version}</javaVersion>
     <date>${maven.build.timestamp}</date>
@@ -68,7 +86,7 @@
 			</plugin>
 			<plugin>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.15.0</version>
+				<version>${pl_compiler.version}</version>
 				<configuration>
 					<release>${javaVersion}</release>
 				</configuration>
@@ -76,29 +94,43 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>
-				<version>3.5.0</version>
+				<version>${pl_jar.version}</version>
 				<configuration>
 					<archive>
 						<manifest>
 							<mainClass>de.spiritscorp.DataSync.Main</mainClass>
 							<addDefaultImplementationEntries>true</addDefaultImplementationEntries>
 							<addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
+							<addBuildEnvironmentEntries>true</addBuildEnvironmentEntries>
 						</manifest>
+						<manifestEntries>
+							<Built-By>${user.name}</Built-By>
+							<Project-Name>${project.name}</Project-Name>
+						</manifestEntries>
 					</archive>
 				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-assembly-plugin</artifactId>
-				<version>3.8.0</version>
+				<version>${pl_assembly.version}</version>
 				<configuration>
+					<appendAssemblyId>false</appendAssemblyId>
+					<finalName>${project.artifactId}-full</finalName>
 					<descriptorRefs>
 						<descriptorRef>jar-with-dependencies</descriptorRef>
 					</descriptorRefs>
 					<archive>
 						<manifest>
 							<mainClass>de.spiritscorp.DataSync.Main</mainClass>
+							<addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+							<addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
+							<addBuildEnvironmentEntries>true</addBuildEnvironmentEntries>
 						</manifest>
+						<manifestEntries>
+							<Built-By>${user.name}</Built-By>
+							<Project-Name>${project.name}</Project-Name>
+						</manifestEntries>
 					</archive>
 				</configuration>
 				<executions>
@@ -114,27 +146,27 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
-				<version>3.5.6</version>
+				<version>${pl_surefire.version}</version>
 				<configuration>
 					<argLine>-javaagent:${net.bytebuddy:byte-buddy-agent:jar}</argLine>
 			    </configuration>
 			</plugin>
-							<!-- Dependency Plugin: Löst Abhängigkeiten auf und stellt deren Systempfade als Properties bereit (wird für den Surefire-Javaagent benötigt) -->
-				<plugin>
-					<groupId>org.apache.maven.plugins</groupId>
-					<artifactId>maven-dependency-plugin</artifactId>
-					<version>3.11.0</version>
-					<executions>
-						<execution>
-							<goals>
-								<goal>properties</goal>
-							</goals>
-						</execution>
-					</executions>
-				</plugin>
+			<!-- Dependency Plugin: Löst Abhängigkeiten auf und stellt deren Systempfade als Properties bereit (wird für den Surefire-Javaagent benötigt) -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<version>${pl_dependency.version}</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>properties</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
 			<plugin>
 				<artifactId>maven-jlink-plugin</artifactId>
-				<version>3.3.0</version>
+				<version>${pl_jlink.version}</version>
 				<extensions>true</extensions>
 				<configuration>
 				</configuration>
@@ -142,7 +174,7 @@
 			<plugin>
 				<groupId>com.github.akman</groupId>
 				<artifactId>jpackage-maven-plugin</artifactId>
-				<version>0.1.5</version>
+				<version>${pl_jpackage.version}</version>
 				<dependencies>
 					<!-- need a newer version of asm to support java 21 -->
 					<dependency>
@@ -177,7 +209,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-resources-plugin</artifactId>
-				<version>3.5.0</version>
+				<version>${pl_resources.version}</version>
 				<executions>
 					<execution>
 						<id>copy-info</id>
@@ -206,13 +238,13 @@
 		<dependency>
 			<groupId>jakarta.json</groupId>
 			<artifactId>jakarta.json-api</artifactId>
-			<version>[2.1.0,)</version>
+			<version>${dep_jakarta.json.api.version}</version>
 		</dependency>
 		<!-- https://mvnrepository.com/artifact/org.glassfish/jakarta.json -->
 		<dependency>
 			<groupId>org.glassfish</groupId>
 			<artifactId>jakarta.json</artifactId>
-			<version>[2.0.1,)</version>
+			<version>${dep_glassfish.jakarta.json.version}</version>
 			<classifier>module</classifier>
 		</dependency>
 		<!-- https://mvnrepository.com/artifact/org.junit.jupiter/junit-jupiter-engine -->

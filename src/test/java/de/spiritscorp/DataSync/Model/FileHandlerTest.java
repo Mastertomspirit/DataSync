@@ -19,6 +19,7 @@
 */
 package de.spiritscorp.DataSync.Model;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -27,7 +28,9 @@ import static org.mockito.Mockito.mock;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -284,63 +287,41 @@ class FileHandlerTest {
 		// Verify: All expected source copies are present
 		for (final Entry<Path, FileAttributes> entry : expectedCopySource.entrySet()) {
 			final FileAttributes actual = actualCopySource.get(entry.getKey());
-			assertNotNull(
-					actual,
-					"Expected file to copy from source not found: " + entry.getValue().getRelativeFilePath());
-
-			assertEquals(
-					entry.getValue(),
-					actual,
-					"File attributes do not match for: " + entry.getValue().getRelativeFilePath()
-							+ " -> source copy list is not as expected");
+			assertNotNull(actual, "Expected file to copy from source not found: " + entry.getValue().getRelativeFilePath());
+			assertEquals(entry.getValue(), actual, "File attributes do not match for: " + entry.getValue().getRelativeFilePath()
+					+ " -> source copy list is not as expected");
 			actualCopySource.remove(entry.getKey());
 		}
 
 		// Verify: All expected destination copies are present
 		for (final Entry<Path, FileAttributes> entry : expectedCopyDest.entrySet()) {
 			final FileAttributes actual = actualCopyDest.get(entry.getKey());
-			assertNotNull(
-					actual,
-					"Expected file to copy from destination not found: " + entry.getValue().getRelativeFilePath());
+			assertNotNull(actual, "Expected file to copy from destination not found: " + entry.getValue().getRelativeFilePath());
 
-			assertEquals(
-					entry.getValue(),
-					actual,
-					"File attributes do not match for: " + entry.getValue().getRelativeFilePath()
-							+ " -> destination copy list is not as expected");
+			assertEquals(entry.getValue(), actual, "File attributes do not match for: " + entry.getValue().getRelativeFilePath()
+					+ " -> destination copy list is not as expected");
 			actualCopyDest.remove(entry.getKey());
 		}
 
 		// Verify: All expected deletions are present
 		for (final Entry<Path, FileAttributes> entry : expectedDel.entrySet()) {
 			final FileAttributes actual = actualDel.get(entry.getKey());
-			assertNotNull(
-					actual,
-					"Expected file to delete not found: " + entry.getValue().getRelativeFilePath());
+			assertNotNull(actual, "Expected file to delete not found: " + entry.getValue().getRelativeFilePath());
 
-			assertEquals(
-					entry.getValue(),
-					actual,
-					"File attributes do not match for: " + entry.getValue().getRelativeFilePath()
-							+ " -> delete list is not as expected");
+			assertEquals(entry.getValue(), actual, "File attributes do not match for: " + entry.getValue().getRelativeFilePath()
+					+ " -> delete list is not as expected");
 			actualDel.remove(entry.getKey());
 		}
 
 		// Verify: No unexpected extra files in any list
-		assertTrue(
-				actualCopySource.isEmpty(),
-				"Unexpected extra files in source copy list (count: " + actualCopySource.size() + ") - "
-						+ actualCopySource.keySet());
+		assertTrue(actualCopySource.isEmpty(),
+				"Unexpected extra files in source copy list (count: " + actualCopySource.size() + ") - " + actualCopySource.keySet());
 
-		assertTrue(
-				actualCopyDest.isEmpty(),
-				"Unexpected extra files in destination copy list (count: " + actualCopyDest.size() + ") - "
-						+ actualCopyDest.keySet());
+		assertTrue(actualCopyDest.isEmpty(),
+				"Unexpected extra files in destination copy list (count: " + actualCopyDest.size() + ") - " + actualCopyDest.keySet());
 
-		assertTrue(
-				actualDel.isEmpty(),
-				"Unexpected extra files in delete list (count: " + actualDel.size() + ") - "
-						+ actualDel.keySet());
+		assertTrue(actualDel.isEmpty(),
+				"Unexpected extra files in delete list (count: " + actualDel.size() + ") - " + actualDel.keySet());
 	}
 
 	/**
@@ -393,14 +374,100 @@ class FileHandlerTest {
 				syncMap);
 
 		// Verify: All result maps are empty
-		assertTrue(
-				result.get(0).isEmpty(),
-				"Source copy list should be empty when source map is empty");
-		assertTrue(
-				result.get(1).isEmpty(),
-				"Destination copy list should be empty when destination map is empty");
-		assertTrue(
-				result.get(2).isEmpty(),
-				"Delete list should be empty when both maps are empty");
+		assertTrue(result.get(0).isEmpty(), "Source copy list should be empty when source map is empty");
+		assertTrue(result.get(1).isEmpty(), "Destination copy list should be empty when destination map is empty");
+		assertTrue(result.get(2).isEmpty(), "Delete list should be empty when both maps are empty");
+	}
+
+	@Test
+	@DisplayName("Initial sync: source newer than destination")
+	void testInitialSyncSourceNewer() {
+
+		sourceMap.clear();
+		destMap.clear();
+		syncMap.clear();
+
+		final Path rel = Path.of("test.txt");
+		final Path targetPath = testPath.resolve("source").resolve(rel);
+		final FileAttributes sourceAttr = new FileAttributes(rel, "2000", FileTime.fromMillis(2000L), "2000", FileTime.fromMillis(2000L), 50, "hash-new");
+		final FileAttributes destAttr = new FileAttributes(rel, "1000", FileTime.fromMillis(1000L), "1000", FileTime.fromMillis(1000L), 50, "hash-old");
+		sourceMap.put(testPath.resolve("source").resolve(rel), sourceAttr);
+		destMap.put(testPath.resolve("dest").resolve(rel), destAttr);
+
+		final ArrayList<Map<Path, FileAttributes>> result = fileHandler.getSyncFiles(
+				sourceMap,
+				destMap,
+				testPath.resolve("source"),
+				testPath.resolve("dest"),
+				syncMap);
+
+		assertAll("Test empty sync list -- source is newer",
+				() -> assertFalse(result.get(0).isEmpty(), "Source copy list should not be empty"),
+				() -> assertTrue(result.get(0).containsKey(targetPath), () -> String.format(
+						"Expected source file to be copied to destination.\nMissing Key:   %s\nActual Keys:    %s", targetPath, Arrays.toString(result.get(0).keySet().toArray()))),
+				() -> assertTrue(result.get(1).isEmpty(), () -> String.format(
+						"Expected source file to be copied to destination.\nMissing Key:   %s\nActual Keys:    %s", targetPath, Arrays.toString(result.get(1).keySet().toArray()))),
+				() -> assertTrue(result.get(2).isEmpty(), "Delete list should be empty"));
+	}
+
+	@Test
+	@DisplayName("Initial sync: destination newer than source")
+	void testInitialSyncDestNewer() {
+
+		sourceMap.clear();
+		destMap.clear();
+		syncMap.clear();
+
+		final Path rel = Path.of("test.txt");
+		final Path targetPath = testPath.resolve("dest").resolve(rel);
+		final FileAttributes sourceAttr = new FileAttributes(rel, "1000", FileTime.fromMillis(1000L), "1000", FileTime.fromMillis(1000L), 50, "hash-old");
+		final FileAttributes destAttr = new FileAttributes(rel, "2000", FileTime.fromMillis(2000L), "2000", FileTime.fromMillis(2000L), 50, "hash-new");
+		sourceMap.put(testPath.resolve("source").resolve(rel), sourceAttr);
+		destMap.put(testPath.resolve("dest").resolve(rel), destAttr);
+
+		final ArrayList<Map<Path, FileAttributes>> result = fileHandler.getSyncFiles(
+				sourceMap,
+				destMap,
+				testPath.resolve("source"),
+				testPath.resolve("dest"),
+				syncMap);
+
+		assertAll("Test empty sync list -- dest is newer",
+				() -> assertFalse(result.get(1).isEmpty(), "Dest copy list should not be empty"),
+				() -> assertTrue(result.get(1).containsKey(testPath.resolve("dest").resolve(rel)), () -> String.format(
+						"Expected destination file to be copied to source\nMissing Key:   %s\nActual Keys:    %s", targetPath, Arrays.toString(result.get(1).keySet().toArray()))),
+				() -> assertTrue(result.get(0).isEmpty(), () -> String.format(
+						"Expected destination file to be copied to source.\nMissing Key:   %s\nActual Keys:    %s", targetPath, Arrays.toString(result.get(0).keySet().toArray()))),
+				() -> assertTrue(result.get(2).isEmpty(), "Delete list should be empty"));
+	}
+
+	@Test
+	@DisplayName("Initial sync: identical files")
+	void testInitialSyncIdenticalFiles() {
+
+		sourceMap.clear();
+		destMap.clear();
+		syncMap.clear();
+
+		final Path rel = Path.of("same.txt");
+		final FileAttributes attr = new FileAttributes(rel, "1000", FileTime.fromMillis(1000L), "1000", FileTime.fromMillis(1000L), 50, "hash-old");
+		sourceMap.put(testPath.resolve("source").resolve(rel), attr);
+
+		destMap.put(testPath.resolve("dest").resolve(rel), attr);
+
+		final ArrayList<Map<Path, FileAttributes>> result = fileHandler.getSyncFiles(
+				sourceMap,
+				destMap,
+				testPath.resolve("source"),
+				testPath.resolve("dest"),
+				syncMap);
+
+		assertAll("Test empty sync list -- identical files",
+				() -> assertTrue(result.get(0).isEmpty(), () -> String.format(
+						"Source copy list should be empty.\nActual Keys:    %s", Arrays.toString(result.get(0).keySet().toArray()))),
+				() -> assertTrue(result.get(1).isEmpty(), () -> String.format(
+						"Dest copy list should be empty.\nActual Keys:    %s", Arrays.toString(result.get(1).keySet().toArray()))),
+				() -> assertTrue(result.get(2).isEmpty(), () -> String.format(
+						"Del hit list should be empty.\nActual Keys:    %s", Arrays.toString(result.get(2).keySet().toArray()))));
 	}
 }

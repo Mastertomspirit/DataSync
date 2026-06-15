@@ -239,9 +239,9 @@ class FileHandler {
 				}
 				if(!path.toFile().canWrite())		path.toFile().setWritable(true);
 				Files.delete(path);
-				log.setEntry(path.toString(), "deleted", map.get(path));
+				log.setEntry(path.toString(), "gelöscht", map.get(path));
 			}catch(IOException e) {
-				log.setEntry(path.toString(), "ERROR ON DELETION", map.get(path));
+				log.setEntry(path.toString(), "FEHLER BEIM LÖSCHEN", map.get(path));
 				Debug.PRINT_DEBUG("delete failed: %s", path.toString());
 				e.printStackTrace();
 			}
@@ -280,9 +280,9 @@ class FileHandler {
 						StandardCopyOption.REPLACE_EXISTING, 
 						StandardCopyOption.COPY_ATTRIBUTES);				
 				Files.setAttribute(path, "creationTime", entry.getValue().getCreateTime());
-				log.setEntry(path.toString(), "copied", entry.getValue());
+				log.setEntry(path.toString(), "kopiert", entry.getValue());
 			}catch(IOException e) {
-				log.setEntry(path.toString(), "ERROR ON COPYING", entry.getValue());
+				log.setEntry(path.toString(), "FEHLER BEIM KOPIEREN", entry.getValue());
 				Debug.PRINT_DEBUG("copy failed: %s", path.toString());
 				e.printStackTrace();
 			}
@@ -309,74 +309,160 @@ class FileHandler {
 	}
 	
 	/**
-	 * Algorithm to determine which files must be synchronized or deleted.
-	 * 
-	 * <p><strong>Decision Logic (FIXED - 2026-06-13):</strong>
+	 * Determines synchronization actions for all files contained in sourceMap.
+	 *
+	 * <p>
+	 * The synchronization decision is based on:
+	 * </p>
+	 *
+	 * <ul>
+	 *   <li>Current source file state</li>
+	 *   <li>Current destination file state</li>
+	 *   <li>Last known synchronization state</li>
+	 * </ul>
+	 *
+	 * <p>
+	 * Rules:
+	 * </p>
+	 *
 	 * <ol>
-	 *   <li><strong>New files:</strong> attributes=null AND dest=null → Copy from source</li>
-	 *   <li><strong>Deleted from dest:</strong> attributes≠null AND dest=null → Delete from source</li>
-	 *   <li><strong>File conflict:</strong> attributes≠null AND dest≠null AND files differ:
-	 *       <ul>
-	 *         <li>If source.modTime > dest.modTime → Copy source (source is newer)</li>
-	 *         <li>If dest.modTime > source.modTime → Copy dest (dest is newer)</li>
-	 *       </ul>
-	 *   </li>
+	 *   <li>File only exists in source -> copy to destination</li>
+	 *   <li>File existed previously but is missing in destination -> delete source</li>
+	 *   <li>File exists in source and destination but not in sync state
+	 *       -> initial sync conflict, newest version wins</li>
+	 *   <li>File exists in all locations and differs from sync state
+	 *       -> newest version wins</li>
+	 *   <li>Identical files -> no action</li>
 	 * </ol>
-	 * </p>
-	 * 
-	 * <p><strong>BUG FIX DETAIL:</strong>
-	 * Original code only checked when attributes!=null, comparing source to old sync state.
-	 * Fixed version always compares current source and destination timestamps,
-	 * guaranteeing the newest version is always chosen.
-	 * </p>
-	 * 
-	 * @param sourceMap Current files in source directory
-	 * @param destMap Current files in destination directory
-	 * @param resultValue Lists for actions: [copySource, copyDest, delete]
-	 * @param startDestPath Root destination path for path resolution
-	 * @param syncMap Last known synchronization state
+	 *
+	 * @param sourceMap Current source files
+	 * @param destMap Current destination files
+	 * @param resultValue Synchronization result:
+	 *        [0] copy source -> destination
+	 *        [1] copy destination -> source
+	 *        [2] delete files
+	 * @param startDestPath Destination root path
+	 * @param syncMap Last synchronization snapshot
 	 */
-	private void syncMaps(Map<Path, FileAttributes> sourceMap, Map<Path, FileAttributes> destMap, ArrayList<Map<Path, FileAttributes>> resultValue, Path startDestPath, Map<Path,FileAttributes> syncMap) {
-		Map<Path, FileAttributes> copySourceHitList = resultValue.get(0);
-		Map<Path, FileAttributes> copyDestHitList = resultValue.get(1);
-		Map<Path, FileAttributes> delHitList = resultValue.get(2);
+	private void syncMaps(Map<Path, FileAttributes> sourceMap, Map<Path, FileAttributes> destMap, ArrayList<Map<Path, FileAttributes>> resultValue, Path startDestPath, Map<Path, FileAttributes> syncMap) {
 	
-		for(Map.Entry<Path, FileAttributes> entry : sourceMap.entrySet()) {
-			Path relativePath = entry.getValue().getRelativeFilePath();
-			Path destPath = startDestPath.resolve(relativePath);
-			FileAttributes syncAttributes = syncMap.get(relativePath);
-			FileAttributes destAttributes = destMap.get(destPath);
-			
-			// Scenario 1: New file in source (not in sync, not in dest)
-			if(syncAttributes == null && destAttributes == null) {
-				copySourceHitList.put(entry.getKey(), entry.getValue());
-			}
-			// Scenario 2: File deleted from dest (exists in sync and source, but missing from dest)
-			else if(syncAttributes != null && destAttributes == null) {
-				delHitList.put(entry.getKey(), entry.getValue());
-			}
-			// Scenario 3: File exists in all three locations - determine latest version
-			// CRITICAL FIX: Now properly handles when file exists in dest but was modified after sync
-			else if(syncAttributes != null && destAttributes != null) {
-				// Check if source and dest differ
-				if(!entry.getValue().equals(syncAttributes)) {
-					// Files are different - compare modification times to determine which is newer
-					long sourceModTime = entry.getValue().getModTime().toMillis();
-					long destModTime = destAttributes.getModTime().toMillis();
-					
-					if(sourceModTime > destModTime) {
-						// Source is newer - copy source to destination
-						copySourceHitList.put(entry.getKey(), entry.getValue());
-					} else {
-						// Destination is newer or equal - copy destination to source
-						copyDestHitList.put(destPath, destAttributes);
-					}
-				}
-				// If files are equal, no action needed
-			}
-		}
+	    Map<Path, FileAttributes> copySourceHitList = resultValue.get(0);
+	    Map<Path, FileAttributes> copyDestHitList = resultValue.get(1);
+	    Map<Path, FileAttributes> delHitList = resultValue.get(2);
+	
+	    for (Map.Entry<Path, FileAttributes> entry : sourceMap.entrySet()) {
+	
+	        Path relativePath = entry.getValue().getRelativeFilePath();
+	        Path destPath = startDestPath.resolve(relativePath);
+	
+	        FileAttributes sourceAttributes = entry.getValue();
+	        FileAttributes destAttributes = destMap.get(destPath);
+	        FileAttributes syncAttributes = syncMap.get(relativePath);
+	
+	        /*
+	         * -----------------------------------------------------------------
+	         * CASE 1
+	         * File exists only in source.
+	         * -----------------------------------------------------------------
+	         */
+	        if (destAttributes == null) {
+	            if (syncAttributes == null) {
+	                // New file
+	                copySourceHitList.put(entry.getKey(), sourceAttributes);
+	            } else {
+	                // File existed before but was deleted on destination
+	                delHitList.put(entry.getKey(), sourceAttributes);
+	            }
+	            continue;
+	        }
+	
+	        /*
+	         * -----------------------------------------------------------------
+	         * CASE 2
+	         * File exists in source and destination.
+	         * -----------------------------------------------------------------
+	         */
+	
+	        if (sourceAttributes.equals(destAttributes)) {
+	            continue;
+	        }
+	
+	        /*
+	         * -----------------------------------------------------------------
+	         * CASE 3
+	         * Initial synchronization conflict.
+	         *
+	         * File exists on both sides but there is no sync history.
+	         * Newest file wins.
+	         * -----------------------------------------------------------------
+	         */
+	        if (syncAttributes == null) {
+	            if (isNewer(sourceAttributes, destAttributes)) {
+	                copySourceHitList.put(entry.getKey(), sourceAttributes);
+	            } else {
+	                copyDestHitList.put(destPath, destAttributes);
+	            }
+	            continue;
+	        }
+	
+	        /*
+	         * -----------------------------------------------------------------
+	         * CASE 4
+	         * File exists in sync history.
+	         * -----------------------------------------------------------------
+	         */
+	
+	        boolean sourceChanged = !sourceAttributes.equals(syncAttributes);
+	        boolean destChanged = !destAttributes.equals(syncAttributes);
+	
+	        /*
+	         * Source changed, destination unchanged.
+	         */
+	        if (sourceChanged && !destChanged) {
+	            copySourceHitList.put(entry.getKey(), sourceAttributes);
+	            continue;
+	        }
+	
+	        /*
+	         * Destination changed, source unchanged.
+	         */
+	        if (!sourceChanged && destChanged) {
+	            copyDestHitList.put(destPath, destAttributes);
+	            continue;
+	        }
+	
+	        /*
+	         * Conflict:
+	         * both sides changed since last sync.
+	         *
+	         * Newest version wins.
+	         */
+	//	TODO Conflict Handling
+			if (sourceChanged && destChanged) {
+	            if (isNewer(sourceAttributes, destAttributes)) {
+	                copySourceHitList.put(entry.getKey(), sourceAttributes);
+	            } else {
+	                copyDestHitList.put(destPath, destAttributes);
+	            }
+	        }
+	    }
 	}
 	
+	/**
+	 * Returns true if source is newer than destination.
+	 *
+	 * @param source Source file attributes
+	 * @param dest Destination file attributes
+	 * @return true if source modification time is newer
+	 */
+	private boolean isNewer(
+	        FileAttributes source,
+	        FileAttributes dest) {
+	
+	    return source.getModTime().toMillis()
+	            > dest.getModTime().toMillis();
+	}
+		
 	/**
 	 * Splits a map into smaller chunks for parallel processing.
 	 * Used to optimize performance when dealing with large file sets.

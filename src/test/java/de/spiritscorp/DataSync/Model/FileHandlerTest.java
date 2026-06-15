@@ -403,4 +403,124 @@ class FileHandlerTest {
 				result.get(2).isEmpty(),
 				"Delete list should be empty when both maps are empty");
 	}
+	
+@Test
+@DisplayName("Initial sync: source newer than destination")
+void testInitialSyncSourceNewer() {
+
+    sourceMap.clear();
+    destMap.clear();
+    syncMap.clear();
+
+    Path rel = Path.of("test.txt");
+
+    FileAttributes sourceAttr = helper.createAttributes(
+            rel,
+            2000L,   // newer timestamp
+            "hash-new");
+
+    FileAttributes destAttr = helper.createAttributes(
+            rel,
+            1000L,   // older timestamp
+            "hash-old");
+
+    sourceMap.put(
+            testPath.resolve("source").resolve(rel),
+            sourceAttr);
+
+    destMap.put(
+            testPath.resolve("dest").resolve(rel),
+            destAttr);
+
+    ArrayList<Map<Path, FileAttributes>> result =
+            fileHandler.getSyncFiles(
+                    sourceMap,
+                    destMap,
+                    testPath.resolve("source"),
+                    testPath.resolve("dest"),
+                    syncMap);
+
+    assertTrue(
+            result.get(0).containsKey(
+                    testPath.resolve("source").resolve(rel)),
+            "Expected source file to be copied to destination");
+  }
+
+@Test
+@DisplayName("Initial sync: destination newer than source")
+void testInitialSyncDestNewer() {
+
+    sourceMap.clear();
+    destMap.clear();
+    syncMap.clear();
+
+    Path rel = Path.of("test.txt");
+
+    FileAttributes sourceAttr = helper.createAttributes(
+            rel,
+            1000L,
+            "hash-old");
+
+    FileAttributes destAttr = helper.createAttributes(
+            rel,
+            2000L,
+            "hash-new");
+
+    sourceMap.put(
+            testPath.resolve("source").resolve(rel),
+            sourceAttr);
+
+    destMap.put(
+            testPath.resolve("dest").resolve(rel),
+            destAttr);
+
+    ArrayList<Map<Path, FileAttributes>> result =
+            fileHandler.getSyncFiles(
+                    sourceMap,
+                    destMap,
+                    testPath.resolve("source"),
+                    testPath.resolve("dest"),
+                    syncMap);
+
+    assertTrue(
+            result.get(1).containsKey(
+                    testPath.resolve("dest").resolve(rel)),
+            "Expected destination file to be copied to source");
+  }
+
+	@Test
+@DisplayName("Initial sync: identical files")
+void testInitialSyncIdenticalFiles() {
+
+    sourceMap.clear();
+    destMap.clear();
+    syncMap.clear();
+
+    Path rel = Path.of("same.txt");
+
+    FileAttributes attr = helper.createAttributes(
+            rel,
+            1000L,
+            "sameHash");
+
+    sourceMap.put(
+            testPath.resolve("source").resolve(rel),
+            attr);
+
+    destMap.put(
+            testPath.resolve("dest").resolve(rel),
+            attr);
+
+    ArrayList<Map<Path, FileAttributes>> result =
+            fileHandler.getSyncFiles(
+                    sourceMap,
+                    destMap,
+                    testPath.resolve("source"),
+                    testPath.resolve("dest"),
+                    syncMap);
+
+    assertTrue(result.get(0).isEmpty());
+    assertTrue(result.get(1).isEmpty());
+    assertTrue(result.get(2).isEmpty());
+  }
 }

@@ -287,63 +287,41 @@ class FileHandlerTest {
 		// Verify: All expected source copies are present
 		for (final Entry<Path, FileAttributes> entry : expectedCopySource.entrySet()) {
 			final FileAttributes actual = actualCopySource.get(entry.getKey());
-			assertNotNull(
-					actual,
-					"Expected file to copy from source not found: " + entry.getValue().getRelativeFilePath());
-
-			assertEquals(
-					entry.getValue(),
-					actual,
-					"File attributes do not match for: " + entry.getValue().getRelativeFilePath()
-							+ " -> source copy list is not as expected");
+			assertNotNull(actual, "Expected file to copy from source not found: " + entry.getValue().getRelativeFilePath());
+			assertEquals(entry.getValue(), actual, "File attributes do not match for: " + entry.getValue().getRelativeFilePath()
+					+ " -> source copy list is not as expected");
 			actualCopySource.remove(entry.getKey());
 		}
 
 		// Verify: All expected destination copies are present
 		for (final Entry<Path, FileAttributes> entry : expectedCopyDest.entrySet()) {
 			final FileAttributes actual = actualCopyDest.get(entry.getKey());
-			assertNotNull(
-					actual,
-					"Expected file to copy from destination not found: " + entry.getValue().getRelativeFilePath());
+			assertNotNull(actual, "Expected file to copy from destination not found: " + entry.getValue().getRelativeFilePath());
 
-			assertEquals(
-					entry.getValue(),
-					actual,
-					"File attributes do not match for: " + entry.getValue().getRelativeFilePath()
-							+ " -> destination copy list is not as expected");
+			assertEquals(entry.getValue(), actual, "File attributes do not match for: " + entry.getValue().getRelativeFilePath()
+					+ " -> destination copy list is not as expected");
 			actualCopyDest.remove(entry.getKey());
 		}
 
 		// Verify: All expected deletions are present
 		for (final Entry<Path, FileAttributes> entry : expectedDel.entrySet()) {
 			final FileAttributes actual = actualDel.get(entry.getKey());
-			assertNotNull(
-					actual,
-					"Expected file to delete not found: " + entry.getValue().getRelativeFilePath());
+			assertNotNull(actual, "Expected file to delete not found: " + entry.getValue().getRelativeFilePath());
 
-			assertEquals(
-					entry.getValue(),
-					actual,
-					"File attributes do not match for: " + entry.getValue().getRelativeFilePath()
-							+ " -> delete list is not as expected");
+			assertEquals(entry.getValue(), actual, "File attributes do not match for: " + entry.getValue().getRelativeFilePath()
+					+ " -> delete list is not as expected");
 			actualDel.remove(entry.getKey());
 		}
 
 		// Verify: No unexpected extra files in any list
-		assertTrue(
-				actualCopySource.isEmpty(),
-				"Unexpected extra files in source copy list (count: " + actualCopySource.size() + ") - "
-						+ actualCopySource.keySet());
+		assertTrue(actualCopySource.isEmpty(),
+				"Unexpected extra files in source copy list (count: " + actualCopySource.size() + ") - " + actualCopySource.keySet());
 
-		assertTrue(
-				actualCopyDest.isEmpty(),
-				"Unexpected extra files in destination copy list (count: " + actualCopyDest.size() + ") - "
-						+ actualCopyDest.keySet());
+		assertTrue(actualCopyDest.isEmpty(),
+				"Unexpected extra files in destination copy list (count: " + actualCopyDest.size() + ") - " + actualCopyDest.keySet());
 
-		assertTrue(
-				actualDel.isEmpty(),
-				"Unexpected extra files in delete list (count: " + actualDel.size() + ") - "
-						+ actualDel.keySet());
+		assertTrue(actualDel.isEmpty(),
+				"Unexpected extra files in delete list (count: " + actualDel.size() + ") - " + actualDel.keySet());
 	}
 
 	/**

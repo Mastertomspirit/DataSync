@@ -1,8 +1,8 @@
 # DataSync
 
-[![Java Version](https://img.shields.shields.io/badge/Java-21-orange.svg)](https://www.oracle.com/java/technologies/downloads/)
-[![Build](https://img.shields.shields.io/badge/Build-Maven-blue.svg)](https://maven.apache.org/)
-[![Platform](https://img.shields.shields.io/badge/Platform-Windows%20%7C%20Linux-green.svg)](https://github.com/Mastertomspirit/DataSync)
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](#)
+[![Java Version](https://img.shields.io/badge/Java-21-orange.svg)](#)
+[![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux-blue.svg)](#)
 
 An efficient synchronization and backup application that automatically manages your folders in the background. It supports multiple synchronization strategies, duplicate detection, and runs silently in the system tray.
 

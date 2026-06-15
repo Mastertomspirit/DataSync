@@ -1,49 +1,79 @@
 # DataSync
 
-### _Currently supported Language: German_
+[![Java Version](https://img.shields.shields.io/badge/Java-21-orange.svg)](https://www.oracle.com/java/technologies/downloads/)
+[![Build](https://img.shields.shields.io/badge/Build-Maven-blue.svg)](https://maven.apache.org/)
+[![Platform](https://img.shields.shields.io/badge/Platform-Windows%20%7C%20Linux-green.svg)](https://github.com/Mastertomspirit/DataSync)
 
-A synchronization app that automatically backup or synchronize, one or more folders, in the background. The source paths can also be scan for duplicates.
-On the x-button it minimized to tray.
+An efficient synchronization and backup application that automatically manages your folders in the background. It supports multiple synchronization strategies, duplicate detection, and runs silently in the system tray.
 
-### Features:
+> **Note:** The user interface and logs are currently available in **German**.
 
-| **Scan Type** | **Description**
-|---|---|
-| Synchronize | Synchronize two folders; trashbin & subfolder are not available in this mode
-| Deep Scan | Scan each file with sha256
-| Flat Scan | Equals file size, create and modified time, size and path
-| Duplicate Scan | Scan the source directory and compares each file with the hash value
+---
 
-</br>
+## 🚀 Features
 
-- 📂   __subfolders (optional)__
-- 🗑️   __trashbin (optional)__
-- 📎   __logging in JSON format (optional)__
-- ✂️   __auto delete (optional)__
-- 🚴‍♂️   __manual operation__
- 
- </br>
- 
-Background job time:
-` 1, 5, 30 minutes`
-`hourly` 
-`daily`
-`weekly`
-`monthly`
+* **Background Operation:** Minimized to the system tray when closing via the X-button, keeping your workspace clean.
+* **Flexible Automation:** Highly configurable background intervals.
+* **Advanced Scanning:** Supports multiple scan types tailored to your needs—from fast metadata checks to deep cryptographic verification.
+* **Optional Behaviors:**
+  * 📂 **Subfolder Support:** Include or exclude subdirectories.
+  * 🗑️ **Trashbin Integration:** Move deleted files to a temporary backup instead of permanent deletion (mode-dependent).
+  * ✂️ **Auto-Delete:** Clean up destination paths automatically to mirror the source.
+  * 📎 **JSON Logging:** Structured logging for easy parsing and monitoring.
+  * 🚴‍♂️ **Manual Trigger:** Run any synchronization task instantly on demand.
 
-The automatic background job is not supported on MacOS yet
+---
 
-### Build:
+## 🔍 Scan Types
 
-* To build the app with runtime for a specify platform, 
-* run Maven on this platform with `mvn clean compile jlink:jlink verify`
- 
-* To use only the jar, java version 21 is required. Run `mvn package`
+| Scan Type | Description |
+| :--- | :--- |
+| **Synchronize** | Direct synchronization between two folders. *(Note: Trashbin and subfolder options are disabled in this mode).* |
+| **Deep Scan** | Maximum precision. Compares files using cryptographic **SHA-256** checksums. |
+| **Flat Scan** | Fast and efficient. Compares files based on metadata: size, creation time, modification time, and file path. |
+| **Duplicate Scan** | Analyzes the source directory and identifies identical files by comparing their hash values. |
 
-### Flags:
+---
 
-| **Flag** | **Description**
-|---|---|
-| firstStart | sleeps for 5 minutes after system start
-| debug | enable the debug output
-| debugToFile |  enable the debug and error output to file at `user.home/DataSync/`
+## ⏱️ Background Job Intervals
+
+Automated background tasks can be scheduled to run at the following intervals:
+* `1, 5, 30 minutes`
+* `hourly`
+* `daily`
+* `weekly`
+* `monthly`
+
+⚠️ **OS Compatibility:** Automatic background execution is currently supported on **Windows** and **Linux**. macOS is not supported yet.
+
+---
+
+## ⚙️ Command Line Flags
+
+Fine-tune the application startup behavior using the following flags:
+
+| Flag | Description |
+| :--- | :--- |
+| `--firstStart` | Delays the application execution for 5 minutes after system startup (useful for boot-start scripts). |
+| `--debug` | Enables detailed debug output in the console. |
+| `--debugToFile` | Redirects all debug and error logs to a file located at `user.home/DataSync/`. |
+
+---
+
+## 🛠️ Build & Requirements
+
+### Requirements
+* **Java Development Kit (JDK) 21** or higher.
+* **Apache Maven** (for building from source).
+
+### Building a Platform-Specific Runtime (jlink)
+To build the application bundled with a lightweight runtime tailored for your current platform, run:
+```bash
+mvn clean compile jlink:jlink verify
+```
+
+### Building a Standard JAR
+If you prefer a standalone executable JAR (requires Java 21 pre-installed on the target system):
+```bash
+mvn clean package
+```

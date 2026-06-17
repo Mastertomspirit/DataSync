@@ -247,6 +247,16 @@
 			<version>${dep_glassfish.jakarta.json.version}</version>
 			<classifier>module</classifier>
 		</dependency>
+    <dependency>
+        <groupId>org.kordamp.ikonli</groupId>
+        <artifactId>ikonli-javafx</artifactId>
+        <version>12.3.1</version>
+    </dependency>
+    <dependency>
+        <groupId>org.kordamp.ikonli</groupId>
+        <artifactId>ikonli-materialdesign2-pack</artifactId>
+        <version>12.3.1</version>
+    </dependency>
 		<!-- https://mvnrepository.com/artifact/org.junit.jupiter/junit-jupiter-engine -->
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>

@@ -83,7 +83,7 @@ public class Logger {
 			jw.close();
 			logList.clear();
 		} catch (final IOException e) {
-			e.printStackTrace();
+			Debug.printException(this.getClass(), e);
 		}
 	}
 
@@ -99,7 +99,7 @@ public class Logger {
 						.forEach((v) -> logList.add(v));
 				jr.close();
 			} catch (final IOException e) {
-				e.printStackTrace();
+				Debug.printException(this.getClass(), e);
 			}
 		}
 	}

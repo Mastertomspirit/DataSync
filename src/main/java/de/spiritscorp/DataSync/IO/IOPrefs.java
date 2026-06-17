@@ -61,7 +61,7 @@ class IOPrefs {
 				jr.close();
 				if (job != null) return true;
 			} catch (final IOException e) {
-				e.printStackTrace();
+				Debug.printException(this.getClass(), e);
 			}
 		}
 		return false;
@@ -85,7 +85,7 @@ class IOPrefs {
 			prefTempMap.clear();
 			return true;
 		} catch (final IOException e) {
-			e.printStackTrace();
+			Debug.printException(this.getClass(), e);
 		}
 		return false;
 	}

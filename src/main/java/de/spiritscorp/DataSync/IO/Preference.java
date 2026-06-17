@@ -120,7 +120,7 @@ public class Preference {
 				startDestPath = ioP.getPath("startDestPath");
 				trashbinPath = ioP.getPath("trashbinPath");
 			} catch (final ConfigException e) {
-				e.printStackTrace();
+				Debug.printException(this.getClass(), e);
 			}
 		}
 		if (!sourcePath.isEmpty() && !destPath.isEmpty()) {
@@ -174,7 +174,9 @@ public class Preference {
 	public void saveLastScanTime() {
 		try (BufferedWriter bw = Files.newBufferedWriter(Preference.scanTimePath, StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
 			bw.write(String.valueOf(System.currentTimeMillis()));
-		} catch (final IOException e) {}
+		} catch (final IOException e) {
+			Debug.printException(this.getClass(), e);
+		}
 	}
 
 	/**

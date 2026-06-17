@@ -1,18 +1,18 @@
 /*
  		DataSync Application
- 		
+
 		@author Tom Spirit
-		
+
 		This program is free software; you can redistribute it and/or modify
 		it under the terms of the GNU General Public License as published by
 		the Free Software Foundation; either version 3 of the License, or
 		(at your option) any later version.
-		
+
 		This program is distributed in the hope that it will be useful,
 		but WITHOUT ANY WARRANTY; without even the implied warranty of
 		MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 		GNU General Public License for more details.
-		
+
 		You should have received a copy of the GNU General Public License
 		along with this program; if not, write to the Free Software Foundation,
 		Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
@@ -35,78 +35,77 @@ import java.util.Map;
 import de.spiritscorp.DataSync.ScanType;
 import de.spiritscorp.DataSync.IO.Debug;
 
-class FileScan  implements Runnable{
+class FileScan implements Runnable {
 
-	private Path path, startPath;
-	private Map<Path, FileAttributes> map;
-	private ScanType scanType;
-	private BasicFileAttributes bfa;
-	
+	private final Path path, startPath;
+	private final Map<Path, FileAttributes> map;
+	private final ScanType scanType;
+	private final BasicFileAttributes bfa;
+
 	/**
 	 * Scan the attributes of one file
-	 * 
+	 *
 	 * @param path
 	 * @param startPath
 	 * @param map
 	 * @param scanType
 	 */
-	FileScan(Path path, Path startPath, Map<Path, FileAttributes> map, ScanType scanType, BasicFileAttributes bfa){
+	FileScan(Path path, Path startPath, Map<Path, FileAttributes> map, ScanType scanType, BasicFileAttributes bfa) {
 		this.path = path;
 		this.startPath = startPath;
 		this.map = map;
 		this.scanType = scanType;
 		this.bfa = bfa;
 	}
-	
+
 	@Override
 	public void run() {
-			FileAttributes fa = new FileAttributes(
-					relativePath(), 
-					fileTimeToString(bfa.creationTime()), 
-					bfa.creationTime(),
-					fileTimeToString(bfa.lastModifiedTime()), 
-					bfa.lastModifiedTime(),
-					bfa.size(), 
-					deepScan()
-			);
-			map.put(path, fa);
+		final FileAttributes fa = new FileAttributes(
+				relativePath(),
+				fileTimeToString(bfa.creationTime()),
+				bfa.creationTime(),
+				fileTimeToString(bfa.lastModifiedTime()),
+				bfa.lastModifiedTime(),
+				bfa.size(),
+				deepScan());
+		map.put(path, fa);
 	}
 
 	private String getSha256() {
-		StringBuffer sb = new StringBuffer();
-		try(BufferedInputStream bis = new BufferedInputStream(Files.newInputStream(path, StandardOpenOption.READ))){
-			MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
+		final StringBuffer sb = new StringBuffer();
+		try (BufferedInputStream bis = new BufferedInputStream(Files.newInputStream(path, StandardOpenOption.READ))) {
+			final MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
 			byte[] input;
-			while(bis.available() != 0) {
+			while (bis.available() != 0) {
 				input = bis.readNBytes(8192);
 				messageDigest.update(input);
 			}
-			byte[] digestByte = messageDigest.digest();
-			for(byte b : digestByte) {
-				sb.append(Integer.toString((b&0xff) + 0x100,16).substring(1));
+			final byte[] digestByte = messageDigest.digest();
+			for (final byte b : digestByte) {
+				sb.append(Integer.toString((b & 0xff) + 0x100, 16).substring(1));
 			}
 		} catch (IOException | NoSuchAlgorithmException e) {
-			e.printStackTrace();
 			sb.delete(0, sb.length());
 			sb.append("Failed");
-			Debug.PRINT_DEBUG("Failed: %s Message: %s", path, e.getMessage());
+			Debug.printDebug("Failed: %s Message: %s", path, e.getMessage());
+			Debug.printException(this.getClass(), e);
 		}
 		return new String(sb);
 	}
-	
+
 	private String fileTimeToString(FileTime fileTime) {
 		return fileTime.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime().format(DateTimeFormatter.ofPattern("dd.MM.yyyy  HH:mm:ss"));
-	}	
+	}
+
 	private Path relativePath() {
 		return startPath.relativize(path);
 	}
+
 	private String deepScan() {
-		switch (scanType) {
-		case DEEP_SCAN: return getSha256();
-		case FLAT_SCAN: 
-		case SYNCHRONIZE:
-		default:		 return "null";
-		}
+		return switch (scanType) {
+		case DEEP_SCAN -> getSha256();
+		case FLAT_SCAN, SYNCHRONIZE -> "null";
+		default -> "null";
+		};
 	}
 }
-

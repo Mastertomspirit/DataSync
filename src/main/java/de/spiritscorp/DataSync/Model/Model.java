@@ -71,7 +71,7 @@ public class Model {
 	 * @return
 	 */
 	public Map<Path, FileAttributes> scanSyncFiles(ArrayList<Path> sourcePathes, ArrayList<Path> destPathes, Long[] stats, ScanType deepScan, boolean subDir, boolean trashbin) {
-		Debug.PRINT_DEBUG("list start");
+		Debug.printDebug("list start");
 		final Thread t1 = new Thread(() -> handler.listFiles(sourcePathes, sourceMap, deepScan, subDir));
 		final Thread t2 = new Thread(() -> handler.listFiles(destPathes, destMap, deepScan, subDir));
 		t1.start();
@@ -80,13 +80,13 @@ public class Model {
 			t1.join();
 			t2.join();
 		} catch (final InterruptedException e) {
-			e.printStackTrace();
+			Debug.printException(this.getClass(), e);
 		}
 		stats[0] = (long) sourceMap.size();
 		stats[1] = (long) destMap.size();
 		stats[2] = getBytes(sourceMap);
 		stats[3] = getBytes(destMap);
-		Debug.PRINT_DEBUG("list ready");
+		Debug.printDebug("list ready");
 		return getFailtures(sourceMap, destMap);
 	}
 
@@ -94,9 +94,9 @@ public class Model {
 	 * Equals the files and set unique in the maps
 	 */
 	public void getEqualsFiles() {
-		Debug.PRINT_DEBUG("getEqualsFiles start");
+		Debug.printDebug("getEqualsFiles start");
 		handler.equalsFiles(sourceMap, destMap);
-		Debug.PRINT_DEBUG("getEqualsFiles ready");
+		Debug.printDebug("getEqualsFiles ready");
 	}
 
 	/**
@@ -109,7 +109,7 @@ public class Model {
 	 *         Give back the copySourceHitList, the copyDestHitList and the delHitList
 	 */
 	public ArrayList<Map<Path, FileAttributes>> getSyncFiles(Map<Path, FileAttributes> syncMap, Path sourcePath, Path destPath) {
-		Debug.PRINT_DEBUG("getSyncFiles start");
+		Debug.printDebug("getSyncFiles start");
 
 		final ArrayList<Map<Path, FileAttributes>> result = handler.getSyncFiles(sourceMap, destMap, sourcePath, destPath, syncMap);
 
@@ -120,7 +120,7 @@ public class Model {
 //			syncMap.put(entry.getValue().getRelativeFilePath(), entry.getValue());
 //		}
 
-		Debug.PRINT_DEBUG("getSyncFiles ready");
+		Debug.printDebug("getSyncFiles ready");
 		return result;
 	}
 

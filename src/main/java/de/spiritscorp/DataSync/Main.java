@@ -34,7 +34,7 @@ import de.spiritscorp.DataSync.IO.Preference;
 
 public class Main {
 
-	public final static String VERSION = "V 0.9.6.4";
+	public final static String VERSION = "V 0.9.6.5";
 	public static boolean debug = false;
 
 	/**
@@ -55,11 +55,11 @@ public class Main {
 
 		if (Arrays.stream(args).anyMatch((s) -> s.equals("debugToFile"))) {
 			debug = true;
-			Debug.SET_DEBUG_TO_FILE();
-			Debug.PRINT_DEBUG_TIMELESS("%nDEBUG BEGIN -> [%s]: %s%n",
+			Debug.setDebugToFile();
+			Debug.printDebugTimeless("%nDEBUG BEGIN -> [%s]: %s%n",
 					System.getProperty("app.instance.name", "Standard Instance"),
 					LocalDateTime.now(ZoneId.systemDefault()).format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.FULL, FormatStyle.SHORT)));
-			Debug.PRINT_DEBUG("Set config root path -> %s", Preference.getRootPath().toString());
+			Debug.printDebug("Set config root path -> %s", Preference.getRootPath().toString());
 		}
 
 		new Controller(firstStart);

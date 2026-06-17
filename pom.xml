@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>de.spiritscorp</groupId>
 	<artifactId>DataSync</artifactId>
-	<version>0.9.6.4</version>
+	<version>0.9.6.5</version>
 	<name>Data Sync</name>
 	<description>Application to synchronize your data</description>
 	<inceptionYear>2022</inceptionYear>
@@ -248,7 +248,7 @@
 							<vendor>Tom Spirit</vendor>
 							<icon>64x64.ico</icon>
 							<module>de.spiritscorp.DataSync/de.spiritscorp.DataSync.Main</module>
-							<javaoptions>-Dfile.encoding=UTF-8 -Xms32m -Xmx4096m</javaoptions>
+							<javaoptions>-Dfile.encoding=UTF-8 -Xms32m -Xmx4096m -Dapp.instance.name="${project.artifactId}_v${project.version}"</javaoptions>
 						</configuration>
 					</execution>
 				</executions>

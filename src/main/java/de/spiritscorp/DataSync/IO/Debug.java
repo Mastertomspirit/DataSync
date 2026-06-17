@@ -21,6 +21,8 @@ package de.spiritscorp.DataSync.IO;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
@@ -42,11 +44,52 @@ public class Debug {
 	 *               the extra arguments are ignored. The number of arguments is variable and may be zero. The maximum number of arguments is limited
 	 *               by the maximum dimension of a Java array as defined by The Java Virtual Machine Specification.
 	 */
-	public static final void PRINT_DEBUG(String format, Object... args) {
-		if (Main.debug) {
-			final String time = LocalDateTime.now(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss.SSSSS"));
-			System.out.printf(time + " [" + instanceName + "]  " + format + "%n", args);
+	public static final void printDebug(String format, Object... args) {
+		print(System.out, format, args);
+	}
+
+	/**
+	 * A error method to write a formatted string to this error stream using a timestamp, the specified format string and arguments.
+	 *
+	 * @param format A format string as described in Format string syntax
+	 * @param args   Arguments referenced by the format specifiers in the format string. If there are more arguments than format specifiers,
+	 *               the extra arguments are ignored. The number of arguments is variable and may be zero. The maximum number of arguments is limited
+	 *               by the maximum dimension of a Java array as defined by The Java Virtual Machine Specification.
+	 */
+	public static final void printError(String format, Object... args) {
+		print(System.err, format, args);
+	}
+
+	/**
+	 * Logs or prints detailed diagnostic information about a caught exception.
+	 * <p>
+	 * This utility method formats and outputs the primary exception message,
+	 * inspects and logs the root cause if present to prevent {@link NullPointerException},
+	 * and extracts the complete formatted stack trace for deep debugging.
+	 * </p>
+	 * *
+	 * <p><b>Example Output Structure:</b></p>
+	 *
+	 * <pre>
+	 * Exception in Class: [com.example.MyService]:Message -> Connection failed
+	 * ↳ Cause: java.net.ConnectException -> Message: Connection refused
+	 * Full Info:
+	 * java.lang.RuntimeException: Connection failed
+	 * at com.example.MyService.start(MyService.java:24)
+	 * ...
+	 * </pre>
+	 *
+	 * @param clazz the {@link Class} context where the exception was caught, used for identification
+	 * @param e     the {@link Exception} instance containing the error details and stack trace
+	 */
+	public static final void printException(Class<?> clazz, Exception e) {
+		printError("Exception in Class: [%s]:Message -> %s", clazz.getName(), e.getMessage());
+		if (e.getCause() != null) {
+			printError("  ↳ Cause: %s -> Message: %s", e.getCause().getClass().getName(), e.getCause().getMessage());
 		}
+		final StringWriter sw = new StringWriter();
+		e.printStackTrace(new PrintWriter(sw));
+		printError("Full Info:%n%s", sw.toString());
 	}
 
 	/**
@@ -57,13 +100,13 @@ public class Debug {
 	 *               the extra arguments are ignored. The number of arguments is variable and may be zero. The maximum number of arguments is limited
 	 *               by the maximum dimension of a Java array as defined by The Java Virtual Machine Specification.
 	 */
-	public static final void PRINT_DEBUG_TIMELESS(String format, Object... args) {
+	public static final void printDebugTimeless(String format, Object... args) {
 		if (Main.debug) {
 			System.out.printf(format + "%n", args);
 		}
 	}
 
-	public static final void SET_DEBUG_TO_FILE() {
+	public static final void setDebugToFile() {
 		try {
 			if (!Files.exists(Preference.getDebugPath())) Files.createDirectories(Preference.getDebugPath().getParent());
 			System.setOut(
@@ -71,7 +114,15 @@ public class Debug {
 			System.setErr(
 					new PrintStream(Files.newOutputStream(Preference.getErrorPath(), StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.APPEND), true, Charset.forName("UTF-8")));
 		} catch (final IOException e) {
+			System.err.println(e.getMessage());
 			e.printStackTrace();
+		}
+	}
+
+	private static final void print(PrintStream stream, String format, Object[] args) {
+		if (Main.debug) {
+			final String time = LocalDateTime.now(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss.SSSSS"));
+			stream.printf(time + " [" + instanceName + "]  " + format + "%n", args);
 		}
 	}
 }

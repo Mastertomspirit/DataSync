@@ -46,7 +46,7 @@ class IOSyncMap {
 
 	/**
 	 * read the json syncMap
-	 * 
+	 *
 	 * @param syncMap
 	 * @return <b>boolean</b> </br>
 	 *         true if the map is loaded
@@ -69,8 +69,8 @@ class IOSyncMap {
 						syncMap.put(Paths.get(entry.getValue().asJsonObject().getString("relativeFilePath")), file);
 					}
 				} catch (final IOException e) {
-					Debug.PRINT_DEBUG("%nFehler beim laden der SyncMap: %s", e.getMessage());
-					e.printStackTrace();
+					Debug.printDebug("%nFehler beim laden der SyncMap: %s", e.getMessage());
+					Debug.printException(this.getClass(), e);
 					return false;
 				}
 			} else {
@@ -96,8 +96,8 @@ class IOSyncMap {
 			jw.write(job);
 			jw.close();
 		} catch (final IOException e) {
-			e.printStackTrace();
-			Debug.PRINT_DEBUG("%nFehler beim schreiben der SyncMap: %s", e.getMessage());
+			Debug.printException(this.getClass(), e);
+			Debug.printDebug("%nFehler beim schreiben der SyncMap: %s", e.getMessage());
 		}
 	}
 

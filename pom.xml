@@ -107,7 +107,7 @@
     <mavenVersion>${maven.version}</mavenVersion>
     <javaVendor>${java.vendor}</javaVendor>
     <javaRuntimeVersion>${java.runtime.version}</javaRuntimeVersion>
-	<buildTimestamp>${maven.build.timestamp}</buildTimestamp>
+	<buildTimestampUtc>${maven.build.timestamp}</buildTimestampUtc>
 	<timezone>${user.timezone}</timezone>
 </buildEnvironment>
 <buildOS>

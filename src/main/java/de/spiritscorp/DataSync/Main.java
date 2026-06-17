@@ -21,6 +21,7 @@
 */
 package de.spiritscorp.DataSync;
 
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -29,10 +30,11 @@ import java.util.Arrays;
 
 import de.spiritscorp.DataSync.Controller.Controller;
 import de.spiritscorp.DataSync.IO.Debug;
+import de.spiritscorp.DataSync.IO.Preference;
 
 public class Main {
 
-	public final static String VERSION = "V 0.9.6.3";
+	public final static String VERSION = "V 0.9.6.4";
 	public static boolean debug = false;
 
 	/**
@@ -41,11 +43,23 @@ public class Main {
 	public static void main(String[] args) {
 		debug = Arrays.stream(args).anyMatch((s) -> s.equals("debug"));
 		final boolean firstStart = Arrays.stream(args).anyMatch((s) -> s.equals("firstStart"));
+		final String configFolder = Arrays
+				.stream(args)
+				.filter((s) -> s.toLowerCase().startsWith("--configfile="))
+				.findFirst()
+				.map((s) -> s.substring(s.indexOf('=') + 1, s.length()))
+				.orElse("");
+		if (!configFolder.isBlank()) {
+			Preference.getInstance(Path.of(configFolder));
+		}
 
 		if (Arrays.stream(args).anyMatch((s) -> s.equals("debugToFile"))) {
 			debug = true;
 			Debug.SET_DEBUG_TO_FILE();
-			Debug.PRINT_DEBUG_TIMELESS("%nDEBUG BEGIN: %s%n", LocalDateTime.now(ZoneId.systemDefault()).format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.FULL, FormatStyle.SHORT)));
+			Debug.PRINT_DEBUG_TIMELESS("%nDEBUG BEGIN -> [%s]: %s%n",
+					System.getProperty("app.instance.name", "Standard Instance"),
+					LocalDateTime.now(ZoneId.systemDefault()).format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.FULL, FormatStyle.SHORT)));
+			Debug.PRINT_DEBUG("Set config root path -> %s", Preference.getRootPath().toString());
 		}
 
 		new Controller(firstStart);

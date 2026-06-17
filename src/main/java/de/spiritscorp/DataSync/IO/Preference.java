@@ -1,18 +1,18 @@
 /*
  		DataSync Application
- 		
+
 		@author Tom Spirit
-		
+
 		This program is free software; you can redistribute it and/or modify
 		it under the terms of the GNU General Public License as published by
 		the Free Software Foundation; either version 3 of the License, or
 		(at your option) any later version.
-		
+
 		This program is distributed in the hope that it will be useful,
 		but WITHOUT ANY WARRANTY; without even the implied warranty of
 		MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 		GNU General Public License for more details.
-		
+
 		You should have received a copy of the GNU General Public License
 		along with this program; if not, write to the Free Software Foundation,
 		Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
@@ -23,11 +23,13 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Map;
+
 import de.spiritscorp.DataSync.BgTime;
 import de.spiritscorp.DataSync.ScanType;
 import de.spiritscorp.DataSync.Model.FileAttributes;
@@ -37,21 +39,21 @@ import jakarta.json.JsonValue;
 
 public class Preference {
 
-	private static final Path ROOT_PATH = Paths.get(System.getProperty("user.home"), "DataSync");
-	public static final Path DEBUG_PATH = ROOT_PATH.resolve("debug.log");
-	public static final Path ERROR_PATH = ROOT_PATH.resolve("debug.err");
-	public static final Path LOG_PATH = ROOT_PATH.resolve("log.json");
-	public static final Path CONFIG_PATH = ROOT_PATH.resolve("conf.json");
-	public static final Path SYNCMAP_PATH = ROOT_PATH.resolve("syncMap.json");
-	public static final Path SCAN_TIME_PATH = ROOT_PATH.resolve("lastScanTime");
-	
+	private static Path rootPath = Paths.get(System.getProperty("user.home"), "DataSync");
+	private static Path debugPath;
+	private static Path errorPath;
+	private static Path logPath;
+	private static Path configPath;
+	private static Path syncMapPath;
+	private static Path scanTimePath;
+
 	private IOPrefs ioP;
 	private IOSyncMap ioS;
 	private ArrayList<Path> sourcePath = new ArrayList<>();
 	private ArrayList<Path> destPath = new ArrayList<>();
-	private Map<Path,FileAttributes> syncMap = Model.createMap();
+	private final Map<Path, FileAttributes> syncMap = Model.createMap();
 	private Path startDestPath, startSourcePath, trashbinPath;
-	private String trashbinString = "Papierkorb";
+	private final String trashbinString = "Papierkorb";
 	private ScanType deepScan = ScanType.FLAT_SCAN;
 	private BgTime bgTime = BgTime.DAYLY;
 	private int multiSourcePath, multiDestPath;
@@ -60,57 +62,70 @@ public class Preference {
 	private boolean subDir = false;
 	private boolean autoDel, autoSync, bgSync, trashbin, syncMapLoad;
 	private boolean autoBgDel = true;
-	
-	private final static Preference pref = new Preference();
-	
+
+	private static Preference pref = null;
+
 	/**
-	 * 
+	 *
 	 * @return <b>Preference</b>
 	 */
-	public static Preference getInstance() {
+	public static Preference getInstance(Path path) {
+		if (pref == null) pref = new Preference(path);
 		return pref;
 	}
-	
-	private Preference() {
+
+	public static Preference getInstance() { return getInstance(null); }
+
+	private Preference(Path path) {
+		if (path != null && Files.exists(path, LinkOption.NOFOLLOW_LINKS) && Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS) && Files.isWritable(path)) {
+			setConfigPaths(path);
+		} else {
+			setConfigPaths(rootPath);
+		}
 		load();
 	}
-	
-//	Check and load the preferences  
+
+//	Check and load the preferences
 	private void load() {
 		ioP = new IOPrefs();
 		ioS = new IOSyncMap();
 		setSyncMapLoad(ioS.loadSyncMap(syncMap));
-		if(ioP.readPreferences()){
+		if (ioP.readPreferences()) {
 			try {
 				multiSourcePath = ioP.getMultiPath("multiSourcePath");
 				multiDestPath = ioP.getMultiPath("multiDestPath");
 				deepScan = ioP.getScanType();
 				bgTime = ioP.getBgTime();
 				subDir = ioP.getBoolean("subDir");
-				logOn = ioP.getBoolean("logOn");	
+				logOn = ioP.getBoolean("logOn");
 				autoDel = ioP.getBoolean("autoDel");
 				autoBgDel = ioP.getBoolean("autoBgDel");
-				autoSync = ioP.getBoolean("autoSync"); 
-				bgSync = ioP.getBoolean("bgSync"); 
+				autoSync = ioP.getBoolean("autoSync");
+				bgSync = ioP.getBoolean("bgSync");
 				trashbin = ioP.getBoolean("trashbin");
 
-				for(int i = 1; i <= multiSourcePath; i++) {
+				for (int i = 1; i <= multiSourcePath; i++) {
 					sourcePath.add(ioP.getPath("sourcePath" + i));
 				}
-				for(int i = 1; i <= multiDestPath; i++) {
+				for (int i = 1; i <= multiDestPath; i++) {
 					destPath.add(ioP.getPath("destPath" + i));
 				}
 //	TODO This is for aggregate older versions, will refactor in the next versions
-				try {	startSourcePath = ioP.getPath("startSourcePath");
-				}catch(ConfigException e) {		startSourcePath = sourcePath.get(0);	}				
+				try {
+					startSourcePath = ioP.getPath("startSourcePath");
+				} catch (final ConfigException e) {
+					startSourcePath = sourcePath.get(0);
+				}
 
 				startDestPath = ioP.getPath("startDestPath");
 				trashbinPath = ioP.getPath("trashbinPath");
-			}catch(ConfigException e) {e.printStackTrace();}
+			} catch (final ConfigException e) {
+				e.printStackTrace();
+			}
 		}
-		if(!sourcePath.isEmpty() && !destPath.isEmpty()) {
+		if (!sourcePath.isEmpty() && !destPath.isEmpty()) {
 			isLoaded = true;
-		}else {
+		} else {
 			multiSourcePath = 1;
 			multiDestPath = 1;
 			startDestPath = Paths.get(System.getProperty("user.home"));
@@ -121,18 +136,18 @@ public class Preference {
 		}
 	}
 
-/**
- * 	Save the preferences
- * 
- * @return <b>boolean</b> true if success
- */
+	/**
+	 * Save the preferences
+	 *
+	 * @return <b>boolean</b> true if success
+	 */
 	public boolean savePrefs() {
-		if(destPath != null && !sourcePath.isEmpty()) {
-			for(int i = 1; i <= multiSourcePath; i++) {
-				ioP.setPreferences("sourcePath" + i, Json.createValue(sourcePath.get(i-1).toString()));
+		if (destPath != null && !sourcePath.isEmpty()) {
+			for (int i = 1; i <= multiSourcePath; i++) {
+				ioP.setPreferences("sourcePath" + i, Json.createValue(sourcePath.get(i - 1).toString()));
 			}
-			for(int i = 1; i <= multiDestPath; i++) {
-				ioP.setPreferences("destPath" + i, Json.createValue(destPath.get(i-1).toString()));
+			for (int i = 1; i <= multiDestPath; i++) {
+				ioP.setPreferences("destPath" + i, Json.createValue(destPath.get(i - 1).toString()));
 			}
 			ioP.setPreferences("startDestPath", Json.createValue(startDestPath.toString()));
 			ioP.setPreferences("startSourcePath", Json.createValue(startSourcePath.toString()));
@@ -144,138 +159,137 @@ public class Preference {
 			ioP.setPreferences("logOn", (logOn) ? JsonValue.TRUE : JsonValue.FALSE);
 			ioP.setPreferences("autoDel", (autoDel) ? JsonValue.TRUE : JsonValue.FALSE);
 			ioP.setPreferences("autoBgDel", (autoBgDel) ? JsonValue.TRUE : JsonValue.FALSE);
-			ioP.setPreferences("autoSync", (autoSync) ? JsonValue.TRUE : JsonValue.FALSE); 
-			ioP.setPreferences("bgSync", (bgSync) ? JsonValue.TRUE : JsonValue.FALSE); 
+			ioP.setPreferences("autoSync", (autoSync) ? JsonValue.TRUE : JsonValue.FALSE);
+			ioP.setPreferences("bgSync", (bgSync) ? JsonValue.TRUE : JsonValue.FALSE);
 			ioP.setPreferences("trashbin", (trashbin) ? JsonValue.TRUE : JsonValue.FALSE);
 			ioP.setPreferences("bgTime", Json.createValue(bgTime.getName()));
 			return ioP.writePreferences();
 		}
 		return false;
 	}
-	
+
 	/**
-	 * Save the last scan time 
+	 * Save the last scan time
 	 */
 	public void saveLastScanTime() {
-		try(BufferedWriter bw = Files.newBufferedWriter(Preference.SCAN_TIME_PATH, StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)){
+		try (BufferedWriter bw = Files.newBufferedWriter(Preference.scanTimePath, StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
 			bw.write(String.valueOf(System.currentTimeMillis()));
-		}catch(IOException e) {	}
+		} catch (final IOException e) {}
 	}
-	
+
 	/**
 	 * Get the last scan time
-	 * 
+	 *
 	 * @return <b>long</b> lastScanTime
 	 */
 	public long getLastScanTime() {
-		try(BufferedReader br = Files.newBufferedReader(Preference.SCAN_TIME_PATH)){
-			String str = br.readLine();
-			try { 
-				return Long.valueOf(str);
-			}catch(NullPointerException e) {
+		try (BufferedReader br = Files.newBufferedReader(Preference.scanTimePath)) {
+			final String str = br.readLine();
+			try {
+				return Long.parseLong(str);
+			} catch (final NullPointerException e) {
 				return 0;
 			}
-		}catch(IOException e) {	}
+		} catch (final IOException e) {}
 		return 0;
 	}
-	
-	public void setStartSourcePath(Path startSourcePath) {
-		this.startSourcePath = startSourcePath;
-	}
+
+	public void setStartSourcePath(Path startSourcePath) { this.startSourcePath = startSourcePath; }
+
 	public void setStartDestPath(Path startDestPath) {
 		this.startDestPath = startDestPath;
 		this.trashbinPath = startDestPath.resolve(trashbinString);
 	}
+
 	public void writeSyncMap() {
-		ioS.writeSyncMap(syncMap);	
+		ioS.writeSyncMap(syncMap);
 	}
+
 	public void setSourcePath(ArrayList<Path> paths) {
 		multiSourcePath = paths.size();
 		sourcePath = paths;
 	}
+
 	public void setDestPath(ArrayList<Path> paths) {
 		multiDestPath = paths.size();
-		destPath = paths;		
+		destPath = paths;
 	}
-	public void setTrashbin(boolean trashbin) {
-		this.trashbin = trashbin;
+
+	public void setTrashbin(boolean trashbin) { this.trashbin = trashbin; }
+
+	public void setScanMode(ScanType deepScan) { this.deepScan = deepScan; }
+
+	public void setBgTime(BgTime bgTime) { this.bgTime = bgTime; }
+
+	public void setBgSync(boolean bgSync) { this.bgSync = bgSync; }
+
+	public void setLogOn(boolean logOn) { this.logOn = logOn; }
+
+	public void setSubDir(boolean subDir) { this.subDir = subDir; }
+
+	public void setAutoBgDel(boolean autoBgDel) { this.autoBgDel = autoBgDel; }
+
+	public void setAutoDel(boolean autoDel) { this.autoDel = autoDel; }
+
+	public void setAutoSync(boolean autoSync) { this.autoSync = autoSync; }
+
+	public void setSyncMapLoad(boolean syncMapLoad) { this.syncMapLoad = syncMapLoad; }
+
+	public Path getStartSourcePath() { return startSourcePath; }
+
+	public Path getStartDestPath() { return startDestPath; }
+
+	public Map<Path, FileAttributes> getSyncMap() { return syncMap; }
+
+	public ArrayList<Path> getSourcePath() { return sourcePath; }
+
+	public ArrayList<Path> getDestPath() { return destPath; }
+
+	public ScanType getDeepScan() { return deepScan; }
+
+	public Path getTrashbinPath() { return trashbinPath; }
+
+	public boolean isLoaded() { return isLoaded; }
+
+	public boolean isLogOn() { return logOn; }
+
+	public boolean isSubDir() { return subDir; }
+
+	public boolean isBgSync() { return bgSync; }
+
+	public boolean isAutoDel() { return autoDel; }
+
+	public boolean isAutoBgDel() { return autoBgDel; }
+
+	public boolean isAutoSync() { return autoSync; }
+
+	public boolean isTrashbin() { return trashbin; }
+
+	public BgTime getBgTime() { return bgTime; }
+
+	public boolean isSyncMapLoad() { return syncMapLoad; }
+
+	private void setConfigPaths(Path root) {
+		rootPath = root;
+		debugPath = rootPath.resolve("debug.log");
+		errorPath = rootPath.resolve("debug.err");
+		logPath = rootPath.resolve("log.json");
+		configPath = rootPath.resolve("conf.json");
+		syncMapPath = rootPath.resolve("syncMap.json");
+		scanTimePath = rootPath.resolve("lastScanTime");
 	}
-	public void setScanMode(ScanType deepScan) {
-		this.deepScan = deepScan;
-	}
-	public void setBgTime(BgTime bgTime) {
-		this.bgTime = bgTime;
-	}
-	public void setBgSync(boolean bgSync) {
-		this.bgSync = bgSync;
-	}
-	public void setLogOn(boolean logOn) {
-		this.logOn = logOn;
-	}
-	public void setSubDir(boolean subDir) {
-		this.subDir = subDir;
-	}
-	public void setAutoBgDel(boolean autoBgDel) {
-		this.autoBgDel = autoBgDel;
-	}
-	public void setAutoDel(boolean autoDel) {
-		this.autoDel = autoDel;
-	}
-	public void setAutoSync(boolean autoSync) {
-		this.autoSync = autoSync;
-	}
-	public void setSyncMapLoad(boolean syncMapLoad) {
-		this.syncMapLoad = syncMapLoad;
-	}
-	public Path getStartSourcePath() {
-		return startSourcePath;
-	}
-	public Path getStartDestPath() {
-		return startDestPath;
-	}
-	public Map<Path, FileAttributes> getSyncMap() {
-		return syncMap;
-	}
-	public ArrayList<Path> getSourcePath() {
-		return sourcePath;
-	}
-	public ArrayList<Path> getDestPath() {
-		return destPath;
-	}
-	public ScanType getDeepScan() {
-		return deepScan;
-	}
-	public Path getTrashbinPath() {
-		return trashbinPath;
-	}
-	public boolean isLoaded() {
-		return isLoaded;
-	}
-	public boolean isLogOn() {
-		return logOn;
-	}
-	public boolean isSubDir() {
-		return subDir;
-	}
-	public boolean isBgSync() {
-		return bgSync;
-	}
-	public boolean isAutoDel() {
-		return autoDel;
-	}
-	public boolean isAutoBgDel() {
-		return autoBgDel;
-	}
-	public boolean isAutoSync() {
-		return autoSync;
-	}
-	public boolean isTrashbin() {
-		return trashbin;
-	}
-	public BgTime getBgTime() {
-		return bgTime;
-	}
-	public boolean isSyncMapLoad() {
-		return syncMapLoad;
-	}
+
+	public static String getRootPath() { return rootPath.toString(); }
+
+	public static Path getDebugPath() { return debugPath; }
+
+	public static Path getErrorPath() { return errorPath; }
+
+	public static Path getLogPath() { return logPath; }
+
+	public static Path getConfigPath() { return configPath; }
+
+	public static Path getSyncMapPath() { return syncMapPath; }
+
+	public static Path getScanTimePath() { return scanTimePath; }
 }

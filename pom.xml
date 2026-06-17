@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>de.spiritscorp</groupId>
 	<artifactId>DataSync</artifactId>
-	<version>0.9.6.3</version>
+	<version>0.9.6.4</version>
 	<name>Data Sync</name>
 	<description>Application to synchronize your data</description>
 

@@ -1,6 +1,7 @@
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](#)
 [![Java Version](https://img.shields.io/badge/Java-21-orange.svg)](#)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux-blue.svg)](#)
+[![Environment](https://img.shields.io/badge/Environment-GUI%20only-blue.svg)](#)
 
 # DataSync
 

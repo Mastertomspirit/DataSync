@@ -80,7 +80,7 @@ public class View extends JFrame {
 		try {
 			bgPicTemp = ImageIO.read(View.class.getClassLoader().getResource("splashing-165192_1280.jpg"));
 		} catch (final IOException e) {
-			e.printStackTrace();
+			Debug.printException(this.getClass(), e);
 		}
 		bgPic = bgPicTemp;
 	}

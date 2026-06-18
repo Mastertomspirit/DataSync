@@ -260,11 +260,9 @@ class ControllerHelper {
 	}
 
 	/**
-	 * Set and delete the system autostart for Windows and Linux </br>
-	 * </br>
-	 * 
+	 * Set and delete the system autostart for Windows and Linux <br>
 	 * <b><i>NO OSX SUPPORT PLANED</i></b>
-	 * 
+	 *
 	 * @param set When set is true, entry will delete
 	 */
 	public void setOSAutostart(boolean set) {

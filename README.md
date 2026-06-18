@@ -54,9 +54,10 @@ Fine-tune the application startup behavior using the following flags:
 
 | Flag | Description |
 | :--- | :--- |
-| `--firstStart` | Delays the application execution for 5 minutes after system startup (useful for boot-start scripts). |
-| `--debug` | Enables detailed debug output in the console. |
-| `--debugToFile` | Redirects all debug and error logs to a file located at `user.home/DataSync/`. |
+| `firstStart` | Delays the application execution for 5 minutes after system startup (useful for boot-start scripts). |
+| `debug` | Enables detailed debug output in the console. |
+| `debugToFile` | Redirects all debug and error logs to a file located at `user.home/DataSync/`. |
+| `--configFile=` | Set another configDirectory `/myNewDir/`. |
 
 ---
 
@@ -76,4 +77,10 @@ mvn clean compile jlink:jlink verify
 If you prefer a standalone executable JAR (requires Java 21 pre-installed on the target system):
 ```bash
 mvn clean package
+```
+
+### Sign the Runtime or JAR
+For signing use the install phase:
+```bash
+mvn clean 
 ```

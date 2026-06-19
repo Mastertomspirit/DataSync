@@ -8,8 +8,8 @@ pom.xml.tag
 pom.xml.releaseBackup
 pom.xml.versionsBackup
 pom.xml.next
-ideen
-gui
+ideen.md
+gui.md
 release.properties
 dependency-reduced-pom.xml
 buildNumber.properties

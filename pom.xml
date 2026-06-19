@@ -169,6 +169,11 @@
 				<version>${pl_jlink.version}</version>
 				<extensions>true</extensions>
 				<configuration>
+					    <addModules>
+                           <addModule>javafx.controls</addModule>
+                           <addModule>org.kordamp.ikonli.javafx</addModule>
+                           <addModule>org.kordamp.ikonli.materialdesign2</addModule>
+                       </addModules>
 				</configuration>
 			</plugin>
 			<plugin>

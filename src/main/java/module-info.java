@@ -18,8 +18,19 @@
 		Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 module de.spiritscorp.DataSync {
-	exports de.spiritscorp.DataSync;
+	requires javafx.controls;
+    
+    // Falls Ikonli auch noch drin ist, brauchst du diese weiterhin:
+    requires org.kordamp.ikonli.javafx;
+    requires org.kordamp.ikonli.materialdesign2;
+
+    // 2. Das Paket mit deiner MainView für das JavaFX-Grafiksystem öffnen
+    exports de.spiritscorp.DataSync.Gui to javafx.graphics;
+    
+    // Falls deine Main-Klasse direkt im Root-Paket liegt:
+    exports de.spiritscorp.DataSync to javafx.graphics;
+//	exports de.spiritscorp.DataSync;
 	opens de.spiritscorp.DataSync.Model;
-	requires java.desktop;
+	//requires java.desktop;
 	requires jakarta.json;
 }

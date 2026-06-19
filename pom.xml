@@ -234,6 +234,11 @@
 		</plugins>
 	</build>
 	<dependencies>
+		<dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-controls</artifactId>
+            <version>21.0.5</version>
+		</dependency>
 		<!-- https://mvnrepository.com/artifact/jakarta.json/jakarta.json-api -->
 		<dependency>
 			<groupId>jakarta.json</groupId>

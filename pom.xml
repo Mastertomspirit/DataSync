@@ -220,6 +220,11 @@
 				<version>${pl_jlink.version}</version>
 				<extensions>true</extensions>
 				<configuration>
+					    <addModules>
+                           <addModule>javafx.controls</addModule>
+                           <addModule>org.kordamp.ikonli.javafx</addModule>
+                           <addModule>org.kordamp.ikonli.materialdesign2</addModule>
+                       </addModules>
 				</configuration>
 			</plugin>
 			<plugin>
@@ -350,6 +355,11 @@
 		</plugins>
 	</build>
 	<dependencies>
+		<dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-controls</artifactId>
+            <version>21.0.5</version>
+		</dependency>
 		<!-- https://mvnrepository.com/artifact/jakarta.json/jakarta.json-api -->
 		<dependency>
 			<groupId>jakarta.json</groupId>
@@ -363,6 +373,16 @@
 			<version>${dep_glassfish.jakarta.json.version}</version>
 			<classifier>module</classifier>
 		</dependency>
+    <dependency>
+        <groupId>org.kordamp.ikonli</groupId>
+        <artifactId>ikonli-javafx</artifactId>
+        <version>12.4.0</version>
+    </dependency>
+    <dependency>
+        <groupId>org.kordamp.ikonli</groupId>
+        <artifactId>ikonli-materialdesign2-pack</artifactId>
+        <version>12.4.0</version>
+    </dependency>
 		<!-- https://mvnrepository.com/artifact/org.junit.jupiter/junit-jupiter-engine -->
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>

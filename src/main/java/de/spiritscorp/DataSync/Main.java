@@ -28,17 +28,25 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 import java.util.Arrays;
 
-import de.spiritscorp.DataSync.Controller.Controller;
+import de.spiritscorp.DataSync.Controller.MainViewController;
 import de.spiritscorp.DataSync.IO.Debug;
 import de.spiritscorp.DataSync.IO.Preference;
 
+/**
+ * Main application entry point responsible for runtime arguments parsing,
+ * debug subsystems orchestration, and boots-strapping the JavaFX platform lifecycle.
+ * * @author Tom Spirit
+ */
 public class Main {
 
 	public final static String VERSION = "V 0.9.6.5";
 	public static boolean debug = false;
+	private static boolean firstStart = false;
 
 	/**
-	 * Launch the application.
+	 * Launch the application framework execution matrix.
+	 *
+	 * @param args Command line runtime environment argument flags.
 	 */
 	public static void main(String[] args) {
 		debug = Arrays.stream(args).anyMatch((s) -> s.equals("debug"));
@@ -62,6 +70,11 @@ public class Main {
 			Debug.printDebug("Set config root path -> %s", Preference.getRootPath().toString());
 		}
 
-		new Controller(firstStart);
+		new MainViewController(args);
 	}
+
+	/**
+	 * @return True if the application was executed with the clear initialization flag marker context.
+	 */
+	public static boolean isFirstStart() { return firstStart; }
 }

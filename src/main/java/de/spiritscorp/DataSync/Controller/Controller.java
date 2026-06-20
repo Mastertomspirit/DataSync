@@ -34,7 +34,6 @@ import javax.swing.JOptionPane;
 
 import de.spiritscorp.DataSync.BgTime;
 import de.spiritscorp.DataSync.ScanType;
-import de.spiritscorp.DataSync.Gui.BgView;
 import de.spiritscorp.DataSync.Gui.View;
 import de.spiritscorp.DataSync.IO.Debug;
 import de.spiritscorp.DataSync.IO.Logger;
@@ -45,17 +44,17 @@ import de.spiritscorp.DataSync.Model.Model;
 public class Controller extends WindowAdapter implements ActionListener, MouseListener {
 
 	private View view;
-	private final BgView bgView;
+//	private final BgView bgView;
 	private final Model model;
 	private final Preference pref;
 	private final Logger logger;
 	private final ControllerHelper helper;
-	private final BgController bgController;
+//	private final BgController bgController;
 	private final Controller event = this;
 
 	/**
 	 * Check if a background job should execute, elsewhere the view is started
-	 * 
+	 *
 	 * @param firstStart Delayed scan at system startup
 	 */
 	public Controller(boolean firstStart) {
@@ -64,7 +63,7 @@ public class Controller extends WindowAdapter implements ActionListener, MouseLi
 		pref = Preference.getInstance();
 		logger = new Logger();
 		model = new Model(logger, sourceMap, destMap);
-		bgView = new BgView(event);
+//		bgView = new BgView(event);
 		try {
 			EventQueue.invokeAndWait(() -> {
 				try {
@@ -79,9 +78,9 @@ public class Controller extends WindowAdapter implements ActionListener, MouseLi
 			Debug.printException(this.getClass(), e1);
 		}
 		helper = new ControllerHelper(model, pref, sourceMap, destMap);
-		bgController = new BgController(bgView, pref, logger);
+//		bgController = new BgController(bgView, pref, logger);
 		if (firstStart) {
-			new Thread(() -> bgController.startBgJob(view, helper, true)).start();
+//			new Thread(()->bgController.startBgJob(view, helper, true)).start();
 		}
 	}
 
@@ -89,7 +88,7 @@ public class Controller extends WindowAdapter implements ActionListener, MouseLi
 	public void windowClosing(WindowEvent e) {
 		if (!helper.isScanRun()) {
 			view.setVisible(false);
-			new Thread(() -> bgController.startBgJob(view, helper, false)).start();
+//			new Thread(() -> bgController.startBgJob(view, helper, false)).start();
 		}
 	}
 
@@ -181,15 +180,15 @@ public class Controller extends WindowAdapter implements ActionListener, MouseLi
 		}
 
 //		ITEM BACKGROUND VIEW OPEN
-		if (e.getSource() == bgView.getOpenItem()) {
-			bgController.interruptBgJob();
-			view.setVisible(true);
-		}
+//		if(e.getSource() == bgView.getOpenItem()) {
+//			bgController.interruptBgJob();
+//			view.setVisible(true);
+//		}
 
 //		ITEM BACKGROUND VIEW EXIT
-		if (e.getSource() == bgView.getExitIcon()) {
-			System.exit(0);
-		}
+//		if(e.getSource() == bgView.getExitIcon()) {
+//			System.exit(0);
+//		}
 
 //		CHECKBOX LOGGING ON
 		if (e.getSource() == view.getLogOnBox()) {
@@ -216,7 +215,7 @@ public class Controller extends WindowAdapter implements ActionListener, MouseLi
 	public void mousePressed(MouseEvent e) {
 //		SYSTEM TRAY -> RIGHT CLICK
 		if (e.getButton() == 1) {
-			bgController.interruptBgJob();
+//			bgController.interruptBgJob();
 			view.setVisible(true);
 		}
 	}

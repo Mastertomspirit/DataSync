@@ -39,7 +39,7 @@ import de.spiritscorp.DataSync.IO.Preference;
 import de.spiritscorp.DataSync.Model.FileAttributes;
 import de.spiritscorp.DataSync.Model.Model;
 
-class ControllerHelper {
+public class ControllerHelper {
 
 	private final Model model;
 	private final Preference pref;
@@ -55,7 +55,7 @@ class ControllerHelper {
 	 * @param sourceMap
 	 * @param destMap
 	 */
-	ControllerHelper(final Model model, final Preference pref, Map<Path, FileAttributes> sourceMap, Map<Path, FileAttributes> destMap) {
+	public ControllerHelper(final Model model, final Preference pref, Map<Path, FileAttributes> sourceMap, Map<Path, FileAttributes> destMap) {
 		this.model = model;
 		this.pref = pref;
 		this.sourceMap = sourceMap;
@@ -68,7 +68,7 @@ class ControllerHelper {
 	 *
 	 * @param view The view
 	 */
-	void selectButton(View view) {
+	public void selectButton(View view) {
 		final ArrayList<Path> sourcePaths = new ArrayList<>();
 		final ArrayList<Path> destPaths = new ArrayList<>();
 		int i = 0;
@@ -125,7 +125,7 @@ class ControllerHelper {
 	 *
 	 * @param view
 	 */
-	void startSyncronize(View view) {
+	public void startSyncronize(View view) {
 		scanRun = true;
 		view.setScanRun(true);
 
@@ -172,7 +172,7 @@ class ControllerHelper {
 	 *
 	 * @param view The view
 	 */
-	void startBackup(View view) {
+	public void startBackup(View view) {
 		scanRun = true;
 		view.setScanRun(true);
 
@@ -236,7 +236,7 @@ class ControllerHelper {
 	 *
 	 * @param view The view
 	 */
-	void startDuplicateScan(View view) {
+	public void startDuplicateScan(View view) {
 		scanRun = true;
 		view.setScanRun(true);
 		final long startTime = System.nanoTime();
@@ -327,9 +327,9 @@ class ControllerHelper {
 		// Apple OSX
 	}
 
-	boolean isScanRun() { return scanRun; }
+	public boolean isScanRun() { return scanRun; }
 
-	void setScanRun(boolean scanRun) { this.scanRun = scanRun; }
+	public void setScanRun(boolean scanRun) { this.scanRun = scanRun; }
 
 	/**
 	 * Give back a formatted string for visualizing at the textArea

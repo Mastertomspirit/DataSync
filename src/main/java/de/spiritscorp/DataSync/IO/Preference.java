@@ -47,6 +47,7 @@ public class Preference {
 	private static Path syncMapPath;
 	private static Path scanTimePath;
 
+
 	private IOPrefs ioP;
 	private IOSyncMap ioS;
 	private ArrayList<Path> sourcePath = new ArrayList<>();
@@ -63,21 +64,14 @@ public class Preference {
 	private boolean autoDel, autoSync, bgSync, trashbin, syncMapLoad;
 	private boolean autoBgDel = true;
 
-	private static Preference pref = null;
-
 	/**
 	 *
 	 * @return <b>Preference</b>
 	 */
-	public static Preference getInstance(Path path) {
-		if (pref == null) pref = new Preference(path);
-		return pref;
-	}
+	public static Preference getInstance() { return new Preference(); }
 
-	public static Preference getInstance() { return getInstance(null); }
-
-	private Preference(Path path) {
-		if (path != null && Files.exists(path, LinkOption.NOFOLLOW_LINKS) && Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS) && Files.isWritable(path)) {
+	private Preference() {
+    		if (path != null && Files.exists(path, LinkOption.NOFOLLOW_LINKS) && Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS) && Files.isWritable(path)) {
 			setConfigPaths(path);
 		} else {
 			setConfigPaths(rootPath);
@@ -110,13 +104,7 @@ public class Preference {
 				for (int i = 1; i <= multiDestPath; i++) {
 					destPath.add(ioP.getPath("destPath" + i));
 				}
-//	TODO This is for aggregate older versions, will refactor in the next versions
-				try {
-					startSourcePath = ioP.getPath("startSourcePath");
-				} catch (final ConfigException e) {
-					startSourcePath = sourcePath.get(0);
-				}
-
+				startSourcePath = ioP.getPath("startSourcePath");
 				startDestPath = ioP.getPath("startDestPath");
 				trashbinPath = ioP.getPath("trashbinPath");
 			} catch (final ConfigException e) {
@@ -138,7 +126,7 @@ public class Preference {
 
 	/**
 	 * Save the preferences
-	 *
+	 * 
 	 * @return <b>boolean</b> true if success
 	 */
 	public boolean savePrefs() {

@@ -55,16 +55,9 @@ public class SyncJobContext {
 	 *
 	 * @param basePreference The template preference instance to derive task-specific settings from
 	 */
-	public SyncJobContext(String name, Preference basePreference) {
+	public SyncJobContext(String name, Preference taskPreference) {
 		this.jobName.set(name);
-		// Creates an isolated copy/instance for this specific task
-		this.taskPreference = Preference.getInstance();
-		// Initialize with default values from the template if needed
-		this.taskPreference.setSubDir(basePreference.isSubDir());
-		this.taskPreference.setTrashbin(basePreference.isTrashbin());
-		this.taskPreference.setAutoDel(basePreference.isAutoDel());
-		this.taskPreference.setLogOn(basePreference.isLogOn());
-		this.taskPreference.setBgSync(basePreference.isBgSync());
+		this.taskPreference = taskPreference;
 	}
 
 	/**
@@ -82,6 +75,9 @@ public class SyncJobContext {
 			setRunning(false);
 			setStatusMessage("Aktion vom Benutzer abgebrochen.");
 			appendLog("-> Vorgang abgebrochen.");
+		} else {
+			setStatusMessage("Keine aktive Aktion.");
+			appendLog("-> Nichts zu beenden gefunden.");
 		}
 	}
 

@@ -20,6 +20,7 @@
 package de.spiritscorp.DataSync.Controller;
 
 import de.spiritscorp.DataSync.Gui.Gui;
+import de.spiritscorp.DataSync.IO.Preference;
 import de.spiritscorp.DataSync.Theme.AppTheme;
 import javafx.scene.control.ListCell;
 
@@ -38,14 +39,19 @@ public interface ViewController {
 	void handleNavigate(Gui.ViewState state);
 
 	/**
-	 * Handles the creation and append workflow for a new managed task synchronization context instance.
-	 */
-	void handleCreateNewJob();
-
-	/**
 	 * Requests termination of the entire application environment, safely stopping background hooks.
 	 */
 	void handleApplicationShutdown();
+
+	/**
+	 * Load the whole jobList from the Preferences.
+	 */
+	void loadInitialJobList();
+
+	/**
+	 * Handles the creation and append workflow for a new managed task synchronization context instance.
+	 */
+	void handleCreateNewJob();
 
 	/**
 	 * Triggers the specialized configuration context dialog to change a job instance identification label.
@@ -76,18 +82,20 @@ public interface ViewController {
 	void handleExecuteTask(SyncJobContext job);
 
 	/**
-	 * Persists altered view model configurations down into underlying property IO file definitions data layers.
+	 * Stop execution of processing operations based on active configuration parameters.
 	 *
-	 * @param job         The configuration payload state context to flush.
-	 * @param subDir      Include sub-hierarchies flag.
-	 * @param trashbin    Use safety retention structures flag.
-	 * @param autoDel     Allow destructive purging flag.
-	 * @param logOn       Enable trace log tracking flag.
-	 * @param bgSync      Active real-time daemon state metrics.
-	 * @param interval    Current selected scan-cycle scheduling object identifier.
-	 * @param targetTheme Custom visualization skin engine definition instance to inject.
-	 * @param autostart   Enable OS-level minimized daemon autostart configuration.
+	 * @param job The active task configuration processing target.
 	 */
-	void handleSaveSettings(SyncJobContext job, boolean subDir, boolean trashbin, boolean autoDel,
-			boolean logOn, boolean bgSync, String interval, AppTheme targetTheme, boolean autostart);
+	void handleStopTask(SyncJobContext job);
+
+	/**
+	 * Commits altered orchestration state variables using the encapsulated properties entity carrier.
+	 *
+	 * @param localPreferences Altered context data parameters container reference.
+	 * @param targetTheme      Visual presentation theme strategy selection.
+	 */
+	void handleSaveSettings(Preference localPreferences, AppTheme targetTheme);
+
+	void runInBackground();
+
 }

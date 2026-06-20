@@ -54,6 +54,7 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Tooltip;
 import javafx.scene.control.cell.CheckBoxTableCell;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
@@ -111,9 +112,11 @@ public class WorkspaceView extends VBox {
 
 		actionButton = new Button("Ausführen", Gui.createIcon(MaterialDesignP.PLAY));
 		actionButton.setStyle("-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10px 20px;");
-
+		actionButton.setTooltip(new Tooltip("Starte Job"));
 		cancelButton = new Button("Abbrechen", Gui.createIcon(MaterialDesignS.STOP));
 		cancelButton.setStyle("-fx-background-color: #95a5a6; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10px 16px;");
+		cancelButton.setTooltip(new Tooltip("Stoppe Job"));
+
 		controlToolbar.getChildren().addAll(actionButton, cancelButton);
 
 		consoleTextArea = new TextArea();
@@ -129,7 +132,9 @@ public class WorkspaceView extends VBox {
 		final HBox statusFooter = new HBox(12);
 		statusFooter.setAlignment(Pos.CENTER_LEFT);
 		progressBar = new ProgressBar(0);
+		progressBar.setTooltip(new Tooltip("Aktueller Fortschritt"));
 		statusLabel = new Label("Bereit");
+		statusLabel.setTooltip(new Tooltip("Aktueller Status"));
 		statusFooter.getChildren().addAll(progressBar, statusLabel);
 
 		this.getChildren().addAll(workspaceHeaderLabel, contextInfoLabel, controlToolbar, centerViewport, statusFooter);
@@ -159,6 +164,7 @@ public class WorkspaceView extends VBox {
 		duplicateTable.getColumns().addAll(List.of(selCol, nameCol, pathCol));
 		deleteButton = new Button("Duplikate löschen", Gui.createIcon(MaterialDesignD.DELETE));
 		deleteButton.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white;");
+		deleteButton.setTooltip(new Tooltip("Ausgewählte Dateine werden gelöscht"));
 
 		final VBox frame = new VBox(8, duplicateTable, deleteButton);
 		VBox.setVgrow(duplicateTable, Priority.ALWAYS);
@@ -228,7 +234,7 @@ public class WorkspaceView extends VBox {
 		cancelButton.disableProperty().bind(job.runningProperty().not());
 		actionButton.disableProperty().bind(job.runningProperty());
 
-		cancelButton.setOnAction(e -> job.cancelRunningTask());
+		cancelButton.setOnAction(e -> controller.handleStopTask(job));
 		actionButton.setOnAction(e -> controller.handleExecuteTask(job));
 	}
 
@@ -256,8 +262,17 @@ public class WorkspaceView extends VBox {
 		final VBox dynamicPathsContainer = new VBox(12);
 		grid.add(dynamicPathsContainer, 0, 1, 2, 1);
 
-		taskModeComboBox.valueProperty().addListener((obs, o, n) -> renderContextPaths(ScanType.get(n), dynamicPathsContainer, pref));
-		renderContextPaths(job.getSelectedMode(), dynamicPathsContainer, pref);
+//		TODO Load from preferences
+		final PathContext pathCtx = new PathContext();
+		if (pref.getSourcePath() != null) {
+			pathCtx.sources.addAll(pref.getSourcePath());
+		}
+		if (pref.getDestPath() != null) {
+			pathCtx.destinations.addAll(pref.getDestPath());
+		}
+
+		taskModeComboBox.valueProperty().addListener((obs, o, n) -> renderContextPaths(ScanType.get(n), dynamicPathsContainer, pref, pathCtx));
+		renderContextPaths(job.getSelectedMode(), dynamicPathsContainer, pref, pathCtx);
 
 		// --- Section 3: Task Parameter Flags Options ---
 		final Label paramsTitle = new Label("Erweiterte Ablaufparameter");
@@ -265,14 +280,19 @@ public class WorkspaceView extends VBox {
 
 		final CheckBox subDirCheck = new CheckBox("Unterordner einbeziehen (SubDir)");
 		subDirCheck.setSelected(pref.isSubDir());
+		subDirCheck.setTooltip(new Tooltip("Aktueller Status"));
 		final CheckBox trashbinCheck = new CheckBox("Papierkorb verwenden (Trashbin)");
 		trashbinCheck.setSelected(pref.isTrashbin());
+		trashbinCheck.setTooltip(new Tooltip("Verschiebt modifizierte/gelöschte Dateien temporär in Sicherungsstrukturen"));
 		final CheckBox autoDelCheck = new CheckBox("Automatisches Löschen erlauben (AutoDel)");
 		autoDelCheck.setSelected(pref.isAutoDel());
+		autoDelCheck.setTooltip(new Tooltip("Erlaubt dem System, verwaiste Dateien im Zielordner restlos zu bereinigen"));
 		final CheckBox logOnCheck = new CheckBox("Protokollierung aktivieren (LogOn)");
 		logOnCheck.setSelected(pref.isLogOn());
+		logOnCheck.setTooltip(new Tooltip("Schreibt detaillierte Transaktionsprotokolle in das System-Logverzeichnis"));
 		final CheckBox bgSyncCheck = new CheckBox("Hintergrund-Synchronisation aktiv");
 		bgSyncCheck.setSelected(pref.isBgSync());
+		bgSyncCheck.setTooltip(new Tooltip("Setzt den Autostart und aktiviert die Hintergrundsyncronisierung im nachfolgenden Intervall"));
 
 		final Label bgTimeLabel = new Label("Hintergrund Scan-Intervall:");
 		final ComboBox<String> bgTimeComboBox = new ComboBox<>();
@@ -317,16 +337,31 @@ public class WorkspaceView extends VBox {
 		// --- Commit Action Triggers ---
 		final Button saveButton = new Button("Einstellungen speichern", Gui.createIcon(MaterialDesignD.DISC));
 		saveButton.setStyle("-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10px 24px;");
-		saveButton.setOnAction(e -> controller.handleSaveSettings(
-				job,
-				subDirCheck.isSelected(),
-				trashbinCheck.isSelected(),
-				autoDelCheck.isSelected(),
-				logOnCheck.isSelected(),
-				bgSyncCheck.isSelected(),
-				bgTimeComboBox.getValue(),
-				themeComboBox.getValue(),
-				globalAutostartCheck.isSelected()));
+		saveButton.setTooltip(new Tooltip("Übernimmt alle geänderten Zustandsparameter permanent in die JSON-Konfigurationsdatei"));
+		saveButton.setOnAction(e -> {
+			final Preference jobPref = job.getPreference();
+			jobPref.setSubDir(subDirCheck.isSelected());
+			jobPref.setTrashbin(trashbinCheck.isSelected());
+			jobPref.setAutoDel(autoDelCheck.isSelected());
+			jobPref.setLogOn(logOnCheck.isSelected());
+			jobPref.setBgSync(bgSyncCheck.isSelected());
+			jobPref.setBgTime(BgTime.get(bgTimeComboBox.getValue()));
+			jobPref.setAutoSync(globalAutostartCheck.isSelected());
+			jobPref.setScanMode(ScanType.get(taskModeComboBox.getValue()));
+			jobPref.setSourcePath(new ArrayList<>(pathCtx.sources));
+			if (!pathCtx.sources.isEmpty()) {
+				jobPref.setStartSourcePath(pathCtx.sources.get(0));
+			} else {
+				jobPref.setStartSourcePath(null);
+			}
+			jobPref.setDestPath(new ArrayList<>(pathCtx.destinations));
+			if (!pathCtx.destinations.isEmpty()) {
+				jobPref.setStartDestPath(pathCtx.destinations.get(0));
+			} else {
+				jobPref.setStartDestPath(null);
+			}
+			controller.handleSaveSettings(job.getPreference(), themeComboBox.getValue());
+		});
 
 		final HBox buttonRow = new HBox(saveButton);
 		buttonRow.setAlignment(Pos.CENTER_RIGHT);
@@ -338,7 +373,7 @@ public class WorkspaceView extends VBox {
 	/**
 	 * Morph layouts rendering dynamically mapped on target selected Action mode definitions.
 	 */
-	private void renderContextPaths(ScanType type, VBox container, Preference pref) {
+	private void renderContextPaths(ScanType type, VBox container, Preference pref, PathContext pathCtx) {
 		container.getChildren().clear();
 		final GridPane pathsGrid = new GridPane();
 		pathsGrid.setHgap(12);
@@ -357,9 +392,8 @@ public class WorkspaceView extends VBox {
 				final File f = new DirectoryChooser().showDialog(mainGui.getWindowStage());
 				if (f != null) {
 					srcField.setText(f.getAbsolutePath());
-					final ArrayList<Path> paths = new ArrayList<>();
-					paths.add(Paths.get(f.getAbsolutePath()));
-					pref.setSourcePath(paths);
+					pathCtx.sources.clear();
+					pathCtx.sources.add(Paths.get(f.getAbsolutePath()));
 				}
 			});
 			pathsGrid.add(new Label(ScanType.DUBLICATE_SCAN.equals(type) ? "Scanverzeichnis:" : "Quellverzeichnis:"), 0, 0);
@@ -375,9 +409,8 @@ public class WorkspaceView extends VBox {
 				final File f = new DirectoryChooser().showDialog(mainGui.getWindowStage());
 				if (f != null) {
 					destField.setText(f.getAbsolutePath());
-					final ArrayList<Path> paths = new ArrayList<>();
-					paths.add(Paths.get(f.getAbsolutePath()));
-					pref.setDestPath(paths);
+					pathCtx.destinations.clear();
+					pathCtx.destinations.add(Paths.get(f.getAbsolutePath()));
 				}
 			});
 			pathsGrid.add(new Label("Zielverzeichnis:"), 0, 1);
@@ -390,9 +423,8 @@ public class WorkspaceView extends VBox {
 			multiLabel.setStyle("-fx-font-weight: bold;");
 
 			final ObservableList<String> backupPaths = FXCollections.observableArrayList();
-			if (pref.getSourcePath() != null) {
-				for (final Path p : pref.getSourcePath())
-					backupPaths.add(p.toString());
+			for (final Path p : pathCtx.sources) {
+				backupPaths.add(p.toString());
 			}
 
 			final ListView<String> pathsListView = new ListView<>(backupPaths);
@@ -402,7 +434,7 @@ public class WorkspaceView extends VBox {
 				final File f = new DirectoryChooser().showDialog(mainGui.getWindowStage());
 				if (f != null && !backupPaths.contains(f.getAbsolutePath())) {
 					backupPaths.add(f.getAbsolutePath());
-					updatePreferencesMultiPaths(pref, backupPaths);
+					pathCtx.sources.add(Paths.get(f.getAbsolutePath()));
 				}
 			});
 			final Button rem = new Button("Entfernen", Gui.createIcon(MaterialDesignD.DELETE));
@@ -410,7 +442,7 @@ public class WorkspaceView extends VBox {
 				final String sel = pathsListView.getSelectionModel().getSelectedItem();
 				if (sel != null) {
 					backupPaths.remove(sel);
-					updatePreferencesMultiPaths(pref, backupPaths);
+					pathCtx.sources.remove(Paths.get(sel));
 				}
 			});
 
@@ -427,9 +459,8 @@ public class WorkspaceView extends VBox {
 				final File f = new DirectoryChooser().showDialog(mainGui.getWindowStage());
 				if (f != null) {
 					destField.setText(f.getAbsolutePath());
-					final ArrayList<Path> paths = new ArrayList<>();
-					paths.add(Paths.get(f.getAbsolutePath()));
-					pref.setDestPath(paths);
+					pathCtx.destinations.clear();
+					pathCtx.destinations.add(Paths.get(f.getAbsolutePath()));
 				}
 			});
 			destGrid.add(new Label("Zielverzeichnis:"), 0, 0);
@@ -441,12 +472,11 @@ public class WorkspaceView extends VBox {
 	}
 
 	/**
-	 * Converts structural UI lists updates payload entries directly back onto underlying multi-source files maps.
+	 * Simple structural model container mirroring active paths modifications
+	 * decoupled from underlying live Node hierarchies.
 	 */
-	private void updatePreferencesMultiPaths(Preference pref, ObservableList<String> uiList) {
-		final ArrayList<Path> updatedPaths = new ArrayList<>();
-		for (final String s : uiList)
-			updatedPaths.add(Paths.get(s));
-		pref.setSourcePath(updatedPaths);
+	private static class PathContext {
+		final ArrayList<Path> sources = new ArrayList<>();
+		final ArrayList<Path> destinations = new ArrayList<>();
 	}
 }

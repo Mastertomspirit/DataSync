@@ -19,10 +19,14 @@
 */
 package de.spiritscorp.DataSync.Controller;
 
-import de.spiritscorp.DataSync.BgTime;
+import de.spiritscorp.DataSync.ScanType;
+import de.spiritscorp.DataSync.Gui.BgView;
 import de.spiritscorp.DataSync.Gui.Gui;
+import de.spiritscorp.DataSync.IO.Logger;
 import de.spiritscorp.DataSync.IO.Preference;
 import de.spiritscorp.DataSync.Theme.AppTheme;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ListCell;
@@ -35,6 +39,7 @@ import javafx.scene.control.TextInputDialog;
 public class MainViewController implements ViewController {
 
 	private final Gui gui;
+	private final ContHelper helper;
 
 	/**
 	 * Allocates a new controller instance tied directly to the display engine layer hook.
@@ -42,17 +47,26 @@ public class MainViewController implements ViewController {
 	 * @param gui The global display manager orchestrator application shell instance.
 	 */
 	public MainViewController(Gui gui) {
+		this(
+				gui,
+				new ContHelper());
+	}
+
+	MainViewController(Gui gui, ContHelper helper) {
 		this.gui = gui;
+		this.helper = helper;
+		loadInitialJobList();
 	}
 
 	@Override
 	public void handleNavigate(Gui.ViewState state) {
+		// Wechselt den internen Zustand/Ansicht der GUI (z. B. auf MONITOR oder SETTINGS)
 		gui.setViewState(state);
-	}
-
-	@Override
-	public void handleCreateNewJob() {
-		gui.getJobList().add(new SyncJobContext("Sync Job " + (gui.getJobList().size() + 1), Preference.getInstance()));
+		// Falls die GUI versteckt war (durch das Tray), holen wir sie jetzt wieder auf den Bildschirm
+		if (!gui.getWindowStage().isShowing()) {
+			gui.getWindowStage().show();
+			gui.getWindowStage().toFront();
+		}
 	}
 
 	@Override
@@ -66,6 +80,22 @@ public class MainViewController implements ViewController {
 			System.out.println("[Lifecycle] Complete system teardown triggered manually.");
 			System.exit(0);
 		}
+	}
+
+	@Override
+	public void loadInitialJobList() {
+		final ObservableList<SyncJobContext> jobList = FXCollections.observableArrayList();
+//		TODO loadPreferences() alles laden, sonst demo::
+		if (true) {
+			jobList.add(new SyncJobContext("NAS Dokumenten-Spiegel", Preference.getInstance()));
+			jobList.add(new SyncJobContext("Lokales Code-Workspace Backup", Preference.getInstance()));
+		}
+		gui.setInitialJobConfigurations(jobList);
+	}
+
+	@Override
+	public void handleCreateNewJob() {
+		gui.getJobList().add(new SyncJobContext("Sync Job " + (gui.getJobList().size() + 1), Preference.getInstance()));
 	}
 
 	@Override
@@ -104,27 +134,40 @@ public class MainViewController implements ViewController {
 	@Override
 	public void handleExecuteTask(SyncJobContext job) {
 		if (job != null) {
-//            gui.getHelper().executeJobBasedOnMode(job);
+			switch (job.getSelectedMode()) {
+			case ScanType.SYNCHRONIZE -> helper.startSynchronize(job);
+			case ScanType.DUBLICATE_SCAN -> helper.startDuplicateScan(job);
+			case ScanType.DEEP_SCAN -> helper.startBackup(job);
+			case ScanType.FLAT_SCAN -> helper.startBackup(job);
+			default -> throw new IllegalArgumentException("Unexpected value: " + job.getSelectedMode());
+			}
 		}
 	}
 
 	@Override
-	public void handleSaveSettings(SyncJobContext job, boolean subDir, boolean trashbin, boolean autoDel,
-			boolean logOn, boolean bgSync, String interval, AppTheme targetTheme, boolean autostart) {
-		if (job == null) return;
-		final Preference pref = job.getPreference();
+	public void handleStopTask(SyncJobContext job) {
+		// TODO Need to interrupt the job
+		job.setRunning(false);
+	}
 
-		pref.setSubDir(subDir);
-		pref.setTrashbin(trashbin);
-		pref.setAutoDel(autoDel);
-		pref.setLogOn(logOn);
-		pref.setBgSync(bgSync);
-		if (bgSync) {
-			pref.setBgTime(BgTime.get(interval));
-		}
-		gui.getHelper().setOSAutostart(autostart);
+	@Override
+	public void handleSaveSettings(Preference localPreferences, AppTheme targetTheme) {
+		if (localPreferences == null) return;
+//    TODO
+//        localPreferences.savePrefs();
+		// Persist cross-runtime platform values
+//		helper.setOSAutostart(localPreferences.isBgSync());
 		gui.changeTheme(targetTheme);
 
+		// Retain view context state integrity on current tab layer
 		gui.setViewState(Gui.ViewState.SETTINGS);
+	}
+
+	@Override
+	public void runInBackground() {
+		final BgController bgController = new BgController(gui, this, gui.getJobList(), new Logger());
+		final BgView bgView = new BgView(bgController);
+		bgController.setBgView(bgView);
+		bgController.startBgJob(false);
 	}
 }

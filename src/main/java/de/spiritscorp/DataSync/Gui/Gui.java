@@ -19,21 +19,14 @@
 */
 package de.spiritscorp.DataSync.Gui;
 
-import java.nio.file.Path;
-import java.util.Map;
-
 import org.kordamp.ikonli.Ikon;
 import org.kordamp.ikonli.javafx.FontIcon;
 
 import de.spiritscorp.DataSync.Main;
-import de.spiritscorp.DataSync.Controller.ControllerHelper;
 import de.spiritscorp.DataSync.Controller.MainViewController;
 import de.spiritscorp.DataSync.Controller.SyncJobContext;
 import de.spiritscorp.DataSync.Controller.ViewController;
-import de.spiritscorp.DataSync.IO.Logger;
-import de.spiritscorp.DataSync.IO.Preference;
-import de.spiritscorp.DataSync.Model.FileAttributes;
-import de.spiritscorp.DataSync.Model.Model;
+import de.spiritscorp.DataSync.IO.Debug;
 import de.spiritscorp.DataSync.Theme.AppTheme;
 import de.spiritscorp.DataSync.Theme.DarkSlateTheme;
 import de.spiritscorp.DataSync.Theme.MatrixTerminalTheme;
@@ -47,6 +40,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.Separator;
 import javafx.scene.control.TextArea;
+import javafx.scene.image.Image;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
@@ -59,19 +53,15 @@ import javafx.stage.Stage;
 public class Gui extends Application {
 
 	private final ObservableList<SyncJobContext> jobList = FXCollections.observableArrayList();
-	private final Map<Path, FileAttributes> sourceMap = Model.createMap();
-	private final Map<Path, FileAttributes> destMap = Model.createMap();
-	private final Model model = new Model(new Logger(), sourceMap, destMap);
-	private final ControllerHelper helper = new ControllerHelper(model, Preference.getInstance(), sourceMap, destMap);
-	private final ViewController controller = new MainViewController(this);
+	private ViewController controller;
 
 	private AppTheme currentTheme = new DarkSlateTheme();
 	private final ObservableList<AppTheme> availableThemes = FXCollections.observableArrayList(
 			new DarkSlateTheme(),
 			new MatrixTerminalTheme(),
 			new NordicLightTheme());
-	private Scene mainScene;
 
+	private Scene mainScene;
 	private SidebarView sidebarView;
 	private WorkspaceView workspaceView;
 	private SyncJobContext currentActiveJob;
@@ -103,13 +93,14 @@ public class Gui extends Application {
 	@Override
 	public void start(Stage primaryStage) {
 		this.windowStage = primaryStage;
-		primaryStage.setTitle("DataSync Advanced Management Platform");
+		this.controller = new MainViewController(this);
 
+		primaryStage.setTitle("DataSync Advanced Management Platform");
+		primaryStage.getIcons().add(new Image(getClass().getResourceAsStream("/16x16.png")));
 		Platform.setImplicitExit(false);
 		primaryStage.setOnCloseRequest(event -> {
-			event.consume();
-			primaryStage.hide();
-			System.out.println("[Lifecycle] Window hidden. Application processing stays active in background.");
+			Debug.PRINT_DEBUG("[Lifecycle] Window hidden. Application processing stays active in background.");
+			controller.runInBackground();
 		});
 
 		sidebarView = new SidebarView(this, controller);
@@ -124,9 +115,11 @@ public class Gui extends Application {
 		currentTheme.apply(mainScene);
 
 		primaryStage.setScene(mainScene);
-		primaryStage.show();
-
-		loadInitialJobConfigurations();
+		if (Main.isFirstStart()) {
+			controller.runInBackground();
+		} else {
+			primaryStage.show();
+		}
 	}
 
 	/**
@@ -171,8 +164,6 @@ public class Gui extends Application {
 
 	public Stage getWindowStage() { return windowStage; }
 
-	public ControllerHelper getHelper() { return helper; }
-
 	public ObservableList<AppTheme> getAvailableThemes() { return availableThemes; }
 
 	public AppTheme getCurrentTheme() { return currentTheme; }
@@ -188,16 +179,15 @@ public class Gui extends Application {
 		final Label version = new Label("Programmversion: " + Main.VERSION);
 		final Label vendor = new Label("Lizenznehmer / Entwickler: Tom Spirit");
 		final Label copyright = new Label("Copyright: Licensed under GNU GPL v3.0 Copyleft System.");
-
 		final Separator sep = new Separator();
-
 		final TextArea legalText = new TextArea(
 				"""
 						This program is free software; you can redistribute it and/or modify
 						it under the terms of the GNU General Public License as published by
 						the Free Software Foundation; either version 3 of the License.
 
-						This program is distributed in the hope that it will be useful, without any warranty.""");
+						This program is distributed in the hope that it will be useful, without any warranty.
+						""");
 		legalText.setEditable(false);
 		legalText.setPrefHeight(150);
 		legalText.setStyle("-fx-font-family: monospace;");
@@ -209,15 +199,12 @@ public class Gui extends Application {
 	/**
 	 * Populates active runtime instances entries grids tracing mock startup properties tracking.
 	 */
-	private void loadInitialJobConfigurations() {
-		jobList.add(new SyncJobContext("NAS Dokumenten-Spiegel", Preference.getInstance()));
-		jobList.add(new SyncJobContext("Lokales Code-Workspace Backup", Preference.getInstance()));
-		if (!jobList.isEmpty()) {
+	public void setInitialJobConfigurations(ObservableList<SyncJobContext> jobList) {
+		jobList.clear();
+		jobList.addAll(jobList);
+		// TODO sidebarView ist initial immer leer....
+		if (!jobList.isEmpty() && sidebarView != null) {
 			sidebarView.getSidebarListView().getSelectionModel().select(0);
 		}
-	}
-
-	public static void main(String[] args) {
-		launch(args);
 	}
 }

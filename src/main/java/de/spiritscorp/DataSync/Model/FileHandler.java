@@ -66,7 +66,7 @@ class FileHandler {
 					else
 						Files.walkFileTree(path, new FileVisit(executor, path, resultMap, deepScan));
 				} catch (final IOException e) {
-					e.printStackTrace();
+					Debug.printException(this.getClass(), e);
 				}
 			}
 		}
@@ -75,9 +75,9 @@ class FileHandler {
 			while (!executor.awaitTermination(100, TimeUnit.MILLISECONDS)) {
 			}
 		} catch (final InterruptedException e) {
-			e.printStackTrace();
+			Debug.printException(this.getClass(), e);
 		}
-		Debug.PRINT_DEBUG("listFiles() -> ready  %s -> %s", Thread.currentThread().getName(), paths.get(0).toString());
+		Debug.printDebug("listFiles() -> ready  %s -> %s", Thread.currentThread().getName(), paths.get(0).toString());
 	}
 
 	/**
@@ -88,7 +88,7 @@ class FileHandler {
 	 *         The map with sorted duplicates
 	 */
 	Map<Path, FileAttributes> findDuplicates(Map<Path, FileAttributes> sourceMap) {
-		Debug.PRINT_DEBUG("entryPaths -> %d", sourceMap.size());
+		Debug.printDebug("entryPaths -> %d", sourceMap.size());
 		final Map<Path, FileAttributes> duplicateMap = Model.createMap();
 
 		final HashMap<Long, ArrayList<Path>> mapSize = new HashMap<>();
@@ -116,7 +116,7 @@ class FileHandler {
 				}
 			}
 		}
-		Debug.PRINT_DEBUG("duplicateList -> ready : size: %d", duplicateMap.size());
+		Debug.printDebug("duplicateList -> ready : size: %d", duplicateMap.size());
 		return duplicateMap;
 	}
 
@@ -127,7 +127,7 @@ class FileHandler {
 	 * @param destMap
 	 */
 	void equalsFiles(Map<Path, FileAttributes> sourceMap, Map<Path, FileAttributes> destMap) {
-		Debug.PRINT_DEBUG("max mem: %d, free mem: %d, total mem: %d", Runtime.getRuntime().maxMemory(), Runtime.getRuntime().freeMemory(), Runtime.getRuntime().totalMemory());
+		Debug.printDebug("max mem: %d, free mem: %d, total mem: %d", Runtime.getRuntime().maxMemory(), Runtime.getRuntime().freeMemory(), Runtime.getRuntime().totalMemory());
 		if (sourceMap.size() != 0 && destMap.size() != 0) {
 			final Set<Path> sourceHitList = Collections.synchronizedSet(new HashSet<>());
 			final Set<Path> destHitList = Collections.synchronizedSet(new HashSet<>());
@@ -146,7 +146,7 @@ class FileHandler {
 					while (!executor.awaitTermination(100, TimeUnit.MILLISECONDS)) {
 					}
 				} catch (final InterruptedException e) {
-					e.printStackTrace();
+					Debug.printException(this.getClass(), e);
 				}
 			} else {
 				final Thread t1 = new Thread(() -> equalsMap(sourceMap, destMap, sourceHitList));
@@ -157,7 +157,7 @@ class FileHandler {
 					t1.join();
 					t2.join();
 				} catch (final InterruptedException e) {
-					e.printStackTrace();
+					Debug.printException(this.getClass(), e);
 				}
 			}
 			for (final Path p : sourceHitList) {
@@ -166,7 +166,7 @@ class FileHandler {
 			for (final Path p : destHitList) {
 				destMap.remove(p);
 			}
-			Debug.PRINT_DEBUG("full source hitList size: %d  && full destination hitList size: %d", sourceMap.size(), destMap.size());
+			Debug.printDebug("full source hitList size: %d  && full destination hitList size: %d", sourceMap.size(), destMap.size());
 		}
 	}
 
@@ -189,7 +189,7 @@ class FileHandler {
 	 */
 	ArrayList<Map<Path, FileAttributes>> getSyncFiles(Map<Path, FileAttributes> sourceMap, Map<Path, FileAttributes> destMap, Path startSourcePath, Path startDestPath,
 			Map<Path, FileAttributes> syncMap) {
-		Debug.PRINT_DEBUG("max mem: %d, free mem: %d, total mem: %d", Runtime.getRuntime().maxMemory(), Runtime.getRuntime().freeMemory(), Runtime.getRuntime().totalMemory());
+		Debug.printDebug("max mem: %d, free mem: %d, total mem: %d", Runtime.getRuntime().maxMemory(), Runtime.getRuntime().freeMemory(), Runtime.getRuntime().totalMemory());
 		final ArrayList<Map<Path, FileAttributes>> resultValue = new ArrayList<>();
 		final ArrayList<Map<Path, FileAttributes>> destValue = new ArrayList<>();
 		final Map<Path, FileAttributes> copySourceHitList = Model.createMap();
@@ -219,7 +219,7 @@ class FileHandler {
 					while (!executor.awaitTermination(100, TimeUnit.MILLISECONDS)) {
 					}
 				} catch (final InterruptedException e) {
-					e.printStackTrace();
+					Debug.printException(this.getClass(), e);
 				}
 
 			} else {
@@ -227,7 +227,7 @@ class FileHandler {
 				syncMaps(destMap, sourceMap, destValue, startSourcePath, syncMap);
 			}
 		}
-		Debug.PRINT_DEBUG("full copySourceHitList size: %d  && full copyDestHitList size: %d  && full delHitList size: %d", copySourceHitList.size(), copyDestHitList.size(), delHitList.size());
+		Debug.printDebug("full copySourceHitList size: %d  && full copyDestHitList size: %d  && full delHitList size: %d", copySourceHitList.size(), copyDestHitList.size(), delHitList.size());
 		return resultValue;
 	}
 
@@ -260,8 +260,8 @@ class FileHandler {
 				log.setEntry(path.toString(), "gelöscht", map.get(path));
 			} catch (final IOException e) {
 				log.setEntry(path.toString(), "FEHLER BEIM LÖSCHEN", map.get(path));
-				Debug.PRINT_DEBUG("delete failed: %s", path.toString());
-				e.printStackTrace();
+				Debug.printDebug("delete failed: %s", path.toString());
+				Debug.printException(this.getClass(), e);
 			}
 		}
 		map.clear();
@@ -301,8 +301,8 @@ class FileHandler {
 				log.setEntry(path.toString(), "kopiert", entry.getValue());
 			} catch (final IOException e) {
 				log.setEntry(path.toString(), "FEHLER BEIM KOPIEREN", entry.getValue());
-				Debug.PRINT_DEBUG("copy failed: %s", path.toString());
-				e.printStackTrace();
+				Debug.printDebug("copy failed: %s", path.toString());
+				Debug.printException(this.getClass(), e);
 			}
 		}
 		map.clear();

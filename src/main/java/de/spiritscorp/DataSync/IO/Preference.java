@@ -23,6 +23,7 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
@@ -38,13 +39,14 @@ import jakarta.json.JsonValue;
 
 public class Preference {
 
-	private static final Path ROOT_PATH = Paths.get(System.getProperty("user.home"), "DataSync");
-	public static final Path DEBUG_PATH = ROOT_PATH.resolve("debug.log");
-	public static final Path ERROR_PATH = ROOT_PATH.resolve("debug.err");
-	public static final Path LOG_PATH = ROOT_PATH.resolve("log.json");
-	public static final Path CONFIG_PATH = ROOT_PATH.resolve("conf.json");
-	public static final Path SYNCMAP_PATH = ROOT_PATH.resolve("syncMap.json");
-	public static final Path SCAN_TIME_PATH = ROOT_PATH.resolve("lastScanTime");
+	private static Path rootPath = Paths.get(System.getProperty("user.home"), "DataSync");
+	private static Path debugPath;
+	private static Path errorPath;
+	private static Path logPath;
+	private static Path configPath;
+	private static Path syncMapPath;
+	private static Path scanTimePath;
+
 
 	private IOPrefs ioP;
 	private IOSyncMap ioS;
@@ -69,6 +71,11 @@ public class Preference {
 	public static Preference getInstance() { return new Preference(); }
 
 	private Preference() {
+    		if (path != null && Files.exists(path, LinkOption.NOFOLLOW_LINKS) && Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS) && Files.isWritable(path)) {
+			setConfigPaths(path);
+		} else {
+			setConfigPaths(rootPath);
+		}
 		load();
 	}
 
@@ -101,7 +108,7 @@ public class Preference {
 				startDestPath = ioP.getPath("startDestPath");
 				trashbinPath = ioP.getPath("trashbinPath");
 			} catch (final ConfigException e) {
-				e.printStackTrace();
+				Debug.printException(this.getClass(), e);
 			}
 		}
 		if (!sourcePath.isEmpty() && !destPath.isEmpty()) {
@@ -153,9 +160,11 @@ public class Preference {
 	 * Save the last scan time
 	 */
 	public void saveLastScanTime() {
-		try (BufferedWriter bw = Files.newBufferedWriter(Preference.SCAN_TIME_PATH, StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
+		try (BufferedWriter bw = Files.newBufferedWriter(Preference.scanTimePath, StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
 			bw.write(String.valueOf(System.currentTimeMillis()));
-		} catch (final IOException e) {}
+		} catch (final IOException e) {
+			Debug.printException(this.getClass(), e);
+		}
 	}
 
 	/**
@@ -164,7 +173,7 @@ public class Preference {
 	 * @return <b>long</b> lastScanTime
 	 */
 	public long getLastScanTime() {
-		try (BufferedReader br = Files.newBufferedReader(Preference.SCAN_TIME_PATH)) {
+		try (BufferedReader br = Files.newBufferedReader(Preference.scanTimePath)) {
 			final String str = br.readLine();
 			try {
 				return Long.parseLong(str);
@@ -249,4 +258,28 @@ public class Preference {
 	public BgTime getBgTime() { return bgTime; }
 
 	public boolean isSyncMapLoad() { return syncMapLoad; }
+
+	private void setConfigPaths(Path root) {
+		rootPath = root;
+		debugPath = rootPath.resolve("debug.log");
+		errorPath = rootPath.resolve("debug.err");
+		logPath = rootPath.resolve("log.json");
+		configPath = rootPath.resolve("conf.json");
+		syncMapPath = rootPath.resolve("syncMap.json");
+		scanTimePath = rootPath.resolve("lastScanTime");
+	}
+
+	public static String getRootPath() { return rootPath.toString(); }
+
+	public static Path getDebugPath() { return debugPath; }
+
+	public static Path getErrorPath() { return errorPath; }
+
+	public static Path getLogPath() { return logPath; }
+
+	public static Path getConfigPath() { return configPath; }
+
+	public static Path getSyncMapPath() { return syncMapPath; }
+
+	public static Path getScanTimePath() { return scanTimePath; }
 }

@@ -2,9 +2,11 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>de.spiritscorp</groupId>
 	<artifactId>DataSync</artifactId>
-	<version>0.9.6.3</version>
+	<version>0.9.6.5</version>
 	<name>Data Sync</name>
 	<description>Application to synchronize your data</description>
+	<inceptionYear>2022</inceptionYear>
+	<url>https://github.com/Mastertomspirit/DataSync</url>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -12,6 +14,7 @@
 		<maven.build.timestamp.format>dd.MM.yyy - HH:mm</maven.build.timestamp.format>
 
         <!-- Plugin versions -->
+        <pl_git_commit_id>10.0.0</pl_git_commit_id>
         <pl_antrun.version>3.2.0</pl_antrun.version>
         <pl_compiler.version>3.15.0</pl_compiler.version>
         <pl_jar.version>3.5.0</pl_jar.version>
@@ -21,6 +24,10 @@
         <pl_jlink.version>3.3.0</pl_jlink.version>
         <pl_jpackage.version>0.1.5</pl_jpackage.version>
         <pl_resources.version>3.5.0</pl_resources.version>
+        <pl_release>3.3.1</pl_release>
+        <pl_source>3.4.0</pl_source>
+        <pl_javadoc>3.12.0</pl_javadoc>
+        <pl_gpg>3.2.8</pl_gpg>
 
         <!-- Dependency versions -->
         <dep_jakarta.json.api.version>2.1.0</dep_jakarta.json.api.version>
@@ -32,7 +39,7 @@
 	</properties>
 
 	<build>
-		<finalName>${project.name}</finalName>
+		<finalName>${project.artifactId}</finalName>
 		<directory>target</directory>
 		<outputDirectory>target/classes</outputDirectory>
 		<testOutputDirectory>target/test-classes</testOutputDirectory>
@@ -50,6 +57,24 @@
 		</testResources>
 		<plugins>
 			<plugin>
+                <groupId>io.github.git-commit-id</groupId>
+                <artifactId>git-commit-id-maven-plugin</artifactId>
+                <version>${pl_git_commit_id}</version>
+                <executions>
+                    <execution>
+                        <id>get-the-git-infos</id>
+                        <goals>
+                            <goal>revision</goal>
+                        </goals>
+                        <phase>initialize</phase>
+                    </execution>
+                </executions>
+                <configuration>
+                    <generateGitPropertiesFile>false</generateGitPropertiesFile>
+                     <injectAllReactorProjects>true</injectAllReactorProjects>
+                </configuration>
+            </plugin>
+			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-antrun-plugin</artifactId>
 				<version>${pl_antrun.version}</version>
@@ -64,20 +89,46 @@
 							<target>
 								<echo file="target/classes/info.xml">
 <![CDATA[<?xml version="1.0" encoding="UTF-8"?>
+
 <app>
-    <name>${project.name}</name>
-    <groupId>${project.groupId}</groupId>
+	<name>${project.name}</name>
+	<groupId>${project.groupId}</groupId>
 	<artifactId>${project.artifactId}</artifactId>
-    <version>${project.version}</version>
-    <javaVersion>${java.version}</javaVersion>
-    <date>${maven.build.timestamp}</date>
-    <timezone>${user.timezone}</timezone>
-    <buildOS>
-        <arch>${os.arch}</arch>
-        <name>${os.name}</name>
-        <version>${os.version}</version>
-    </buildOS>
-</app>]]>
+	<description>${project.description}</description>
+	<url>${project.url}</url>
+	<inceptionYear>${project.inceptionYear}</inceptionYear>
+	<version>${project.version}</version>
+	<javaVersion>${javaVersion}</javaVersion>
+	<license>GNU GPL 3</license>
+</app>
+<developers>
+    <developer>
+        <name>The Spirit</name>
+        <role>Lead Developer</role>
+    </developer>
+</developers>
+<buildEnvironment>
+    <mavenVersion>${maven.version}</mavenVersion>
+    <javaVendor>${java.vendor}</javaVendor>
+    <javaRuntimeVersion>${java.runtime.version}</javaRuntimeVersion>
+	<buildTimestampUtc>${maven.build.timestamp}</buildTimestampUtc>
+	<timezone>${user.timezone}</timezone>
+</buildEnvironment>
+<buildOS>
+    <arch>${os.arch}</arch>
+    <name>${os.name}</name>
+    <version>${os.version}</version>
+</buildOS>
+<git>
+    <branch>${git.branch}</branch>
+    <commit>
+        <id>${git.commit.id}</id>
+        <idShort>${git.commit.id.abbrev}</idShort>
+        <time>${git.commit.time}</time>
+        <user>${git.commit.user.name}</user>
+    </commit>
+    <dirty>${git.dirty}</dirty>
+</git>]]>
 		                      </echo>
 							</target>
 						</configuration>
@@ -197,7 +248,7 @@
 						<configuration>
 							<toolhome>$‍{env.JPACKAGE_HOME}</toolhome>
 							<dest>target/jpackage</dest>
-							<name>${project.name}</name>
+							<name>${project.artifactId}</name>
 							<type>IMAGE</type>
 							<runtimeimage>target/maven-jlink/default</runtimeimage>
 							<appversion>${project.version}</appversion>
@@ -206,7 +257,7 @@
 							<vendor>Tom Spirit</vendor>
 							<icon>64x64.ico</icon>
 							<module>de.spiritscorp.DataSync/de.spiritscorp.DataSync.Main</module>
-							<javaoptions>-Dfile.encoding=UTF-8 -Xms32m -Xmx4096m</javaoptions>
+							<javaoptions>-Dfile.encoding=UTF-8 -Xms32m -Xmx4096m -Dapp.instance.name="${project.artifactId}_v${project.version}"</javaoptions>
 						</configuration>
 					</execution>
 				</executions>
@@ -223,7 +274,7 @@
 							<goal>copy-resources</goal>
 						</goals>
 						<configuration>
-							<outputDirectory>target/jpackage/${project.name}</outputDirectory>
+							<outputDirectory>target/jpackage/${project.artifactId}</outputDirectory>
 							<resources>
 								<resource>
 									<directory>target/classes</directory>
@@ -236,6 +287,71 @@
 					</execution>
 				</executions>
 			</plugin>
+			<plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>${pl_release}</version>
+                <configuration>
+                    <goals>clean verify</goals>
+                    <tagNameFormat>v@{project.version}</tagNameFormat>
+                    <autoVersionSubmodules>true</autoVersionSubmodules>
+                </configuration>
+            </plugin>
+			<plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>${pl_source}</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>jar-no-fork</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+			<plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>${pl_javadoc}</version>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+			                <legacyMode>true</legacyMode>
+							<doclint>none</doclint>
+			            </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+			<plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+	            <artifactId>maven-gpg-plugin</artifactId>
+	            <version>${pl_gpg}</version>
+	            <executions>
+	            	<execution>
+	                	<id>sign-artifacts</id>
+	                    <phase>install</phase>
+	                    <goals>
+	                    	<goal>sign</goal>
+	                    </goals>
+	                    <configuration>
+	                    	<gpgArguments>
+	                    		<arg>--batch</arg>
+	                        	<arg>--pinentry-mode</arg>
+	                            <arg>loopback</arg>
+	                        </gpgArguments>
+	                        <keyname>thespirit@spiritscorp.network</keyname>
+							<passphraseEnvName>GPG_PASSPHRASE</passphraseEnvName>
+	                    </configuration>
+	            	</execution>
+	        	</executions>
+        	</plugin>
 		</plugins>
 	</build>
 	<dependencies>

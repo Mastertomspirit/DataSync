@@ -35,6 +35,7 @@ import javax.swing.JOptionPane;
 import de.spiritscorp.DataSync.BgTime;
 import de.spiritscorp.DataSync.ScanType;
 import de.spiritscorp.DataSync.Gui.View;
+import de.spiritscorp.DataSync.IO.Debug;
 import de.spiritscorp.DataSync.IO.Logger;
 import de.spiritscorp.DataSync.IO.Preference;
 import de.spiritscorp.DataSync.Model.FileAttributes;
@@ -69,12 +70,12 @@ public class Controller extends WindowAdapter implements ActionListener, MouseLi
 					view = new View(event, pref);
 					if (!firstStart) view.setVisible(true);
 				} catch (final Exception e) {
-					e.printStackTrace();
+					Debug.printException(this.getClass(), e);
 					System.exit(1);
 				}
 			});
 		} catch (InvocationTargetException | InterruptedException e1) {
-			e1.printStackTrace();
+			Debug.printException(this.getClass(), e1);
 		}
 		helper = new ControllerHelper(model, pref, sourceMap, destMap);
 //		bgController = new BgController(bgView, pref, logger);

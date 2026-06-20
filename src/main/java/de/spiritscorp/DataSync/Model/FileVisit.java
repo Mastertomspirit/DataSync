@@ -66,7 +66,7 @@ class FileVisit implements FileVisitor<Path> {
 	@Override
 	public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
 		if(attrs.isSymbolicLink() || !attrs.isRegularFile()) {	
-			Debug.PRINT_DEBUG("Skip_VisitFile -> " + file);
+			Debug.printDebug("Skip_VisitFile -> " + file);
 			return FileVisitResult.CONTINUE;
 		}
 		executor.execute(new FileScan(file, path, map, deepScan, attrs));
@@ -75,7 +75,7 @@ class FileVisit implements FileVisitor<Path> {
 
 	@Override
 	public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
-		Debug.PRINT_DEBUG("VisitFileFailed -> " + file);
+		Debug.printDebug("VisitFileFailed -> " + file);
 		return FileVisitResult.CONTINUE;
 	}
 

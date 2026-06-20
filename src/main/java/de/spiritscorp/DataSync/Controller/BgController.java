@@ -79,12 +79,12 @@ public class BgController {
 			try {
 				sysTray.add(bgView.getTrayIcon());
 			} catch (final Exception e) {
-				Debug.PRINT_DEBUG("[DataSync Daemon] TrayIcon konnte nicht registriert werden.");
+				Debug.printDebug("[DataSync Daemon] TrayIcon konnte nicht registriert werden.");
 			}
 		}
 
 		thread = new Thread(() -> {
-			Debug.PRINT_DEBUG("DataSync Multi-Job Background-Daemon started.");
+			Debug.printDebug("DataSync Multi-Job Background-Daemon started.");
 
 			// Initialer Start-Delay (Für Tests beschleunigt)
 			try {
@@ -103,7 +103,7 @@ public class BgController {
 
 					// Nur ausführen, wenn für diesen spezifischen Job die Hintergrund-Synchronisation aktiv ist
 					if (pref != null && pref.isBgSync()) {
-						Debug.PRINT_DEBUG("Executing background routine for task: " + job.getJobName());
+						Debug.printDebug("Executing background routine for task: " + job.getJobName());
 
 						// Erstelle das Arbeitsmodell passend für die Kriterien des jeweiligen Jobs
 						final Thread th = new Thread(() -> {
@@ -136,7 +136,7 @@ public class BgController {
 			if (sysTray != null && bgView.getTrayIcon() != null) {
 				sysTray.remove(bgView.getTrayIcon());
 			}
-			Debug.PRINT_DEBUG("DataSync Background-Daemon terminated cleanly.");
+			Debug.printDebug("DataSync Background-Daemon terminated cleanly.");
 		});
 
 		thread.start();
@@ -151,7 +151,7 @@ public class BgController {
 		gui.getWindowStage().show();
 		if (this.thread != null) {
 			this.thread.interrupt();
-			Debug.PRINT_DEBUG("Background routine interrupted");
+			Debug.printException("Background routine interrupted");
 		}
 	}
 }

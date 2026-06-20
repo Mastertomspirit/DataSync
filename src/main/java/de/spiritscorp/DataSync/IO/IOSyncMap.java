@@ -1,18 +1,18 @@
 /*
  		DataSync Application
- 		
+
 		@author Tom Spirit
-		
+
 		This program is free software; you can redistribute it and/or modify
 		it under the terms of the GNU General Public License as published by
 		the Free Software Foundation; either version 3 of the License, or
 		(at your option) any later version.
-		
+
 		This program is distributed in the hope that it will be useful,
 		but WITHOUT ANY WARRANTY; without even the implied warranty of
 		MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 		GNU General Public License for more details.
-		
+
 		You should have received a copy of the GNU General Public License
 		along with this program; if not, write to the Free Software Foundation,
 		Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
@@ -43,82 +43,83 @@ import jakarta.json.JsonWriterFactory;
 import jakarta.json.stream.JsonGenerator;
 
 class IOSyncMap {
-	
-/**
- * read the json syncMap
- * 
- * @param syncMap
- * @return <b>boolean</b> 	</br>true if the map is loaded
- */
+
+	/**
+	 * read the json syncMap
+	 *
+	 * @param syncMap
+	 * @return <b>boolean</b> </br>
+	 *         true if the map is loaded
+	 */
 	boolean loadSyncMap(Map<Path, FileAttributes> syncMap) {
-		if(syncMap.isEmpty()) {
-			if(Files.exists(Preference.SYNCMAP_PATH)) {
-				try(FileReader reader = new FileReader(Preference.SYNCMAP_PATH.toFile(), Charset.forName("UTF-8"))){		
-					JsonReader jr = Json.createReader(reader);	
-					JsonObject jo = jr.readObject();
+		if (syncMap.isEmpty()) {
+			if (Files.exists(Preference.getSyncMapPath())) {
+				try (FileReader reader = new FileReader(Preference.getSyncMapPath().toFile(), Charset.forName("UTF-8"))) {
+					final JsonReader jr = Json.createReader(reader);
+					final JsonObject jo = jr.readObject();
 					jr.close();
-					for(Entry<String, JsonValue> entry : jo.entrySet()) {
-						FileAttributes file = new FileAttributes(Paths.get(entry.getValue().asJsonObject().getString("relativeFilePath")),
-																 entry.getValue().asJsonObject().getString("createTimeString"), 
-																 FileTime.fromMillis(Long.parseLong(entry.getValue().asJsonObject().get("createTime").toString())), 
-																 entry.getValue().asJsonObject().getString("modTimeString"), 
-																 FileTime.fromMillis(Long.parseLong(entry.getValue().asJsonObject().get("modTime").toString())), 
-																 Long.parseLong(entry.getValue().asJsonObject().get("size").toString()), 
-																 entry.getValue().asJsonObject().getString("fileHash"));
+					for (final Entry<String, JsonValue> entry : jo.entrySet()) {
+						final FileAttributes file = new FileAttributes(Paths.get(entry.getValue().asJsonObject().getString("relativeFilePath")),
+								entry.getValue().asJsonObject().getString("createTimeString"),
+								FileTime.fromMillis(Long.parseLong(entry.getValue().asJsonObject().get("createTime").toString())),
+								entry.getValue().asJsonObject().getString("modTimeString"),
+								FileTime.fromMillis(Long.parseLong(entry.getValue().asJsonObject().get("modTime").toString())),
+								Long.parseLong(entry.getValue().asJsonObject().get("size").toString()),
+								entry.getValue().asJsonObject().getString("fileHash"));
 						syncMap.put(Paths.get(entry.getValue().asJsonObject().getString("relativeFilePath")), file);
 					}
-				}catch (IOException e) {
-					Debug.PRINT_DEBUG("%nFehler beim laden der SyncMap: %s", e.getMessage());
-					e.printStackTrace();
+				} catch (final IOException e) {
+					Debug.printDebug("%nFehler beim laden der SyncMap: %s", e.getMessage());
+					Debug.printException(this.getClass(), e);
 					return false;
 				}
-			}else {
+			} else {
 				return false;
 			}
 		}
 		return true;
 	}
-	
+
 	/**
 	 * write the sync map as json
-	 * 
+	 *
 	 * @param syncMap
 	 */
 	void writeSyncMap(Map<Path, FileAttributes> syncMap) {
-		try(OutputStream os = Files.newOutputStream(Preference.SYNCMAP_PATH, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {	
-			HashMap<String,Boolean> config = new HashMap<>();
+		try (OutputStream os = Files.newOutputStream(Preference.getSyncMapPath(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
+			final HashMap<String, Boolean> config = new HashMap<>();
 			JsonObject job;
 			config.put(JsonGenerator.PRETTY_PRINTING, true);
-			JsonWriterFactory jwf = Json.createWriterFactory(config);
+			final JsonWriterFactory jwf = Json.createWriterFactory(config);
 			job = Json.createObjectBuilder(createSyncMap(syncMap)).build();
-			JsonWriter jw = jwf.createWriter(os);
+			final JsonWriter jw = jwf.createWriter(os);
 			jw.write(job);
 			jw.close();
-		}catch(IOException e) {
-			e.printStackTrace();
-			Debug.PRINT_DEBUG("%nFehler beim schreiben der SyncMap: %s", e.getMessage());
-		}	
+		} catch (final IOException e) {
+			Debug.printException(this.getClass(), e);
+			Debug.printDebug("%nFehler beim schreiben der SyncMap: %s", e.getMessage());
+		}
 	}
 
 	/**
 	 * Build a jsonObject from the sync map
-	 * 
+	 *
 	 * @param syncMap
-	 * @return <b>JsonObject</b> 	</br>
+	 * @return <b>JsonObject</b> </br>
 	 */
 	private JsonObject createSyncMap(Map<Path, FileAttributes> syncMap) {
-		JsonObjectBuilder jo = Json.createObjectBuilder();
-		for(Map.Entry<Path, FileAttributes> entry : syncMap.entrySet()) {
-			JsonObject jo2 = Json.createObjectBuilder().add("relativeFilePath", entry.getValue().getRelativeFilePath().toString())
-													   .add("fileHash", entry.getValue().getFileHash())
-													   .add("modTimeString", entry.getValue().getModTimeString())
-													   .add("createTime", entry.getValue().getCreateTime().toMillis())
-													   .add("modTime", entry.getValue().getModTime().toMillis())
-													   .add("size", entry.getValue().getSize())
-													   .add("createTimeString", entry.getValue().getCreateTimeString())
-													   .build();
+		final JsonObjectBuilder jo = Json.createObjectBuilder();
+		for (final Map.Entry<Path, FileAttributes> entry : syncMap.entrySet()) {
+			final JsonObject jo2 = Json.createObjectBuilder().add("relativeFilePath", entry.getValue().getRelativeFilePath().toString())
+					.add("fileHash", entry.getValue().getFileHash())
+					.add("modTimeString", entry.getValue().getModTimeString())
+					.add("createTime", entry.getValue().getCreateTime().toMillis())
+					.add("modTime", entry.getValue().getModTime().toMillis())
+					.add("size", entry.getValue().getSize())
+					.add("createTimeString", entry.getValue().getCreateTimeString())
+					.build();
 			jo.add(entry.getValue().getRelativeFilePath().toString(), jo2);
 		}
 		return jo.build();
-	}	
+	}
 }

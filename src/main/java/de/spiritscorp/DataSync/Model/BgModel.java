@@ -56,12 +56,12 @@ public class BgModel {
 		final Path trashbinPath = pref.getTrashbinPath();
 		final boolean trashbin = pref.isTrashbin();
 		final boolean autoBgDel = pref.isAutoBgDel();
-		Debug.PRINT_DEBUG("time since last scan: %d", System.currentTimeMillis() - pref.getLastScanTime());
+		Debug.printDebug("time since last scan: %d", System.currentTimeMillis() - pref.getLastScanTime());
 		if (pref.getDeepScan() == ScanType.SYNCHRONIZE) {
 			if (Files.exists(pref.getStartDestPath())) {
 				if (System.currentTimeMillis() - pref.getLastScanTime() > pref.getBgTime().getTime()) {
-					Debug.PRINT_DEBUG("bgJob running");
-					Debug.PRINT_DEBUG("list start");
+					Debug.printDebug("bgJob running");
+					Debug.printDebug("list start");
 					final Thread t1 = new Thread(() -> handler.listFiles(pref.getSourcePath(), sourceMap, ScanType.SYNCHRONIZE, false));
 					final Thread t2 = new Thread(() -> handler.listFiles(pref.getDestPath(), destMap, ScanType.SYNCHRONIZE, false));
 					t1.start();
@@ -70,11 +70,11 @@ public class BgModel {
 						t1.join();
 						t2.join();
 					} catch (final InterruptedException e) {
-						Debug.PRINT_DEBUG("Scan interrupted", e.getMessage());
+						Debug.printException(this.getClass(), e);
 					}
-					Debug.PRINT_DEBUG("list ready");
+					Debug.printDebug("list ready");
 
-					Debug.PRINT_DEBUG("getSyncFiles start");
+					Debug.printDebug("getSyncFiles start");
 					if (syncMap.isEmpty()) {
 						final Map<Path, FileAttributes> tempSyncMap = Model.createMap();
 						handler.listFiles(pref.getSourcePath(), tempSyncMap, ScanType.SYNCHRONIZE, false);
@@ -83,9 +83,9 @@ public class BgModel {
 						}
 					}
 					final ArrayList<Map<Path, FileAttributes>> result = handler.getSyncFiles(sourceMap, destMap, startSourcePath, startDestPath, syncMap);
-					Debug.PRINT_DEBUG("getSyncFiles ready");
+					Debug.printDebug("getSyncFiles ready");
 
-					Debug.PRINT_DEBUG("syncFiles start");
+					Debug.printDebug("syncFiles start");
 					if (!result.get(0).isEmpty()) handler.copyFiles(result.get(0), false, startDestPath);
 					if (!result.get(1).isEmpty()) handler.copyFiles(result.get(1), false, startSourcePath);
 					if (!result.get(2).isEmpty()) handler.deleteFiles(result.get(2), false, false, null);
@@ -101,16 +101,16 @@ public class BgModel {
 					}
 					pref.writeSyncMap();
 					pref.saveLastScanTime();
-					Debug.PRINT_DEBUG("syncFiles ready");
-					Debug.PRINT_DEBUG("bgJob finish");
+					Debug.printDebug("syncFiles ready");
+					Debug.printDebug("bgJob finish");
 					return result.get(0).isEmpty() && result.get(1).isEmpty() && result.get(2).isEmpty();
 				}
 			}
 		} else {
 			if (Files.exists(pref.getStartDestPath())) {
 				if (System.currentTimeMillis() - pref.getLastScanTime() > pref.getBgTime().getTime()) {
-					Debug.PRINT_DEBUG("bgJob running");
-					Debug.PRINT_DEBUG("list start");
+					Debug.printDebug("bgJob running");
+					Debug.printDebug("list start");
 					final Thread t1 = new Thread(() -> handler.listFiles(pref.getSourcePath(), sourceMap, ScanType.FLAT_SCAN, pref.isSubDir()));
 					final Thread t2 = new Thread(() -> handler.listFiles(pref.getDestPath(), destMap, ScanType.FLAT_SCAN, pref.isSubDir()));
 					t1.start();
@@ -119,21 +119,21 @@ public class BgModel {
 						t1.join();
 						t2.join();
 					} catch (final InterruptedException e) {
-						e.printStackTrace();
+						Debug.printException(this.getClass(), e);
 					}
-					Debug.PRINT_DEBUG("list ready");
+					Debug.printDebug("list ready");
 
-					Debug.PRINT_DEBUG("getEqualsFiles start");
+					Debug.printDebug("getEqualsFiles start");
 					handler.equalsFiles(sourceMap, destMap);
-					Debug.PRINT_DEBUG("getEqualsFiles ready");
+					Debug.printDebug("getEqualsFiles ready");
 
-					Debug.PRINT_DEBUG("backupFiles start");
+					Debug.printDebug("backupFiles start");
 					if (autoBgDel && !destMap.isEmpty()) handler.deleteFiles(destMap, logOn, trashbin, trashbinPath);
 					if (!sourceMap.isEmpty()) handler.copyFiles(sourceMap, logOn, startDestPath);
 					pref.saveLastScanTime();
-					Debug.PRINT_DEBUG("backupFiles ready");
+					Debug.printDebug("backupFiles ready");
 
-					Debug.PRINT_DEBUG("bgJob finish");
+					Debug.printDebug("bgJob finish");
 					return (sourceMap.isEmpty() && destMap.isEmpty());
 				}
 			}

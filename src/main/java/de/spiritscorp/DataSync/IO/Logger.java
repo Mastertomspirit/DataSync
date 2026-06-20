@@ -1,18 +1,18 @@
 /*
  		DataSync Application
- 		
+
 		@author Tom Spirit
-		
+
 		This program is free software; you can redistribute it and/or modify
 		it under the terms of the GNU General Public License as published by
 		the Free Software Foundation; either version 3 of the License, or
 		(at your option) any later version.
-		
+
 		This program is distributed in the hope that it will be useful,
 		but WITHOUT ANY WARRANTY; without even the implied warranty of
 		MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 		GNU General Public License for more details.
-		
+
 		You should have received a copy of the GNU General Public License
 		along with this program; if not, write to the Free Software Foundation,
 		Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
@@ -40,25 +40,25 @@ import jakarta.json.JsonWriterFactory;
 import jakarta.json.stream.JsonGenerator;
 
 public class Logger {
-	
-	private LinkedList<JsonValue> logList = new LinkedList<>();
-	
+
+	private final LinkedList<JsonValue> logList = new LinkedList<>();
+
 	/**
 	 * Set a new log entry
-	 * 
-	 * @param filePath The path where the file is/was located
-	 * @param changeStatus	The status, what is happen
-	 * @param fa The attributes of the file
+	 *
+	 * @param filePath     The path where the file is/was located
+	 * @param changeStatus The status, what is happen
+	 * @param fa           The attributes of the file
 	 */
 	public void setEntry(String filePath, String changeStatus, FileAttributes fa) {
-		JsonObject jo = Json.createObjectBuilder()
+		final JsonObject jo = Json.createObjectBuilder()
 				.add("Dateiname", fa.getFileName())
 				.add("erstellt", fa.getCreateTimeString())
 				.add("zuletzt modifiziert", fa.getModTimeString())
 				.add("Größe", fa.getSize())
-				.add("Fingerabdruck" , (fa.getFileHash() == null) ? "null" : fa.getFileHash())
-				.build();	
-		JsonArray ja = Json.createArrayBuilder()
+				.add("Fingerabdruck", (fa.getFileHash() == null) ? "null" : fa.getFileHash())
+				.build();
+		final JsonArray ja = Json.createArrayBuilder()
 				.add(filePath)
 				.add(LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy  HH:mm:ss")))
 				.add(changeStatus)
@@ -66,40 +66,40 @@ public class Logger {
 				.build();
 		logList.addFirst(ja);
 	}
-	
+
 //	TODO	ineffizient
 	/**
 	 * Write the cached entries to the file system, append on the top of the file
 	 */
 	public void printStatus() {
 		readLog();
-		JsonArray ja = Json.createArrayBuilder(logList).build();
-		try(FileOutputStream fos = new FileOutputStream(Preference.LOG_PATH.toFile(), false)) {
-			HashMap<String,Boolean> config = new HashMap<>();
+		final JsonArray ja = Json.createArrayBuilder(logList).build();
+		try (FileOutputStream fos = new FileOutputStream(Preference.getLogPath().toFile(), false)) {
+			final HashMap<String, Boolean> config = new HashMap<>();
 			config.put(JsonGenerator.PRETTY_PRINTING, true);
-			JsonWriterFactory jwf = Json.createWriterFactory(config);
-			JsonWriter jw = jwf.createWriter(fos);
+			final JsonWriterFactory jwf = Json.createWriterFactory(config);
+			final JsonWriter jw = jwf.createWriter(fos);
 			jw.write(ja);
 			jw.close();
 			logList.clear();
-		} catch (IOException e) {
-			e.printStackTrace();
+		} catch (final IOException e) {
+			Debug.printException(this.getClass(), e);
 		}
 	}
-	
+
 	/**
 	 * Read the logfile as JsonArray
 	 */
 	private void readLog() {
-		if(Files.exists(Preference.LOG_PATH)) {
-			try(FileReader reader = new FileReader(Preference.LOG_PATH.toFile(), Charset.forName("UTF-8"))) {
-				JsonReader jr = Json.createReader(reader);
+		if (Files.exists(Preference.getLogPath())) {
+			try (FileReader reader = new FileReader(Preference.getLogPath().toFile(), Charset.forName("UTF-8"))) {
+				final JsonReader jr = Json.createReader(reader);
 				jr.readArray()
-					.stream()
-					.forEach((v) -> logList.add(v));
+						.stream()
+						.forEach((v) -> logList.add(v));
 				jr.close();
-			} catch (IOException e) {
-				e.printStackTrace();
+			} catch (final IOException e) {
+				Debug.printException(this.getClass(), e);
 			}
 		}
 	}

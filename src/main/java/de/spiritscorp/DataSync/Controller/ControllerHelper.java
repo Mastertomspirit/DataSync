@@ -139,7 +139,7 @@ public class ControllerHelper {
 			failMap = model.scanSyncFiles(pref.getSourcePath(), pref.getDestPath(), stats, pref.getDeepScan(), false, false);
 			final ArrayList<Map<Path, FileAttributes>> result = model.getSyncFiles(pref.getSyncMap(), startSourcePath, startDestPath);
 			scanTimeFormatted = getEndTimeFormatted(System.nanoTime() - startTime) + " für das Scannen";
-			Debug.PRINT_DEBUG("sourceMap size = %d, destMap size = %d, failtures = %d", stats[0], stats[1], failMap.size());
+			Debug.printDebug("sourceMap size = %d, destMap size = %d, failtures = %d", stats[0], stats[1], failMap.size());
 			view.setTextArea(formatMaps(pref.getDeepScan()));
 			view.setTextArea(String.format("Quelldateien: %d Stück und Zieldateien: %d Stück", stats[0], stats[1]));
 			view.setTextArea(String.format("Größe aller Quelldateien: %s      Größe aller Zieldateien: %s", getReadableBytes(stats[2]), getReadableBytes(stats[3])));
@@ -161,8 +161,8 @@ public class ControllerHelper {
 		} else {
 			view.setTextArea("Kein Ziellaufwerk vorhanden");
 		}
-		Debug.PRINT_DEBUG(scanTimeFormatted);
-		Debug.PRINT_DEBUG(syncTimeFormatted);
+		Debug.printDebug(scanTimeFormatted);
+		Debug.printDebug(syncTimeFormatted);
 		scanRun = false;
 		view.setScanRun(false);
 	}
@@ -189,7 +189,7 @@ public class ControllerHelper {
 			failMap = model.scanSyncFiles(pref.getSourcePath(), pref.getDestPath(), stats, pref.getDeepScan(), pref.isSubDir(), pref.isTrashbin());
 			model.getEqualsFiles();
 			scanTimeFormatted = getEndTimeFormatted(System.nanoTime() - startTime) + " für das Scannen";
-			Debug.PRINT_DEBUG("sourceMap size = %d, destMap size = %d, failtures = %d", stats[0], stats[1], failMap.size());
+			Debug.printDebug("sourceMap size = %d, destMap size = %d, failtures = %d", stats[0], stats[1], failMap.size());
 			view.setTextArea(formatMaps(deepScan));
 			view.setTextArea(String.format("Quelldateien: %d Stück und Zieldateien: %d Stück", stats[0], stats[1]));
 			view.setTextArea(String.format("Größe aller Quelldateien: %s      Größe aller Zieldateien: %s", getReadableBytes(stats[2]), getReadableBytes(stats[3])));
@@ -225,8 +225,8 @@ public class ControllerHelper {
 		} else {
 			view.setTextArea("Kein Ziellaufwerk vorhanden");
 		}
-		Debug.PRINT_DEBUG(scanTimeFormatted);
-		Debug.PRINT_DEBUG(backupTimeFormatted);
+		Debug.printDebug(scanTimeFormatted);
+		Debug.printDebug(backupTimeFormatted);
 		scanRun = false;
 		view.setScanRun(false);
 	}
@@ -242,7 +242,7 @@ public class ControllerHelper {
 		final long startTime = System.nanoTime();
 		failMap = model.scanDublicates(pref.getSourcePath());
 		final String scanTimeFormatted = getEndTimeFormatted(System.nanoTime() - startTime) + " für das Scannen";
-		Debug.PRINT_DEBUG("sourceMap size = %d, destMap size = %d, failtures = %d", sourceMap.size(), destMap.size(), failMap.size());
+		Debug.printDebug("sourceMap size = %d, destMap size = %d, failtures = %d", sourceMap.size(), destMap.size(), failMap.size());
 		long space = 0;
 		for (final Path p : sourceMap.keySet()) {
 			space += sourceMap.get(p).getSize();
@@ -254,17 +254,15 @@ public class ControllerHelper {
 		view.setTextArea(scanTimeFormatted);
 		sourceMap.clear();
 		failMap.clear();
-		Debug.PRINT_DEBUG(scanTimeFormatted);
+		Debug.printDebug(scanTimeFormatted);
 		scanRun = false;
 		view.setScanRun(false);
 	}
 
 	/**
-	 * Set and delete the system autostart for Windows and Linux </br>
-	 * </br>
-	 * 
+	 * Set and delete the system autostart for Windows and Linux <br>
 	 * <b><i>NO OSX SUPPORT PLANED</i></b>
-	 * 
+	 *
 	 * @param set When set is true, entry will delete
 	 */
 	public void setOSAutostart(boolean set) {
@@ -289,7 +287,7 @@ public class ControllerHelper {
 				else
 					Runtime.getRuntime().exec("cmd /c reg delete " + cmd);
 			} catch (final IOException e) {
-				e.printStackTrace();
+				Debug.printException(this.getClass(), e);
 			}
 
 		} else if (os.contains("nix") || os.contains("aix") || os.contains("nux")) {
@@ -311,18 +309,18 @@ public class ControllerHelper {
 				Runtime.getRuntime().exec("mv " + pathTemp + " " + path);
 				if (set) {
 					Runtime.getRuntime().exec("crontab " + path.toString());
-					Debug.PRINT_DEBUG("crontab " + path.toString());
+					Debug.printDebug("crontab " + path.toString());
 				} else {
 					Runtime.getRuntime().exec("crontab -r " + path.toString());
-					Debug.PRINT_DEBUG("crontab -r " + path.toString());
+					Debug.printDebug("crontab -r " + path.toString());
 				}
 			} catch (final IOException e) {
-				e.printStackTrace();
+				Debug.printException(this.getClass(), e);
 			}
 			try {
 				Files.deleteIfExists(path);
 			} catch (final IOException e) {
-				e.printStackTrace();
+				Debug.printException(this.getClass(), e);
 			}
 		} else if (os.contains("osx")) {
 		}

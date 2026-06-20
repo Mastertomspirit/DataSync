@@ -39,7 +39,7 @@ import de.spiritscorp.DataSync.IO.Preference;
  */
 public class Main {
 
-	public final static String VERSION = "V 0.9.6.3";
+	public final static String VERSION = "V 0.9.6.5";
 	public static boolean debug = false;
 	private static boolean firstStart = false;
 

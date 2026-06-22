@@ -22,8 +22,11 @@ package de.spiritscorp.DataSync.Controller;
 import java.nio.file.Path;
 
 import de.spiritscorp.DataSync.ScanType;
+import de.spiritscorp.DataSync.IO.Debug;
 import de.spiritscorp.DataSync.IO.Preference;
+import de.spiritscorp.DataSync.IO.PreferenceManager;
 import de.spiritscorp.DataSync.Model.FileAttributes;
+import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -38,7 +41,7 @@ import javafx.collections.ObservableList;
  */
 public class SyncJobContext {
 
-	private StringProperty jobName = new SimpleStringProperty();
+	private final StringProperty jobName = new SimpleStringProperty();
 	private final BooleanProperty running = new SimpleBooleanProperty(false);
 	private final StringProperty statusMessage = new SimpleStringProperty("Bereit");
 	private final StringProperty logOutput = new SimpleStringProperty("");
@@ -64,20 +67,66 @@ public class SyncJobContext {
 	 * Assigns the thread processing file modifications to allow secure termination handles.
 	 * * @param thread The execution context running background tasks
 	 */
-	public synchronized void setActiveWorkerThread(Thread thread) { this.activeWorkerThread = thread; }
+	synchronized void setActiveWorkerThread(Thread thread) { this.activeWorkerThread = thread; }
 
 	/**
-	 * Interrupts the active worker loop safely using standard thread interruption signals.
+	 * Signals the underlying worker thread to terminate via standard interruption flags.
+	 * If a timeout greater than zero is specified, this method blocks the invoking context
+	 * to await a graceful structural thread finalization.
+	 *
+	 * @param timeoutMs Maximum duration in milliseconds to await thread join; 0 executes asynchronously.
 	 */
-	public synchronized void cancelRunningTask() {
+	public synchronized void cancelRunningTask(long timeoutMs) {
 		if (activeWorkerThread != null && activeWorkerThread.isAlive()) {
+			Debug.printDebug("[Info] Sending interruption signal to worker thread for job: %s", getJobName());
 			activeWorkerThread.interrupt();
-			setRunning(false);
-			setStatusMessage("Aktion vom Benutzer abgebrochen.");
-			appendLog("-> Vorgang abgebrochen.");
+
+			if (timeoutMs > 0) {
+				try {
+					// Gracefully await the thread to flush buffers and exit its iteration loops
+					activeWorkerThread.join(timeoutMs);
+					if (activeWorkerThread.isAlive()) {
+						Debug.printDebug("[Warn] Warning: Worker thread for job '%s' breached timeout matrix.", getJobName());
+					}
+				} catch (final InterruptedException e) {
+					Debug.printDebug("[Info] Thread joining sequence was interrupted for job: %s", getJobName());
+					Thread.currentThread().interrupt();
+				}
+			}
+
+			// If it was cleared or joined successfully, adjust states safely
+			if (!activeWorkerThread.isAlive()) {
+				setRunning(false);
+				setStatusMessage("Aktion erfolgreich beendet.");
+				appendLog("-> Vorgang sauber beendet.");
+			} else {
+				setRunning(false);
+				setStatusMessage("Aktion vom Benutzer abgebrochen (Forced).");
+				appendLog("-> Vorgang erzwungen abgebrochen.");
+			}
 		} else {
-			setStatusMessage("Keine aktive Aktion.");
-			appendLog("-> Nichts zu beenden gefunden.");
+			updateUIAndLog("Keine aktive Aktion.", "-> Nichts zu beenden gefunden.");
+		}
+	}
+
+	/**
+	 * Helper method to safely update UI properties and internal log feeds across thread boundaries.
+	 */
+	private void updateUIAndLog(String status, String logEntry) {
+		if (Platform.isFxApplicationThread()) {
+			setStatusMessage(status);
+			appendLog(logEntry);
+		} else {
+			try {
+				Platform.runLater(() -> {
+					setStatusMessage(status);
+					appendLog(logEntry);
+				});
+			} catch (final IllegalStateException e) {
+				// Caught if the JavaFX toolkit is already dead during a hard native OS shutdown.
+				// We log the text purely to the background core debug stream.
+				Debug.printDebug("[Info] GUI framework offline. Suppressed state update: %s (%s)", status, logEntry);
+			}
 		}
 	}
 
@@ -85,7 +134,7 @@ public class SyncJobContext {
 		this.logOutput.set(this.logOutput.get() + line + System.lineSeparator());
 	}
 
-	public void clearLog() {
+	void clearLog() {
 		this.logOutput.set("");
 	}
 
@@ -101,7 +150,7 @@ public class SyncJobContext {
 		return running;
 	}
 
-	public void setRunning(boolean value) {
+	void setRunning(boolean value) {
 		this.running.set(value);
 	}
 
@@ -183,5 +232,8 @@ public class SyncJobContext {
 		public Path getFileSystemPath() { return fileSystemPath; }
 	}
 
-	public void setJobName(String newTaskName) { this.jobName = new SimpleStringProperty(newTaskName); }
+	void setJobName(String newTaskName) {
+		PreferenceManager.getInstance().renameProfile(jobName.get(), newTaskName, this.getPreference());
+		this.jobName.set(newTaskName);
+	}
 }

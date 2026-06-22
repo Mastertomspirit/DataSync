@@ -19,16 +19,18 @@
 */
 package de.spiritscorp.DataSync.Controller;
 
+import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Map;
 
 import de.spiritscorp.DataSync.ScanType;
+import de.spiritscorp.DataSync.IO.Debug;
 import de.spiritscorp.DataSync.IO.Logger;
 import de.spiritscorp.DataSync.IO.Preference;
 import de.spiritscorp.DataSync.Model.FileAttributes;
@@ -86,7 +88,7 @@ public class ContHelper {
 				appendLogData(context, String.format("Größe aller Quelldateien: %s | Größe aller Zieldateien: %s", getReadableBytes(stats[2]), getReadableBytes(stats[3])));
 
 				startTime = System.nanoTime();
-				final boolean success = model.syncFiles(result, pref.getSyncMap(), startSourcePath, startDestPath, false);
+				final boolean success = model.syncFiles(context, result, pref.getSyncMap(), startSourcePath, startDestPath, false);
 				final String syncTimeFormatted = getEndTimeFormatted(System.nanoTime() - startTime) + " für das Synchronisieren";
 
 				if (success) {
@@ -94,14 +96,20 @@ public class ContHelper {
 					appendLogData(context, scanTimeFormatted);
 					appendLogData(context, syncTimeFormatted);
 					updateUIStatus(context, false, "Synchronisation erfolgreich!");
+					Debug.printDebug("[Info] Synchronization completed successfully for profile: %s", context.getJobName());
 				} else {
 					updateUIStatus(context, false, "Synchronisation fehlgeschlagen!");
+					Debug.printDebug("[Error] Synchronization routine failed for: %s", context.getJobName());
 				}
 
 			} catch (final InterruptedException e) {
 				updateUIStatus(context, false, "Synchronisation abgebrochen.");
+				Debug.printDebug("[Error] Synchronization routine aborted due to interruption: %s", e.getMessage());
+				Debug.printException(this.getClass(), e);
 			} catch (final Exception e) {
 				updateUIStatus(context, false, "Fehler: " + e.getMessage());
+				Debug.printDebug("[Error] Synchronization routine failed: %s", e.getMessage());
+				Debug.printException(this.getClass(), e);
 			}
 		});
 
@@ -134,7 +142,7 @@ public class ContHelper {
 					return;
 				}
 
-				model.scanSyncFiles(pref.getSourcePath(), pref.getDestPath(), stats, pref.getDeepScan(), pref.isSubDir(), pref.isTrashbin());
+				model.scanSyncFiles(pref.getSourcePath(), pref.getDestPath(), stats, pref.getScanMode(), pref.isSubDir(), pref.isTrashbin());
 				model.getEqualsFiles();
 				final String scanTimeFormatted = getEndTimeFormatted(System.nanoTime() - startTime) + " für das Scannen";
 
@@ -154,14 +162,20 @@ public class ContHelper {
 					appendLogData(context, scanTimeFormatted);
 					appendLogData(context, backupTimeFormatted);
 					updateUIStatus(context, false, "Backup erfolgreich abgeschlossen!");
+					Debug.printDebug("[Info] Backup completed successfully for profile: %s", context.getJobName());
 				} else {
 					updateUIStatus(context, false, "Backup fehlgeschlagen!");
+					Debug.printDebug("[Error] Backup routine failed in: %s", context.getJobName());
 				}
 
 			} catch (final InterruptedException e) {
 				updateUIStatus(context, false, "Backup-Vorgang abgebrochen.");
+				Debug.printDebug("[Error] Backup routine aborted due to interruption: %s", e.getMessage());
+				Debug.printException(this.getClass(), e);
 			} catch (final Exception e) {
 				updateUIStatus(context, false, "Fehler während des Backups: " + e.getMessage());
+				Debug.printDebug("[Error] Backup routine failed: %s", e.getMessage());
+				Debug.printException(this.getClass(), e);
 			}
 		});
 
@@ -210,6 +224,8 @@ public class ContHelper {
 				updateUIStatus(context, false, "Scan abgebrochen.");
 			} catch (final Exception e) {
 				updateUIStatus(context, false, "Fehler beim Duplikat Scan: " + e.getMessage());
+				Debug.printDebug("[Error] Duplicat scan abord: %s", e.getMessage());
+				Debug.printException(this.getClass(), e);
 			}
 		});
 
@@ -252,11 +268,16 @@ public class ContHelper {
 					context.getDuplicateFiles().removeIf(SyncJobContext.FileRow::isSelected);
 					context.setRunning(false);
 					context.setStatusMessage(finalSuccess + " Duplikate erfolgreich gelöscht.");
+					Debug.printDebug("[Info] Duplicates successfully deleted: %d items.", finalSuccess);
 				});
 			} catch (final InterruptedException e) {
 				updateUIStatus(context, false, "Löschvorgang unterbrochen.");
+				Debug.printDebug("[Error] Duplicate deletion aborted: %s", e.getMessage());
+				Debug.printException(this.getClass(), e);
 			} catch (final Exception e) {
 				updateUIStatus(context, false, "Fehler beim Löschen: " + e.getMessage());
+				Debug.printDebug("[Error] Duplicate deletion failed: %s", e.getMessage());
+				Debug.printException(this.getClass(), e);
 			}
 		});
 
@@ -266,9 +287,14 @@ public class ContHelper {
 	}
 
 	/**
-	 * Adjusts system crontabs or registry hives for handling background daemon triggers.
+	 * Configures or evicts background host operating system daemon startup triggers.
+	 * Adjusts system registry run hives on Windows environments or modifies cron execution
+	 * tables on Linux platforms via secure subprocess execution abstractions.
+	 *
+	 * @param set Target flag to dictate whether to register or clear system integration entries.
+	 * @return true if the underlying system environment sub-process sequences executed without exceptions.
 	 */
-	public void setOSAutostart(boolean set) {
+	public boolean setOSAutostart(boolean set) {
 		final String javaPath = System.getProperty("sun.boot.library.path");
 		final String exePath = System.getProperty("jpackage.app-path");
 		final String datei = System.getProperty("sun.java.command");
@@ -276,36 +302,56 @@ public class ContHelper {
 		final String os = System.getProperty("os.name").toLowerCase();
 
 		if (os.contains("win")) {
-			final String value = (exePath == null)
-					? "/t  REG_SZ /d \"\\\"" + javaPath + "\\javaw.exe\\\" -Xmx200m -jar \\\"" + datei + "\\\" firstStart\""
-					: "/t REG_SZ /d \"" + exePath + " firstStart\"";
-			final String cmd = "HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run /v DataSync /f ";
+			final String regCmd = "HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run";
 			try {
-				if (set)
-					Runtime.getRuntime().exec("cmd /c reg add " + cmd + value);
-				else
-					Runtime.getRuntime().exec("cmd /c reg delete " + cmd);
+				if (set) {
+					// No literal interior quote escapes required; ProcessBuilder insulates whitespaces
+					final String dataPayload = (exePath == null)
+							? javaPath + "\\javaw.exe -Xmx200m -jar " + datei + " firstStart"
+							: exePath + " firstStart";
+
+					final ProcessBuilder pb = new ProcessBuilder("reg", "add", regCmd, "/v", "DataSync", "/t", "REG_SZ", "/d", dataPayload, "/f");
+					pb.start();
+				} else {
+					final ProcessBuilder pb = new ProcessBuilder("reg", "delete", regCmd, "/v", "DataSync", "/f");
+					pb.start();
+				}
 			} catch (final IOException e) {
-				e.printStackTrace();
+				Debug.printError("[Error] Set Windows registry autostart tracking hive failed: %s", e.getMessage());
+				Debug.printException(getClass(), e);
+				return false;
 			}
 		} else if (os.contains("nix") || os.contains("aix") || os.contains("nux")) {
-			final String value = (exePath == null)
-					? String.format("@reboot %s/java -jar \"%s\" firstStart", javaPath, fullPath)
-					: String.format("@reboot %s firstStart", exePath);
-			final Path pathTemp = Paths.get("linx1.txt").toAbsolutePath();
-			final Path path = Paths.get("linx.txt").toAbsolutePath();
 			try {
-				Files.writeString(pathTemp, value, StandardCharsets.UTF_8, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE);
-				Runtime.getRuntime().exec("mv " + pathTemp + " " + path);
-				if (set)
-					Runtime.getRuntime().exec("crontab " + path.toString());
-				else
-					Runtime.getRuntime().exec("crontab -r " + path.toString());
-				Files.deleteIfExists(path);
-			} catch (final IOException e) {
-				e.printStackTrace();
+				if (set) {
+					final String cronPayload = (exePath == null)
+							? String.format("@reboot %s/java -jar \"%s\" firstStart", javaPath, fullPath)
+							: String.format("@reboot %s firstStart", exePath);
+
+					// Feed crontab structural inputs directly via process input stream pipelining
+					final ProcessBuilder pb = new ProcessBuilder("crontab", "-");
+					final Process process = pb.start();
+
+					try (final BufferedWriter writer = new BufferedWriter(
+							new OutputStreamWriter(process.getOutputStream(), StandardCharsets.UTF_8))) {
+						writer.write(cronPayload);
+						writer.newLine(); // Unix crontab standard strictly requires a trailing newline character
+					}
+					process.waitFor();
+				} else {
+					final ProcessBuilder pb = new ProcessBuilder("crontab", "-r");
+					pb.start().waitFor();
+				}
+			} catch (final IOException | InterruptedException e) {
+				Debug.printError("[Error] Set Unix crontab daemon automated launch failed: %s", e.getMessage());
+				Debug.printException(getClass(), e);
+				if (e instanceof InterruptedException) {
+					Thread.currentThread().interrupt();
+				}
+				return false;
 			}
 		}
+		return true;
 	}
 
 	private void updateUIStatus(SyncJobContext context, boolean running, String message) {

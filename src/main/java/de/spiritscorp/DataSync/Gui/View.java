@@ -137,23 +137,23 @@ public class View extends JFrame {
 		destLabel = new JLabel("Dateipfad: ");
 		destLabel.setFont(font);
 		destLabel.setForeground(fgColor);
-
-		if (pref.isLoaded()) {
-			this.setSourceLabel(sourcePath);
-			destLabel.setText(destPath);
-			sb_textArea = new StringBuffer("Einstellungen erfolgreich geladen" + System.lineSeparator());
-			if (sourcePath.size() > 3) {
-				sourcePath.stream()
-						.forEach((p) -> sb_textArea.append("Quellverzeichnis: " + p.toString() + System.lineSeparator()));
-			}
-			sb_textArea.append("Alles bereit zum Starten" + System.lineSeparator());
-		} else {
-			this.setSourceLabel(sourcePath);
-			destLabel.setText(destPath);
-			sb_textArea = new StringBuffer("Keine Einstellungen gefunden" + System.lineSeparator());
-			sb_textArea.append("Bitte Ordner wählen" + System.lineSeparator());
-		}
-
+		/*
+				if (pref.isLoaded()) {
+					this.setSourceLabel(sourcePath);
+					destLabel.setText(destPath);
+					sb_textArea = new StringBuffer("Einstellungen erfolgreich geladen" + System.lineSeparator());
+					if (sourcePath.size() > 3) {
+						sourcePath.stream()
+								.forEach((p) -> sb_textArea.append("Quellverzeichnis: " + p.toString() + System.lineSeparator()));
+					}
+					sb_textArea.append("Alles bereit zum Starten" + System.lineSeparator());
+				} else {
+					this.setSourceLabel(sourcePath);
+					destLabel.setText(destPath);
+					sb_textArea = new StringBuffer("Keine Einstellungen gefunden" + System.lineSeparator());
+					sb_textArea.append("Bitte Ordner wählen" + System.lineSeparator());
+				}
+		*/
 		sourceLabel.setBorder(new EmptyBorder(5, 5, 5, 5));
 		sourceLabel.setToolTipText(sourceLabel.getText());
 		sourceLabel.setEditable(false);
@@ -218,7 +218,7 @@ public class View extends JFrame {
 		deepScanComboBox = new JComboBox<>();
 		deepScanComboBox.setFont(font.deriveFont(16f).deriveFont(0));
 		deepScanComboBox.setModel(new DefaultComboBoxModel<>(ScanType.getAllDescriptions()));
-		deepScanComboBox.setSelectedItem(pref.getDeepScan().getDescription());
+		deepScanComboBox.setSelectedItem(pref.getScanMode().getDescription());
 		deepScanComboBox.setToolTipText("Duplikate suchen und Tiefer Scan lesen die Dateien komplett ein, es kann dementsprechend lang dauern");
 		deepScanComboBox.addActionListener(event);
 
@@ -287,7 +287,7 @@ public class View extends JFrame {
 		if (!pref.isBgSync()) bgTimeComboBox.setEnabled(false);
 		bgTimeComboBox.addActionListener(event);
 
-		if (pref.getDeepScan() == ScanType.SYNCHRONIZE) {
+		if (pref.getScanMode() == ScanType.SYNCHRONIZE) {
 			autoDelCheck.setEnabled(false);
 			autoSyncCheck.setEnabled(false);
 			trashbinCheck.setEnabled(false);

@@ -26,9 +26,9 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import de.spiritscorp.DataSync.ScanType;
+import de.spiritscorp.DataSync.Controller.SyncJobContext;
 import de.spiritscorp.DataSync.IO.Debug;
 import de.spiritscorp.DataSync.IO.Logger;
-import de.spiritscorp.DataSync.IO.Preference;
 
 /**
  * Core controller class responsible for managing high-performance file synchronization,
@@ -191,7 +191,7 @@ public class Model {
 	 * @return true if the entire synchronization pipeline completed without unexpected exceptions,
 	 *         false if errors occurred during file interaction
 	 */
-	public boolean syncFiles(ArrayList<Map<Path, FileAttributes>> result, Map<Path, FileAttributes> syncMap, Path sourcePath, Path destPath, boolean testOn) {
+	public boolean syncFiles(SyncJobContext ctx, ArrayList<Map<Path, FileAttributes>> result, Map<Path, FileAttributes> syncMap, Path sourcePath, Path destPath, boolean testOn) {
 		if (!result.get(0).isEmpty()) handler.copyFiles(result.get(0), false, destPath);
 		if (!result.get(1).isEmpty()) handler.copyFiles(result.get(1), false, sourcePath);
 		if (!result.get(2).isEmpty()) handler.deleteFiles(result.get(2), false, false, null);
@@ -201,11 +201,11 @@ public class Model {
 		syncMap.clear();
 		if (!testOn) {
 			final Map<Path, FileAttributes> tempMap = createMap();
-			handler.listFiles(Preference.getInstance().getSourcePath(), tempMap, ScanType.SYNCHRONIZE, false);
+			handler.listFiles(ctx.getPreference().getSourcePath(), tempMap, ScanType.SYNCHRONIZE, false);
 			for (final Map.Entry<Path, FileAttributes> entry : tempMap.entrySet()) {
 				syncMap.put(entry.getValue().getRelativeFilePath(), entry.getValue());
 			}
-			Preference.getInstance().writeSyncMap();
+			ctx.getPreference().writeSyncMap();
 		}
 		return result.get(0).isEmpty() && result.get(1).isEmpty() && result.get(2).isEmpty();
 	}

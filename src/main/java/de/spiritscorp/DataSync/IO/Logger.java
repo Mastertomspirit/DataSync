@@ -74,7 +74,7 @@ public class Logger {
 	public void printStatus() {
 		readLog();
 		final JsonArray ja = Json.createArrayBuilder(logList).build();
-		try (FileOutputStream fos = new FileOutputStream(Preference.getLogPath().toFile(), false)) {
+		try (FileOutputStream fos = new FileOutputStream(PreferenceManager.getInstance().getLogPath().toFile(), false)) {
 			final HashMap<String, Boolean> config = new HashMap<>();
 			config.put(JsonGenerator.PRETTY_PRINTING, true);
 			final JsonWriterFactory jwf = Json.createWriterFactory(config);
@@ -91,8 +91,8 @@ public class Logger {
 	 * Read the logfile as JsonArray
 	 */
 	private void readLog() {
-		if (Files.exists(Preference.getLogPath())) {
-			try (FileReader reader = new FileReader(Preference.getLogPath().toFile(), Charset.forName("UTF-8"))) {
+		if (Files.exists(PreferenceManager.getInstance().getLogPath())) {
+			try (FileReader reader = new FileReader(PreferenceManager.getInstance().getLogPath().toFile(), Charset.forName("UTF-8"))) {
 				final JsonReader jr = Json.createReader(reader);
 				jr.readArray()
 						.stream()

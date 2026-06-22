@@ -59,6 +59,12 @@ class FileHandler {
 	void listFiles(ArrayList<Path> paths, Map<Path, FileAttributes> resultMap, ScanType deepScan, boolean subDir) {
 		final ExecutorService executor = Executors.newSingleThreadExecutor();
 		for (final Path path : paths) {
+			// Guard: Check interruption context before entering the file tree walker system
+			if (Thread.currentThread().isInterrupted()) {
+				Debug.printDebug("[Engine] Interruption detected prior to walking directory path: %s", path.toString());
+				executor.shutdownNow();
+				return;
+			}
 			if (Files.exists(path)) {
 				try {
 					if (subDir)
@@ -73,9 +79,14 @@ class FileHandler {
 		executor.shutdown();
 		try {
 			while (!executor.awaitTermination(100, TimeUnit.MILLISECONDS)) {
+				if (Thread.currentThread().isInterrupted()) {
+					executor.shutdownNow();
+					throw new InterruptedException();
+				}
 			}
 		} catch (final InterruptedException e) {
-			Debug.printException(this.getClass(), e);
+			Debug.printDebug("[Engine] File processing walk subsystem was forcefully interrupted.");
+			Thread.currentThread().interrupt();
 		}
 		Debug.printDebug("listFiles() -> ready  %s -> %s", Thread.currentThread().getName(), paths.get(0).toString());
 	}
@@ -93,6 +104,7 @@ class FileHandler {
 
 		final HashMap<Long, ArrayList<Path>> mapSize = new HashMap<>();
 		for (final Map.Entry<Path, FileAttributes> entry : sourceMap.entrySet()) {
+			if (Thread.currentThread().isInterrupted()) return duplicateMap;
 			final long size = entry.getValue().getSize();
 			if (mapSize.containsKey(size)) {
 				mapSize.get(size).add(entry.getKey());
@@ -103,6 +115,7 @@ class FileHandler {
 		}
 
 		for (final Map.Entry<Long, ArrayList<Path>> entry : mapSize.entrySet()) {
+			if (Thread.currentThread().isInterrupted()) return duplicateMap;
 			final ArrayList<Path> paths = entry.getValue();
 			if (paths.size() > 1) {
 				for (int i = 0; i < paths.size(); i++) {
@@ -136,17 +149,23 @@ class FileHandler {
 				final Map<Integer, Map<Path, FileAttributes>> splitSource = splitMap(sourceMap, avgProc);
 				final Map<Integer, Map<Path, FileAttributes>> splitDest = splitMap(destMap, avgProc);
 				for (final Map.Entry<Integer, Map<Path, FileAttributes>> source : splitSource.entrySet()) {
-					executor.execute(new Thread(() -> equalsMap(source.getValue(), destMap, sourceHitList)));
+					executor.execute(() -> equalsMap(source.getValue(), destMap, sourceHitList));
 				}
 				for (final Map.Entry<Integer, Map<Path, FileAttributes>> dest : splitDest.entrySet()) {
-					executor.execute(new Thread(() -> equalsMap(dest.getValue(), sourceMap, destHitList)));
+					executor.execute(() -> equalsMap(dest.getValue(), sourceMap, destHitList));
 				}
 				executor.shutdown();
 				try {
 					while (!executor.awaitTermination(100, TimeUnit.MILLISECONDS)) {
+						if (Thread.currentThread().isInterrupted()) {
+							executor.shutdownNow();
+							return;
+						}
 					}
 				} catch (final InterruptedException e) {
-					Debug.printException(this.getClass(), e);
+					executor.shutdownNow();
+					Thread.currentThread().interrupt();
+					return;
 				}
 			} else {
 				final Thread t1 = new Thread(() -> equalsMap(sourceMap, destMap, sourceHitList));
@@ -157,9 +176,14 @@ class FileHandler {
 					t1.join();
 					t2.join();
 				} catch (final InterruptedException e) {
-					Debug.printException(this.getClass(), e);
+					t1.interrupt();
+					t2.interrupt();
+					Thread.currentThread().interrupt();
+					return;
 				}
 			}
+			// Post-processing guard
+			if (Thread.currentThread().isInterrupted()) return;
 			for (final Path p : sourceHitList) {
 				sourceMap.remove(p);
 			}
@@ -209,21 +233,27 @@ class FileHandler {
 				final Map<Integer, Map<Path, FileAttributes>> splitDest = splitMap(destMap, avgProc);
 
 				for (final Map.Entry<Integer, Map<Path, FileAttributes>> source : splitSource.entrySet()) {
-					executor.execute(new Thread(() -> syncMaps(source.getValue(), destMap, resultValue, startDestPath, syncMap)));
+					executor.execute(() -> syncMaps(source.getValue(), destMap, resultValue, startDestPath, syncMap));
 				}
 				for (final Map.Entry<Integer, Map<Path, FileAttributes>> dest : splitDest.entrySet()) {
-					executor.execute(new Thread(() -> syncMaps(dest.getValue(), sourceMap, destValue, startSourcePath, syncMap)));
+					executor.execute(() -> syncMaps(dest.getValue(), sourceMap, destValue, startSourcePath, syncMap));
 				}
 				executor.shutdown();
 				try {
 					while (!executor.awaitTermination(100, TimeUnit.MILLISECONDS)) {
+						if (Thread.currentThread().isInterrupted()) {
+							executor.shutdownNow();
+							return resultValue;
+						}
 					}
 				} catch (final InterruptedException e) {
-					Debug.printException(this.getClass(), e);
+					executor.shutdownNow();
+					Thread.currentThread().interrupt();
+					return resultValue;
 				}
-
 			} else {
 				syncMaps(sourceMap, destMap, resultValue, startDestPath, syncMap);
+				if (Thread.currentThread().isInterrupted()) return resultValue;
 				syncMaps(destMap, sourceMap, destValue, startSourcePath, syncMap);
 			}
 		}
@@ -250,6 +280,11 @@ class FileHandler {
 	 */
 	void deleteFiles(Map<Path, FileAttributes> map, boolean logOn, boolean trashbin, Path trashbinPath) {
 		for (final Path path : map.keySet()) {
+			// Guard: Check thread interrupt status before executing file operations
+			if (Thread.currentThread().isInterrupted()) {
+				Debug.printDebug("[Engine] Safe loop interruption caught within file deletion loop vector.");
+				break;
+			}
 			try {
 				if (trashbin) {
 					Files.createDirectories(trashbinPath.resolve(map.get(path).getRelativeFilePath()));
@@ -287,6 +322,11 @@ class FileHandler {
 	 */
 	void copyFiles(Map<Path, FileAttributes> map, boolean logOn, Path destPath) {
 		for (final Map.Entry<Path, FileAttributes> entry : map.entrySet()) {
+			// Guard: Check thread interrupt status before starting next copy transaction step
+			if (Thread.currentThread().isInterrupted()) {
+				Debug.printDebug("[Engine] Safe loop interruption caught within file replication loop vector.");
+				break;
+			}
 			final Path path = destPath.resolve(entry.getValue().getRelativeFilePath());
 			try {
 				if (!Files.exists(path.getParent()))
@@ -320,6 +360,7 @@ class FileHandler {
 	 */
 	private void equalsMap(Map<Path, FileAttributes> iterateMap, Map<Path, FileAttributes> fullMap, Set<Path> hitList) {
 		for (final Map.Entry<Path, FileAttributes> entry : iterateMap.entrySet()) {
+			if (Thread.currentThread().isInterrupted()) return;
 			if (fullMap.containsValue(entry.getValue())) {
 				hitList.add(entry.getKey());
 			}
@@ -370,6 +411,7 @@ class FileHandler {
 		final Map<Path, FileAttributes> delHitList = resultValue.get(2);
 
 		for (final Map.Entry<Path, FileAttributes> entry : sourceMap.entrySet()) {
+			if (Thread.currentThread().isInterrupted()) return;
 
 			final Path relativePath = entry.getValue().getRelativeFilePath();
 			final Path destPath = startDestPath.resolve(relativePath);

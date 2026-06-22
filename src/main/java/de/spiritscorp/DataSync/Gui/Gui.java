@@ -27,6 +27,7 @@ import de.spiritscorp.DataSync.Controller.MainViewController;
 import de.spiritscorp.DataSync.Controller.SyncJobContext;
 import de.spiritscorp.DataSync.Controller.ViewController;
 import de.spiritscorp.DataSync.IO.Debug;
+import de.spiritscorp.DataSync.IO.PreferenceManager;
 import de.spiritscorp.DataSync.Theme.AppTheme;
 import de.spiritscorp.DataSync.Theme.DarkSlateTheme;
 import de.spiritscorp.DataSync.Theme.MatrixTerminalTheme;
@@ -94,13 +95,15 @@ public class Gui extends Application {
 	public void start(Stage primaryStage) {
 		this.windowStage = primaryStage;
 		this.controller = new MainViewController(this);
+		this.controller.registerNativeShutdownHook();
+		this.currentTheme = PreferenceManager.getInstance().getTheme();
 
 		primaryStage.setTitle("DataSync Advanced Management Platform");
 		primaryStage.getIcons().add(new Image(getClass().getResourceAsStream("/16x16.png")));
 		Platform.setImplicitExit(false);
 		primaryStage.setOnCloseRequest(event -> {
-			Debug.PRINT_DEBUG("[Lifecycle] Window hidden. Application processing stays active in background.");
-			controller.runInBackground();
+			Debug.printDebug("[Info] Window hidden. Application processing stays active in background.");
+			controller.runInBackground(false);
 		});
 
 		sidebarView = new SidebarView(this, controller);
@@ -112,11 +115,14 @@ public class Gui extends Application {
 
 		// Szene zuweisen und Theme anwenden
 		mainScene = new Scene(mainLayout, 1350, 800);
+		if (!getJobList().isEmpty()) {
+			sidebarView.getSidebarListView().getSelectionModel().select(0);
+		}
 		currentTheme.apply(mainScene);
 
 		primaryStage.setScene(mainScene);
 		if (Main.isFirstStart()) {
-			controller.runInBackground();
+			controller.runInBackground(Main.isFirstStart());
 		} else {
 			primaryStage.show();
 		}
@@ -156,6 +162,19 @@ public class Gui extends Application {
 			// Clear previous runtime stylesheets to avoid collision matrix
 			mainScene.getStylesheets().clear();
 			this.currentTheme.apply(mainScene);
+		}
+	}
+
+	/**
+	 * Proxy method to delegate temporary status messages to the active workspace view boundary.
+	 *
+	 * @param message      The localized text string to display.
+	 * @param cssClassName The theme-defined CSS class for contextual coloring.
+	 * @param durationSec  The visibility lifespan of the message in seconds.
+	 */
+	public void showStatusNotification(String message, String cssClassName, int durationSec) {
+		if (workspaceView != null) {
+			workspaceView.displayTemporaryStatus(message, cssClassName, durationSec);
 		}
 	}
 
@@ -200,11 +219,7 @@ public class Gui extends Application {
 	 * Populates active runtime instances entries grids tracing mock startup properties tracking.
 	 */
 	public void setInitialJobConfigurations(ObservableList<SyncJobContext> jobList) {
-		jobList.clear();
-		jobList.addAll(jobList);
-		// TODO sidebarView ist initial immer leer....
-		if (!jobList.isEmpty() && sidebarView != null) {
-			sidebarView.getSidebarListView().getSelectionModel().select(0);
-		}
+		this.jobList.clear();
+		this.jobList.addAll(jobList);
 	}
 }

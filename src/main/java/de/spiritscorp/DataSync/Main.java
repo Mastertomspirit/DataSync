@@ -28,9 +28,10 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 import java.util.Arrays;
 
-import de.spiritscorp.DataSync.Controller.MainViewController;
+import de.spiritscorp.DataSync.Gui.Gui;
 import de.spiritscorp.DataSync.IO.Debug;
-import de.spiritscorp.DataSync.IO.Preference;
+import de.spiritscorp.DataSync.IO.PreferenceManager;
+import javafx.application.Application;
 
 /**
  * Main application entry point responsible for runtime arguments parsing,
@@ -39,9 +40,12 @@ import de.spiritscorp.DataSync.IO.Preference;
  */
 public class Main {
 
-	public final static String VERSION = "V 0.9.6.5";
+	public final static String VERSION = "V 1.1.0.0-alpha";
 	public static boolean debug = false;
 	private static boolean firstStart = false;
+	public static final int THREAD_TIMEOUT = 15000;
+	public static final int BACKGROUND_THREAD_TIMEOUT = 5000;
+	public static final int INFO_DELAY = 4;
 
 	/**
 	 * Launch the application framework execution matrix.
@@ -50,7 +54,7 @@ public class Main {
 	 */
 	public static void main(String[] args) {
 		debug = Arrays.stream(args).anyMatch((s) -> s.equals("debug"));
-		final boolean firstStart = Arrays.stream(args).anyMatch((s) -> s.equals("firstStart"));
+		firstStart = Arrays.stream(args).anyMatch((s) -> s.equals("firstStart"));
 		final String configFolder = Arrays
 				.stream(args)
 				.filter((s) -> s.toLowerCase().startsWith("--configfile="))
@@ -58,19 +62,20 @@ public class Main {
 				.map((s) -> s.substring(s.indexOf('=') + 1, s.length()))
 				.orElse("");
 		if (!configFolder.isBlank()) {
-			Preference.getInstance(Path.of(configFolder));
+			PreferenceManager.initGlobalRoot(Path.of(configFolder));
 		}
 
 		if (Arrays.stream(args).anyMatch((s) -> s.equals("debugToFile"))) {
 			debug = true;
 			Debug.setDebugToFile();
-			Debug.printDebugTimeless("%nDEBUG BEGIN -> [%s]: %s%n",
+			Debug.printDebugTimeless("%nDEBUG BEGIN -> [%s]: %s",
 					System.getProperty("app.instance.name", "Standard Instance"),
 					LocalDateTime.now(ZoneId.systemDefault()).format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.FULL, FormatStyle.SHORT)));
-			Debug.printDebug("Set config root path -> %s", Preference.getRootPath().toString());
+			Debug.printDebug("[Info] Data Sync Application initialized. Beginning system initialization.");
+			Debug.printDebug("[Setup] Set config root path -> %s", PreferenceManager.getInstance().getConfigPath().toString());
 		}
 
-		new MainViewController(args);
+		Application.launch(Gui.class, args);
 	}
 
 	/**

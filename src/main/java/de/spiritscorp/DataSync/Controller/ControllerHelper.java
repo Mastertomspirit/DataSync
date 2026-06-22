@@ -85,7 +85,7 @@ public class ControllerHelper {
 				sourcePaths.add(new FileChooser("Quell", preferendPath).getSelectedFile().toPath());
 				i++;
 			} catch (final NullPointerException ne) {}
-		} while ((pref.getDeepScan() == ScanType.SYNCHRONIZE) ? false : (JOptionPane.showConfirmDialog(view, "Einen weiteren Ordner hinzufügen?", "Multiauswahl bestätigen", 0, 3) == 0));
+		} while ((pref.getScanMode() == ScanType.SYNCHRONIZE) ? false : (JOptionPane.showConfirmDialog(view, "Einen weiteren Ordner hinzufügen?", "Multiauswahl bestätigen", 0, 3) == 0));
 		try {
 			if (sourcePaths.isEmpty()) throw new NullPointerException();
 			if (sourcePaths.size() > 1 && (JOptionPane.showConfirmDialog(view, "Unterordner im Zielverzeichnis erstellen?", "Unterordner Erstellung", 0, 3) == 0)) {
@@ -136,17 +136,17 @@ public class ControllerHelper {
 		String scanTimeFormatted = "", syncTimeFormatted = "";
 
 		if (Files.exists(startDestPath)) {
-			failMap = model.scanSyncFiles(pref.getSourcePath(), pref.getDestPath(), stats, pref.getDeepScan(), false, false);
+			failMap = model.scanSyncFiles(pref.getSourcePath(), pref.getDestPath(), stats, pref.getScanMode(), false, false);
 			final ArrayList<Map<Path, FileAttributes>> result = model.getSyncFiles(pref.getSyncMap(), startSourcePath, startDestPath);
 			scanTimeFormatted = getEndTimeFormatted(System.nanoTime() - startTime) + " für das Scannen";
 			Debug.printDebug("sourceMap size = %d, destMap size = %d, failtures = %d", stats[0], stats[1], failMap.size());
-			view.setTextArea(formatMaps(pref.getDeepScan()));
+			view.setTextArea(formatMaps(pref.getScanMode()));
 			view.setTextArea(String.format("Quelldateien: %d Stück und Zieldateien: %d Stück", stats[0], stats[1]));
 			view.setTextArea(String.format("Größe aller Quelldateien: %s      Größe aller Zieldateien: %s", getReadableBytes(stats[2]), getReadableBytes(stats[3])));
 			view.setTextArea(String.format("Fehlerhafter Zugriff: %d", failMap.size()));
 
 			startTime = System.nanoTime();
-			if (model.syncFiles(result, pref.getSyncMap(), startSourcePath, startDestPath, false)) {
+			if (model.syncFiles(null, result, pref.getSyncMap(), startSourcePath, startDestPath, false)) {
 				syncTimeFormatted = getEndTimeFormatted(System.nanoTime() - startTime) + " für das Syncronisieren";
 				view.setTextArea(scanTimeFormatted);
 				view.setTextArea(syncTimeFormatted);
@@ -176,7 +176,7 @@ public class ControllerHelper {
 		scanRun = true;
 		view.setScanRun(true);
 
-		final ScanType deepScan = pref.getDeepScan();
+		final ScanType deepScan = pref.getScanMode();
 		final Path startDestPath = pref.getStartDestPath();
 		final Path trashbinPath = pref.getTrashbinPath();
 		final boolean trashbin = pref.isTrashbin();
@@ -186,7 +186,7 @@ public class ControllerHelper {
 		String scanTimeFormatted = "", backupTimeFormatted = "";
 
 		if (Files.exists(startDestPath)) {
-			failMap = model.scanSyncFiles(pref.getSourcePath(), pref.getDestPath(), stats, pref.getDeepScan(), pref.isSubDir(), pref.isTrashbin());
+			failMap = model.scanSyncFiles(pref.getSourcePath(), pref.getDestPath(), stats, pref.getScanMode(), pref.isSubDir(), pref.isTrashbin());
 			model.getEqualsFiles();
 			scanTimeFormatted = getEndTimeFormatted(System.nanoTime() - startTime) + " für das Scannen";
 			Debug.printDebug("sourceMap size = %d, destMap size = %d, failtures = %d", stats[0], stats[1], failMap.size());

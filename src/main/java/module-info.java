@@ -40,6 +40,7 @@ module de.spiritscorp.DataSync {
 
 //	opens de.spiritscorp.DataSync.Model;
 
-	requires jakarta.json;
+	requires transitive jakarta.json;
 	requires transitive java.desktop;
+	requires javafx.base;
 }

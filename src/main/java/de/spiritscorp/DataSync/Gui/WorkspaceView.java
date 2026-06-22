@@ -35,7 +35,10 @@ import de.spiritscorp.DataSync.ScanType;
 import de.spiritscorp.DataSync.Controller.SyncJobContext;
 import de.spiritscorp.DataSync.Controller.ViewController;
 import de.spiritscorp.DataSync.IO.Preference;
+import de.spiritscorp.DataSync.IO.PreferenceManager;
 import de.spiritscorp.DataSync.Theme.AppTheme;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
@@ -62,6 +65,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
+import javafx.util.Duration;
 
 /**
  * Display workspace panel hosting the interactive operational consoles,
@@ -190,11 +194,12 @@ public class WorkspaceView extends VBox {
 			final Preference p = job.getPreference();
 			final String src = p.getSourcePath() != null ? Arrays.toString(p.getSourcePath().toArray()) : "Keine Quelle";
 			final String dest = p.getDestPath() != null && !p.getDestPath().isEmpty() ? p.getDestPath().toString() : "Kein Ziel";
-			contextInfoLabel.setText(String.format("Modus: %s  |  Quelle: %s  |  Ziel: %s", job.getSelectedMode().getDescription(), src, dest));
 
 			if (ScanType.DUBLICATE_SCAN.equals(job.getSelectedMode())) {
+				contextInfoLabel.setText(String.format("Modus: %s  |  Ziel: %s", job.getSelectedMode().getDescription(), src));
 				centerViewport.getChildren().add(duplicateViewNode);
 			} else {
+				contextInfoLabel.setText(String.format("Modus: %s  |  Quelle: %s  |  Ziel: %s", job.getSelectedMode().getDescription(), src, dest));
 				centerViewport.getChildren().add(consoleViewNode);
 			}
 		} else if (state == Gui.ViewState.SETTINGS) {
@@ -239,6 +244,49 @@ public class WorkspaceView extends VBox {
 	}
 
 	/**
+	 * Displays a temporary status message within the context info banner.
+	 * Automatically reverts to the default baseline description after a set duration.
+	 * Includes programmatic safety fallbacks if the active theme lacks CSS class declarations.
+	 *
+	 * @param message      The localized text string to display.
+	 * @param cssClassName The CSS class name from the theme for coloring (e.g., "status-success").
+	 * @param durationSec  The visibility duration in seconds before auto-reverting.
+	 */
+	public void displayTemporaryStatus(String message, String cssClassName, int durationSec) {
+		final String originalContextText = "Konfiguration der task-spezifischen Ablaufparameter, Dateiattribute und Verzeichnisstrukturen.";
+		final String originalStyle = contextInfoLabel.getStyle();
+		// 1. Clean up any existing status style classes to prevent collision states
+		contextInfoLabel.getStyleClass().removeAll("status-success", "status-error", "status-warning");
+
+		// 2. Programmatic structural fallback: Set a default color via inline styles
+		// This acts as a safety net if the active CSS theme completely lacks the targeted class definition.
+		switch (cssClassName) {
+		case "status-success" -> contextInfoLabel.setStyle("-fx-text-fill: #22aa22; -fx-font-weight: bold;");
+		case "status-error" -> contextInfoLabel.setStyle("-fx-text-fill: #ff3333; -fx-font-weight: bold;");
+		case "status-warning" -> contextInfoLabel.setStyle("-fx-text-fill: #ffaa00; -fx-font-weight: bold;");
+		default -> contextInfoLabel.setStyle("-fx-font-weight: bold;");
+		}
+
+		// 3. Inject the theme's class rule.
+		// If the theme defines this class, the stylesheet will cleanly override our inline fallback style.
+		contextInfoLabel.setText(message);
+		contextInfoLabel.getStyleClass().add(cssClassName);
+
+		// Initialize asynchronous fade-out/revert timer
+		final Timeline fallbackTimeline = new Timeline(
+				new KeyFrame(
+						Duration.seconds(durationSec),
+						event -> {
+							contextInfoLabel.setText(originalContextText);
+							contextInfoLabel.getStyleClass().remove(cssClassName);
+							contextInfoLabel.setStyle(originalStyle);
+						}));
+
+		fallbackTimeline.setCycleCount(1);
+		fallbackTimeline.play();
+	}
+
+	/**
 	 * Assembles all parameter configurations fields structured nicely within grid metrics elements.
 	 */
 	private Node buildSettingsGridTab(SyncJobContext job) {
@@ -253,6 +301,7 @@ public class WorkspaceView extends VBox {
 		modeTitle.setStyle("-fx-font-weight: bold; -fx-text-fill: #34495e;");
 		final ComboBox<String> taskModeComboBox = new ComboBox<>();
 		taskModeComboBox.getItems().addAll(ScanType.getAllDescriptions());
+		job.selectedModeProperty().set(pref.getScanMode() != null ? pref.getScanMode().getDescription() : ScanType.FLAT_SCAN.getDescription());
 		taskModeComboBox.valueProperty().bindBidirectional(job.selectedModeProperty());
 		taskModeComboBox.setPrefWidth(260);
 		grid.add(modeTitle, 0, 0);
@@ -262,7 +311,6 @@ public class WorkspaceView extends VBox {
 		final VBox dynamicPathsContainer = new VBox(12);
 		grid.add(dynamicPathsContainer, 0, 1, 2, 1);
 
-//		TODO Load from preferences
 		final PathContext pathCtx = new PathContext();
 		if (pref.getSourcePath() != null) {
 			pathCtx.sources.addAll(pref.getSourcePath());
@@ -287,6 +335,9 @@ public class WorkspaceView extends VBox {
 		final CheckBox autoDelCheck = new CheckBox("Automatisches Löschen erlauben (AutoDel)");
 		autoDelCheck.setSelected(pref.isAutoDel());
 		autoDelCheck.setTooltip(new Tooltip("Erlaubt dem System, verwaiste Dateien im Zielordner restlos zu bereinigen"));
+		final CheckBox autoSyncCheck = new CheckBox("Automatisches kopieren erlauben (AutoSync)");
+		autoSyncCheck.setSelected(pref.isAutoSync());
+		autoSyncCheck.setTooltip(new Tooltip("Erlaubt dem System, nach einem Scan alle nötigen Dateien zu kopieren."));
 		final CheckBox logOnCheck = new CheckBox("Protokollierung aktivieren (LogOn)");
 		logOnCheck.setSelected(pref.isLogOn());
 		logOnCheck.setTooltip(new Tooltip("Schreibt detaillierte Transaktionsprotokolle in das System-Logverzeichnis"));
@@ -300,7 +351,7 @@ public class WorkspaceView extends VBox {
 		bgTimeComboBox.getSelectionModel().select(pref.getBgTime() != null ? pref.getBgTime().getName() : BgTime.MIN_30.getName());
 		bgTimeComboBox.disableProperty().bind(bgSyncCheck.selectedProperty().not());
 
-		final VBox optionsBox = new VBox(12, paramsTitle, subDirCheck, trashbinCheck, autoDelCheck, logOnCheck, bgSyncCheck, new HBox(8, bgTimeLabel, bgTimeComboBox));
+		final VBox optionsBox = new VBox(12, paramsTitle, subDirCheck, trashbinCheck, autoDelCheck, autoSyncCheck, logOnCheck, bgSyncCheck, new HBox(8, bgTimeLabel, bgTimeComboBox));
 		grid.add(optionsBox, 0, 2, 2, 1);
 
 		// --- Section 4: Global Parameters Stack ---
@@ -308,7 +359,7 @@ public class WorkspaceView extends VBox {
 		globalTitle.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;");
 
 		final CheckBox globalAutostartCheck = new CheckBox("DataSync beim Systemstart minimiert laden (Autostart OS)");
-		globalAutostartCheck.setSelected(pref.isBgSync()); // Bind status fallback trace
+		globalAutostartCheck.setSelected(PreferenceManager.getInstance().isGlobalAutoStart()); // Bind status fallback trace
 
 		// NEW: Theme Changer Layout Elements Configuration
 		final Label themeLabel = new Label("Visuelles Anwendungs-Theme:");
@@ -339,6 +390,8 @@ public class WorkspaceView extends VBox {
 		saveButton.setStyle("-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10px 24px;");
 		saveButton.setTooltip(new Tooltip("Übernimmt alle geänderten Zustandsparameter permanent in die JSON-Konfigurationsdatei"));
 		saveButton.setOnAction(e -> {
+			PreferenceManager.getInstance().setGlobalAutoStart(globalAutostartCheck.isSelected());
+			PreferenceManager.getInstance().setTheme(themeComboBox.getValue());
 			final Preference jobPref = job.getPreference();
 			jobPref.setSubDir(subDirCheck.isSelected());
 			jobPref.setTrashbin(trashbinCheck.isSelected());
@@ -346,7 +399,7 @@ public class WorkspaceView extends VBox {
 			jobPref.setLogOn(logOnCheck.isSelected());
 			jobPref.setBgSync(bgSyncCheck.isSelected());
 			jobPref.setBgTime(BgTime.get(bgTimeComboBox.getValue()));
-			jobPref.setAutoSync(globalAutostartCheck.isSelected());
+			jobPref.setAutoSync(autoSyncCheck.isSelected());
 			jobPref.setScanMode(ScanType.get(taskModeComboBox.getValue()));
 			jobPref.setSourcePath(new ArrayList<>(pathCtx.sources));
 			if (!pathCtx.sources.isEmpty()) {

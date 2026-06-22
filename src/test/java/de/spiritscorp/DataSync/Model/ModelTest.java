@@ -1,26 +1,29 @@
 /*
  		DataSync Application
- 		
+
 		@author Tom Spirit
-		
+
 		This program is free software; you can redistribute it and/or modify
 		it under the terms of the GNU General Public License as published by
 		the Free Software Foundation; either version 3 of the License, or
 		(at your option) any later version.
-		
+
 		This program is distributed in the hope that it will be useful,
 		but WITHOUT ANY WARRANTY; without even the implied warranty of
 		MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 		GNU General Public License for more details.
-		
+
 		You should have received a copy of the GNU General Public License
 		along with this program; if not, write to the Free Software Foundation,
 		Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 package de.spiritscorp.DataSync.Model;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -38,19 +41,21 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import de.spiritscorp.DataSync.Controller.SyncJobContext;
 import de.spiritscorp.DataSync.IO.Logger;
 
 /**
- * 
+ *
  */
 class ModelTest {
 
 	public static final Path TEST_PATH = Paths.get(System.getProperty("user.home"), ".DataSyncTemp");
 
-	private Map<Path,FileAttributes> sourceMap, destMap, syncMap;
+	private Map<Path, FileAttributes> sourceMap, destMap, syncMap;
 	private TestHelper helper;
 	private Model model;
-	
+	private SyncJobContext ctx;
+
 	/**
 	 * @throws java.lang.Exception
 	 */
@@ -76,7 +81,10 @@ class ModelTest {
 		destMap = Model.createMap();
 		syncMap = Model.createMap();
 		helper = new TestHelper(TEST_PATH);
+		ctx = mock(SyncJobContext.class, RETURNS_DEEP_STUBS);
 		model = new Model(mock(Logger.class), sourceMap, destMap);
+
+		when(ctx.getPreference().getSourcePath()).thenReturn(new ArrayList<>());
 	}
 
 	/**
@@ -84,13 +92,13 @@ class ModelTest {
 	 */
 	@AfterEach
 	void tearDown() throws Exception {
-		if(Files.exists(TEST_PATH)) {		
-			List<Path> paths = Files.walk(TEST_PATH).filter((a) -> !Files.isDirectory(a)).collect(Collectors.toList());
-			for(Path path : paths) {
+		if (Files.exists(TEST_PATH)) {
+			final List<Path> paths = Files.walk(TEST_PATH).filter((a) -> !Files.isDirectory(a)).collect(Collectors.toList());
+			for (final Path path : paths) {
 				Files.delete(path);
 			}
-			List<Path> dirs = Files.walk(TEST_PATH).filter((a) -> Files.isDirectory(a)).collect(Collectors.toList());
-			for(int i = dirs.size() -1; i >= 0; i--) {
+			final List<Path> dirs = Files.walk(TEST_PATH).filter((a) -> Files.isDirectory(a)).collect(Collectors.toList());
+			for (int i = dirs.size() - 1; i >= 0; i--) {
 				Files.delete(dirs.get(i));
 			}
 		}
@@ -106,72 +114,75 @@ class ModelTest {
 
 	/**
 	 * Testmethode für {@link de.spiritscorp.DataSync.Model.Model#backupFiles(int, boolean, java.nio.file.Path, boolean, java.nio.file.Path)}.
-	 * @throws IOException 
+	 *
+	 * @throws IOException
 	 */
 	@Test
 	final void testBackupFiles() throws IOException {
 		helper.createBackupFiles(sourceMap, destMap);
-		Path[] destFiles = new Path[2];
+		final Path[] destFiles = new Path[2];
 		int i = 0;
-		for(Entry<Path, FileAttributes> entry : sourceMap.entrySet()) {
+		for (final Entry<Path, FileAttributes> entry : sourceMap.entrySet()) {
 			Files.createDirectories(entry.getKey().getParent());
 			Files.createFile(entry.getKey());
 			destFiles[i] = TEST_PATH.resolve("dest").resolve(entry.getValue().getRelativeFilePath());
 			i++;
 		}
-		for(Entry<Path, FileAttributes> entry : destMap.entrySet()) {
+		for (final Entry<Path, FileAttributes> entry : destMap.entrySet()) {
 			Files.createDirectories(entry.getKey().getParent());
 			Files.createFile(entry.getKey());
 		}
-	
+
 		assertTrue(model.backupFiles(0, false, TEST_PATH.resolve("dest"), false, null), "Die listen sind nicht leer");
 		assertEquals(2, Files.walk(TEST_PATH.resolve("source")).filter((a) -> !Files.isDirectory(a)).count(), "source Ordner, anzahl passt nicht");
 		assertEquals(2, Files.walk(TEST_PATH.resolve("dest")).filter((a) -> !Files.isDirectory(a)).count(), "dest Ordner, anzahl passt nicht");
-		List<Path> listDest = Files.walk(TEST_PATH.resolve("dest")).filter((a) -> !Files.isDirectory(a)).collect(Collectors.toList());
+		final List<Path> listDest = Files.walk(TEST_PATH.resolve("dest")).filter((a) -> !Files.isDirectory(a)).collect(Collectors.toList());
 		assertEquals(destFiles[0].getFileName(), listDest.get(0).getFileName(), "FileName passt nicht überein");
 		assertEquals(destFiles[1].getFileName(), listDest.get(1).getFileName(), "FileName passt nicht überein");
 	}
 
 	/**
 	 * Testmethode für {@link de.spiritscorp.DataSync.Model.Model#syncFiles(java.util.ArrayList, java.util.Map, java.nio.file.Path, java.nio.file.Path, boolean)}.
-	 * @throws IOException 
+	 *
+	 * @throws IOException
 	 */
 	@Test
 	final void testSyncFiles() throws IOException {
-		ArrayList<Map<Path, FileAttributes>> expectedList =  helper.createSyncMap(sourceMap, destMap, syncMap);
-		for(Entry<Path, FileAttributes> entry : sourceMap.entrySet()) {
+		final ArrayList<Map<Path, FileAttributes>> expectedList = helper.createSyncMap(sourceMap, destMap, syncMap);
+		for (final Entry<Path, FileAttributes> entry : sourceMap.entrySet()) {
 			Files.createDirectories(entry.getKey().getParent());
 			Files.createFile(entry.getKey());
 		}
-		for(Entry<Path, FileAttributes> entry : destMap.entrySet()) {
+		for (final Entry<Path, FileAttributes> entry : destMap.entrySet()) {
 			Files.createDirectories(entry.getKey().getParent());
 			Files.createFile(entry.getKey());
 		}
-		assertTrue(model.syncFiles(expectedList, syncMap, TEST_PATH.resolve("source"), TEST_PATH.resolve("dest"), true), "Die listen sind nicht leer");
-		List<Path> destList = Files.walk(TEST_PATH.resolve("dest")).filter((a) -> !Files.isDirectory(a)).map((a) -> a.getFileName()).collect(Collectors.toList());
-		List<Path> sourceList = Files.walk(TEST_PATH.resolve("source")).filter((a) -> !Files.isDirectory(a)).map((a) -> a.getFileName()).collect(Collectors.toList());
+		assertTrue(model.syncFiles(ctx, expectedList, syncMap, TEST_PATH.resolve("source"), TEST_PATH.resolve("dest"), true), "Die listen sind nicht leer");
+		final List<Path> destList = Files.walk(TEST_PATH.resolve("dest")).filter((a) -> !Files.isDirectory(a)).map((a) -> a.getFileName()).collect(Collectors.toList());
+		final List<Path> sourceList = Files.walk(TEST_PATH.resolve("source")).filter((a) -> !Files.isDirectory(a)).map((a) -> a.getFileName()).collect(Collectors.toList());
 		assertEquals(destList, sourceList, "Quelle und Ziel passen nicht überein");
 	}
-	
+
 	/**
 	 * Testmethode für {@link de.spiritscorp.DataSync.Model.Model#getSyncFiles(java.util.Map, java.nio.file.Path, java.nio.file.Path)}.
-	 * @throws IOException 
+	 *
+	 * @throws IOException
 	 */
 	@Test
 	final void testGetSyncFiles() throws IOException {
-		ArrayList<Map<Path, FileAttributes>> expectedLists = helper.createSyncMap(sourceMap, destMap, syncMap);
-		for(Entry<Path, FileAttributes> entry : sourceMap.entrySet()) {
+		final ArrayList<Map<Path, FileAttributes>> expectedLists = helper.createSyncMap(sourceMap, destMap, syncMap);
+		for (final Entry<Path, FileAttributes> entry : sourceMap.entrySet()) {
 			Files.createDirectories(entry.getKey().getParent());
 			Files.createFile(entry.getKey());
 		}
-		for(Entry<Path, FileAttributes> entry : destMap.entrySet()) {
+		for (final Entry<Path, FileAttributes> entry : destMap.entrySet()) {
 			Files.createDirectories(entry.getKey().getParent());
 			Files.createFile(entry.getKey());
 		}
-		ArrayList<Map<Path, FileAttributes>> result = model.getSyncFiles(syncMap, TEST_PATH.resolve("source"), TEST_PATH.resolve("dest"));
-		for(int i = 0; i < expectedLists.size(); i++) {
+		final ArrayList<Map<Path, FileAttributes>> result = model.getSyncFiles(syncMap, TEST_PATH.resolve("source"), TEST_PATH.resolve("dest"));
+		for (int i = 0; i < expectedLists.size(); i++) {
 			assertEquals(expectedLists.get(i).size(), result.get(i).size(), "Die Größe der Liste passt nicht!");
-			for(Path path : expectedLists.get(i).keySet()) {
+			for (final Path path : expectedLists.get(i).keySet()) {
 				assertTrue(result.get(i).containsKey(path), "Key stimmt nicht!");
 				assertTrue(result.get(i).containsValue(expectedLists.get(i).get(path)), "Werte stimmen nicht");
 			}

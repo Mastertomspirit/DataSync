@@ -36,6 +36,9 @@ public class NordicLightTheme implements AppTheme {
 				.text-field, .combo-box { -fx-background-color: #ffffff; -fx-text-fill: #2e3440; -fx-border-color: #d8dee9; }
 				.combo-box .list-cell { -fx-background-color: #ffffff; -fx-text-fill: #2e3440; }
 				.combo-box .list-cell:selected { -fx-background-color: #88c0d0; -fx-text-fill: #2e3440; }
+				.status-success { -fx-text-fill: #22aa22; -fx-font-weight: bold; }
+				.status-error   { -fx-text-fill: #ff3333; -fx-font-weight: bold; }
+				.status-warning { -fx-text-fill: #ffaa00; -fx-font-weight: bold; }
 				""";
 		scene.getStylesheets().add("data:text/css," + css.replace("\n", "").replace(" ", "%20"));
 	}

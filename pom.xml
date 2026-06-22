@@ -2,13 +2,14 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>de.spiritscorp</groupId>
 	<artifactId>DataSync</artifactId>
-	<version>0.9.6.5</version>
+	<version>1.1.0.0_alpha</version>
 	<name>Data Sync</name>
 	<description>Application to synchronize your data</description>
 	<inceptionYear>2022</inceptionYear>
 	<url>https://github.com/Mastertomspirit/DataSync</url>
 
 	<properties>
+		<version_jpackage>1.1.0.0</version_jpackage>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<javaVersion>21</javaVersion>
 		<maven.build.timestamp.format>dd.MM.yyy - HH:mm</maven.build.timestamp.format>
@@ -251,7 +252,7 @@
 							<name>${project.artifactId}</name>
 							<type>IMAGE</type>
 							<runtimeimage>target/maven-jlink/default</runtimeimage>
-							<appversion>${project.version}</appversion>
+							<appversion>${version_jpackage}</appversion>
 							<copyright>GPL 3.0</copyright>
 							<description>Data Sync -- Software zum Syncronisieren von Dateien</description>
 							<vendor>Tom Spirit</vendor>

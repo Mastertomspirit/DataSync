@@ -83,7 +83,7 @@ public class Debug {
 	 * @param e     the {@link Exception} instance containing the error details and stack trace
 	 */
 	public static final void printException(Class<?> clazz, Exception e) {
-		printError("Exception in Class: [%s]:Message -> %s", clazz.getName(), e.getMessage());
+		printError("Exception in Class: [%s]: Message -> %s", clazz.getName(), e.getMessage());
 		if (e.getCause() != null) {
 			printError("  ↳ Cause: %s -> Message: %s", e.getCause().getClass().getName(), e.getCause().getMessage());
 		}
@@ -108,11 +108,13 @@ public class Debug {
 
 	public static final void setDebugToFile() {
 		try {
-			if (!Files.exists(Preference.getDebugPath())) Files.createDirectories(Preference.getDebugPath().getParent());
+			if (!Files.exists(PreferenceManager.getInstance().getDebugPath())) Files.createDirectories(PreferenceManager.getInstance().getDebugPath().getParent());
 			System.setOut(
-					new PrintStream(Files.newOutputStream(Preference.getDebugPath(), StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.APPEND), true, Charset.forName("UTF-8")));
+					new PrintStream(Files.newOutputStream(PreferenceManager.getInstance().getDebugPath(), StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.APPEND), true,
+							Charset.forName("UTF-8")));
 			System.setErr(
-					new PrintStream(Files.newOutputStream(Preference.getErrorPath(), StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.APPEND), true, Charset.forName("UTF-8")));
+					new PrintStream(Files.newOutputStream(PreferenceManager.getInstance().getErrorPath(), StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.APPEND), true,
+							Charset.forName("UTF-8")));
 		} catch (final IOException e) {
 			System.err.println(e.getMessage());
 			e.printStackTrace();

@@ -32,6 +32,11 @@ import javafx.scene.control.ListCell;
 public interface ViewController {
 
 	/**
+	 * Registers a native host operating system runtime shutdown hook to capture external termination signals.
+	 */
+	void registerNativeShutdownHook();
+
+	/**
 	 * Handles switching between different primary view layers within the main viewport.
 	 *
 	 * @param state The target structural navigation layer.
@@ -96,6 +101,6 @@ public interface ViewController {
 	 */
 	void handleSaveSettings(Preference localPreferences, AppTheme targetTheme);
 
-	void runInBackground();
+	void runInBackground(boolean firstStart);
 
 }

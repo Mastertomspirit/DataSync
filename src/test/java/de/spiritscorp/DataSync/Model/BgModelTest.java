@@ -123,7 +123,7 @@ class BgModelTest {
 	 */
 	@Test
 	final void testRunBgJob_syncronize_with_SyncMap() throws IOException {
-		when(prefMock.getDeepScan()).thenReturn(ScanType.SYNCHRONIZE);
+		when(prefMock.getScanMode()).thenReturn(ScanType.SYNCHRONIZE);
 		helper.createSyncMap(sourceMapRef, destMapRef, syncMap);
 		when(prefMock.getSyncMap()).thenReturn(syncMap);
 		for(Entry<Path, FileAttributes> entry : sourceMapRef.entrySet()) {
@@ -152,7 +152,7 @@ class BgModelTest {
 	 */
 	@Test
 	final void testRunBgJob_syncronize_withOut_SyncMap() throws IOException {
-		when(prefMock.getDeepScan()).thenReturn(ScanType.SYNCHRONIZE);
+		when(prefMock.getScanMode()).thenReturn(ScanType.SYNCHRONIZE);
 
 		helper.createSyncMap(sourceMapRef, destMapRef, syncMap);
 		for(Entry<Path, FileAttributes> entry : sourceMapRef.entrySet()) {
@@ -182,7 +182,7 @@ class BgModelTest {
 	 */
 	@Test
 	final void testRunBgJob_backup() throws IOException {
-		when(prefMock.getDeepScan()).thenReturn(ScanType.FLAT_SCAN);
+		when(prefMock.getScanMode()).thenReturn(ScanType.FLAT_SCAN);
 
 		helper.createBackupFiles(sourceMapRef, destMapRef);
 		for(Entry<Path, FileAttributes> entry : sourceMapRef.entrySet()) {

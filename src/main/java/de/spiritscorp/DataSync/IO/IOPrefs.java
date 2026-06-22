@@ -19,101 +19,82 @@
 */
 package de.spiritscorp.DataSync.IO;
 
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
-import java.util.HashMap;
-
-import de.spiritscorp.DataSync.BgTime;
-import de.spiritscorp.DataSync.ScanType;
-import jakarta.json.Json;
-import jakarta.json.JsonObject;
-import jakarta.json.JsonReader;
-import jakarta.json.JsonValue;
-import jakarta.json.JsonWriter;
-import jakarta.json.JsonWriterFactory;
-import jakarta.json.stream.JsonGenerator;
-
 class IOPrefs {
-
-	private final Path configDir;
-	private JsonObject job;
-	private final HashMap<String, JsonValue> prefTempMap;
-
-	IOPrefs() {
-		this.configDir = Preference.getConfigPath().getParent();
-		prefTempMap = new HashMap<>();
-	}
-
+	/*
+		private final Path configDir;
+		private JsonObject job;
+		private final HashMap<String, JsonValue> prefTempMap;
+	
+		IOPrefs() {
+			this.configDir = Preference.getConfigPath().getParent();
+			prefTempMap = new HashMap<>();
+		}
+	*/
 	/**
 	 * @return <b>boolean</b> true if success
+	 * 
+	 *         boolean readPreferences() {
+	 *         if (Files.exists(Preference.getConfigPath())) {
+	 *         try (FileReader reader = new FileReader(Preference.getConfigPath().toFile(), Charset.forName("UTF-8"))) {
+	 *         final JsonReader jr = Json.createReader(reader);
+	 *         job = jr.readObject();
+	 *         jr.close();
+	 *         if (job != null) return true;
+	 *         } catch (final IOException e) {
+	 *         Debug.printException(this.getClass(), e);
+	 *         }
+	 *         }
+	 *         return false;
+	 *         }
 	 */
-	boolean readPreferences() {
-		if (Files.exists(Preference.getConfigPath())) {
-			try (FileReader reader = new FileReader(Preference.getConfigPath().toFile(), Charset.forName("UTF-8"))) {
-				final JsonReader jr = Json.createReader(reader);
-				job = jr.readObject();
-				jr.close();
-				if (job != null) return true;
-			} catch (final IOException e) {
-				Debug.printException(this.getClass(), e);
-			}
-		}
-		return false;
-	}
-
 	/**
 	 * Write the Preferences at <i>"user-home"/DataSync/conf.json</i>
+	 * 
+	 * boolean writePreferences() {
+	 * if (!Files.exists(configDir)) {
+	 * configDir.toFile().mkdir();
+	 * }
+	 * try (OutputStream os = Files.newOutputStream(Preference.getConfigPath(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
+	 * final HashMap<String, Boolean> config = new HashMap<>();
+	 * config.put(JsonGenerator.PRETTY_PRINTING, true);
+	 * final JsonWriterFactory jwf = Json.createWriterFactory(config);
+	 * job = Json.createObjectBuilder(prefTempMap).build();
+	 * final JsonWriter jw = jwf.createWriter(os);
+	 * jw.write(job);
+	 * jw.close();
+	 * prefTempMap.clear();
+	 * return true;
+	 * } catch (final IOException e) {
+	 * Debug.printException(this.getClass(), e);
+	 * }
+	 * return false;
+	 * }
 	 */
-	boolean writePreferences() {
-		if (!Files.exists(configDir)) {
-			configDir.toFile().mkdir();
-		}
-		try (OutputStream os = Files.newOutputStream(Preference.getConfigPath(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
-			final HashMap<String, Boolean> config = new HashMap<>();
-			config.put(JsonGenerator.PRETTY_PRINTING, true);
-			final JsonWriterFactory jwf = Json.createWriterFactory(config);
-			job = Json.createObjectBuilder(prefTempMap).build();
-			final JsonWriter jw = jwf.createWriter(os);
-			jw.write(job);
-			jw.close();
-			prefTempMap.clear();
-			return true;
-		} catch (final IOException e) {
-			Debug.printException(this.getClass(), e);
-		}
-		return false;
-	}
-
 	/**
 	 * Set the preferences as key value pairs
 	 *
 	 * @param key
 	 * @param value
+	 * 
+	 *              void setPreferences(String key, JsonValue value) {
+	 *              prefTempMap.put(key, value);
+	 *              }
 	 */
-	void setPreferences(String key, JsonValue value) {
-		prefTempMap.put(key, value);
-	}
-
 	/**
 	 *
 	 * @param key The key to be search
 	 * @return <b>Path</> </br>
 	 *         The requested path
 	 * @throws ConfigException If path is not valid
+	 * 
+	 *                         Path getPath(String key) throws ConfigException {
+	 *                         if (job.containsKey(key)) {
+	 *                         final Path convPath = Paths.get(job.getString(key));
+	 *                         if (Files.exists(convPath) || key.startsWith("destPath") || key.startsWith("startDestPath") || key.equals("trashbinPath")) return convPath;
+	 *                         }
+	 *                         throw new ConfigException("No valid Path found: " + key);
+	 *                         }
 	 */
-	Path getPath(String key) throws ConfigException {
-		if (job.containsKey(key)) {
-			final Path convPath = Paths.get(job.getString(key));
-			if (Files.exists(convPath) || key.startsWith("destPath") || key.startsWith("startDestPath") || key.equals("trashbinPath")) return convPath;
-		}
-		throw new ConfigException("No valid Path found: " + key);
-	}
 
 	/**
 	 *
@@ -121,44 +102,45 @@ class IOPrefs {
 	 * @return <b>int</b> </br>
 	 *         The number of paths are set
 	 * @throws ConfigException
+	 * 
+	 *                         int getMultiPath(String key) throws ConfigException {
+	 *                         if (job.containsKey(key)) { return job.getInt(key); }
+	 *                         throw new ConfigException("No valid Multipath number found");
+	 *                         }
 	 */
-	int getMultiPath(String key) throws ConfigException {
-		if (job.containsKey(key)) { return job.getInt(key); }
-		throw new ConfigException("No valid Multipath number found");
-	}
-
 	/**
 	 *
 	 * @param key The key to be search
 	 * @return <b>boolean</b>
 	 * @throws ConfigException
+	 * 
+	 *                         boolean getBoolean(String key) throws ConfigException {
+	 *                         if (job.containsKey(key)) { return job.getBoolean(key); }
+	 *                         throw new ConfigException("No valid boolean found: " + key);
+	 *                         }
 	 */
-	boolean getBoolean(String key) throws ConfigException {
-		if (job.containsKey(key)) { return job.getBoolean(key); }
-		throw new ConfigException("No valid boolean found: " + key);
-	}
-
 	/**
 	 *
 	 * @return <b>ScanType</b>
 	 * @throws ConfigException
+	 * 
+	 *                         ScanType getScanType() throws ConfigException {
+	 *                         try {
+	 *                         return ScanType.get(job.getString("deepScan"));
+	 *                         } catch (final Exception e) {}
+	 *                         throw new ConfigException("No valid ScanType found");
+	 *                         }
 	 */
-	ScanType getScanType() throws ConfigException {
-		try {
-			return ScanType.get(job.getString("deepScan"));
-		} catch (final Exception e) {}
-		throw new ConfigException("No valid ScanType found");
-	}
-
 	/**
 	 *
 	 * @return <b>BgTime</b>
 	 * @throws ConfigException
+	 * 
+	 *                         BgTime getBgTime() throws ConfigException {
+	 *                         try {
+	 *                         return BgTime.get(job.getString("bgTime"));
+	 *                         } catch (final Exception e) {}
+	 *                         throw new ConfigException("No valid BgTime found");
+	 *                         }
 	 */
-	BgTime getBgTime() throws ConfigException {
-		try {
-			return BgTime.get(job.getString("bgTime"));
-		} catch (final Exception e) {}
-		throw new ConfigException("No valid BgTime found");
-	}
 }

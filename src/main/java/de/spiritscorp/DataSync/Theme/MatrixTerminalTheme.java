@@ -37,6 +37,9 @@ public class MatrixTerminalTheme implements AppTheme {
 				.combo-box .list-cell { -fx-background-color: #000000; -fx-text-fill: #00ff00; }
 				.combo-box .list-cell:selected { -fx-background-color: #00ff00; -fx-text-fill: #000000; }
 				.scroll-pane { -fx-background-color: #0d0d0d; }
+				.status-success { -fx-text-fill: #22aa22; -fx-font-weight: bold; }
+				.status-error   { -fx-text-fill: #ff3333; -fx-font-weight: bold; }
+				.status-warning { -fx-text-fill: #ffaa00; -fx-font-weight: bold; }
 				""";
 		scene.getStylesheets().add("data:text/css," + css.replace("\n", "").replace(" ", "%20"));
 	}

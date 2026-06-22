@@ -53,7 +53,7 @@ public class BgView {
 		if (SystemTray.isSupported()) {
 			initTray();
 		} else {
-			Debug.PRINT_DEBUG("[DataSync Core] SystemTray wird von diesem Betriebssystem nicht unterstützt.");
+			Debug.printDebug("[DataSync Core] SystemTray wird von diesem Betriebssystem nicht unterstützt.");
 		}
 	}
 

@@ -39,9 +39,7 @@ import org.kordamp.ikonli.materialdesign2.MaterialDesignS;
 
 import de.spiritscorp.DataSync.BgTime;
 import de.spiritscorp.DataSync.ScanType;
-import de.spiritscorp.DataSync.Controller.ControllerHelper;
 import de.spiritscorp.DataSync.Controller.SyncJobContext;
-import de.spiritscorp.DataSync.IO.Logger;
 import de.spiritscorp.DataSync.IO.Preference;
 import de.spiritscorp.DataSync.Model.FileAttributes;
 import de.spiritscorp.DataSync.Model.Model;
@@ -93,8 +91,8 @@ public class Gui_old extends Application {
 	private final ObservableList<SyncJobContext> jobList = FXCollections.observableArrayList();
 	private final Map<Path, FileAttributes> sourceMap = Model.createMap();
 	private final Map<Path, FileAttributes> destMap = Model.createMap();
-	private final Model model = new Model(new Logger(), sourceMap, destMap);
-	private final ControllerHelper helper = new ControllerHelper(model, Preference.getInstance(), sourceMap, destMap);
+//	private final Model model = new Model(new Logger(), sourceMap, destMap);
+//	private final ControllerHelper helper = new ControllerHelper(model, Preference.getInstance(), sourceMap, destMap);
 
 	private ListView<SyncJobContext> sidebarListView;
 	private Label workspaceHeaderLabel;
@@ -274,7 +272,7 @@ public class Gui_old extends Application {
 		final Button addJobButton = new Button("Task hinzufügen", createIcon(MaterialDesignP.PLUS));
 		addJobButton.setMaxWidth(Double.MAX_VALUE);
 		addJobButton.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10px;");
-		addJobButton.setOnAction(e -> jobList.add(new SyncJobContext("Sync Job " + (jobList.size() + 1), Preference.getInstance())));
+//		addJobButton.setOnAction(e -> jobList.add(new SyncJobContext("Sync Job " + (jobList.size() + 1), Preference.getInstance())));
 
 		exitButton = new Button("Programm beenden", createIcon(MaterialDesignP.POWER));
 		final FontIcon exitIcon = (FontIcon) exitButton.getGraphic();
@@ -415,7 +413,7 @@ public class Gui_old extends Application {
 //			else if ("Duplikate scannen".equals(selected)) helper.startDuplicateScan(job);
 		});
 
-		cancelButton.setOnAction(e -> job.cancelRunningTask());
+//		cancelButton.setOnAction(e -> job.cancelRunningTask());
 //		deleteButton.setOnAction(e -> helper.deleteSelectedDuplicates(job));
 	}
 
@@ -510,7 +508,7 @@ public class Gui_old extends Application {
 				pref.setBgTime(BgTime.get(bgTimeComboBox.getValue()));
 			}
 
-			helper.setOSAutostart(globalAutostartCheck.isSelected());
+//			helper.setOSAutostart(globalAutostartCheck.isSelected());
 			System.out.println("[Config] Settings persistently committed for: " + job.getJobName());
 
 			// Kehre nach dem Speichern zurück in die Monitor-Ansicht
@@ -685,8 +683,8 @@ public class Gui_old extends Application {
 	}
 
 	private void loadInitialJobConfigurations() {
-		jobList.add(new SyncJobContext("NAS Dokumenten-Spiegel", Preference.getInstance()));
-		jobList.add(new SyncJobContext("Lokales Code-Workspace Backup", Preference.getInstance()));
+//		jobList.add(new SyncJobContext("NAS Dokumenten-Spiegel", Preference.getInstance()));
+//		jobList.add(new SyncJobContext("Lokales Code-Workspace Backup", Preference.getInstance()));
 		if (!jobList.isEmpty()) {
 			sidebarListView.getSelectionModel().select(0);
 		}

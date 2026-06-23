@@ -194,7 +194,7 @@ public class Gui extends Application {
 		final VBox infoBox = new VBox(10);
 		infoBox.setStyle("-fx-padding: 15px;");
 		final Label appTitle = new Label("DataSync Core Engine");
-		appTitle.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;");
+		appTitle.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
 		final Label version = new Label("Programmversion: " + Main.VERSION);
 		final Label vendor = new Label("Lizenznehmer / Entwickler: Tom Spirit");
 		final Label copyright = new Label("Copyright: Licensed under GNU GPL v3.0 Copyleft System.");

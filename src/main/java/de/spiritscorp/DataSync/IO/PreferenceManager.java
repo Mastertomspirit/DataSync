@@ -50,7 +50,7 @@ import jakarta.json.stream.JsonGenerator;
  */
 public class PreferenceManager {
 
-	private static Path rootPath = Paths.get(System.getProperty("user.home"), "DataSync_new");
+	private static Path rootPath = Paths.get(System.getProperty("user.home"), "DataSync");
 	private static Path configPath = rootPath.resolve("conf.json");
 	private static Path logPath = rootPath.resolve("log.json");
 	private static Path debugPath = rootPath.resolve("debug.log");

@@ -65,7 +65,6 @@ public class SidebarView extends VBox {
 		this.setSpacing(16);
 		this.setPadding(new Insets(16, 16, 24, 16));
 		this.setPrefWidth(300);
-		this.setStyle("-fx-background-color: #1a252f;"); // Deep slate custom navy container
 
 		// Initialize application navigation switcher menu
 		final MenuButton hamburgerMenu = new MenuButton("Navigation", Gui.createIcon(MaterialDesignH.HAMBURGER));
@@ -84,7 +83,7 @@ public class SidebarView extends VBox {
 
 		// Section header label
 		final Label sidebarHeader = new Label("VERWALTETE TASK-INSTANZEN");
-		sidebarHeader.setStyle("-fx-text-fill: #7f8c8d; -fx-font-size: 11px; -fx-font-weight: bold; -fx-letter-spacing: 0.8px;");
+		sidebarHeader.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-letter-spacing: 0.8px;");
 
 		// Main ListView layout for tasks mapping
 		sidebarListView = new ListView<>(mainGui.getJobList());
@@ -130,7 +129,6 @@ public class SidebarView extends VBox {
 
 			final ContextMenu contextMenu = new ContextMenu();
 
-			// Explicit lambda fix avoiding functional inference signature conflicts
 			final MenuItem renameItem = new MenuItem("Task umbenennen", Gui.createIcon(MaterialDesignS.SWAP_HORIZONTAL));
 			renameItem.setOnAction(event -> controller.handleRenameJob(cell));
 
@@ -142,7 +140,20 @@ public class SidebarView extends VBox {
 			deleteItem.setOnAction(event -> controller.handleDeleteJob(cell.getItem()));
 
 			contextMenu.getItems().addAll(renameItem, duplicateItem, new SeparatorMenuItem(), deleteItem);
-			cell.emptyProperty().addListener((obs, wasEmpty, isNowEmpty) -> cell.setContextMenu(isNowEmpty ? null : contextMenu));
+
+			cell.setOnContextMenuRequested(event -> {
+				// Guard clause: Block popup triggers on empty rows or missing models
+				if (cell.isEmpty() || cell.getItem() == null) {
+					event.consume();
+					return;
+				}
+
+				// Explicitly verify if the mouse coordinates hit the bounded layout area of the graphic/text
+				// This prevents triggers on empty spaces inside extended high-width list cells
+				contextMenu.show(cell, event.getScreenX(), event.getScreenY());
+				event.consume();
+			});
+
 			return cell;
 		});
 

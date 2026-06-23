@@ -105,11 +105,11 @@ public class WorkspaceView extends VBox {
 		this.setSpacing(12);
 
 		workspaceHeaderLabel = new Label("Kein Task aktiv");
-		workspaceHeaderLabel.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;");
+		workspaceHeaderLabel.setStyle("-fx-font-size: 22px; -fx-font-weight: bold;");
 
 		// Subtitle dynamic information bar containing directories context mapping
 		contextInfoLabel = new Label("");
-		contextInfoLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: #7f8c8d; -fx-font-style: italic; -fx-padding: 0 0 8px 0;");
+		contextInfoLabel.setStyle("-fx-font-size: 13px; -fx-font-style: italic; -fx-padding: 0 0 8px 0;");
 
 		controlToolbar = new HBox(12);
 		controlToolbar.setAlignment(Pos.CENTER_LEFT);
@@ -125,7 +125,7 @@ public class WorkspaceView extends VBox {
 
 		consoleTextArea = new TextArea();
 		consoleTextArea.setEditable(false);
-		consoleTextArea.setStyle("-fx-font-family: 'Consolas', monospace; -fx-font-size: 12px;");
+		consoleTextArea.setStyle(" -fx-font-family: 'Consolas', monospace; -fx-font-size: 12px;");
 		consoleViewNode = new ScrollPane(consoleTextArea);
 		consoleViewNode.setFitToWidth(true);
 		consoleViewNode.setFitToHeight(true);
@@ -219,7 +219,6 @@ public class WorkspaceView extends VBox {
 		final ScrollPane scroll = new ScrollPane(content);
 		scroll.setFitToWidth(true);
 		scroll.setPadding(new Insets(12));
-		scroll.setStyle("-fx-background-color: transparent; -fx-background: #ffffff;");
 		centerViewport.getChildren().add(scroll);
 	}
 
@@ -298,7 +297,7 @@ public class WorkspaceView extends VBox {
 
 		// --- Section 1: Execution Mode Selection ---
 		final Label modeTitle = new Label("Ausführungsmodus:");
-		modeTitle.setStyle("-fx-font-weight: bold; -fx-text-fill: #34495e;");
+		modeTitle.setStyle("-fx-font-weight: bold;");
 		final ComboBox<String> taskModeComboBox = new ComboBox<>();
 		taskModeComboBox.getItems().addAll(ScanType.getAllDescriptions());
 		job.selectedModeProperty().set(pref.getScanMode() != null ? pref.getScanMode().getDescription() : ScanType.FLAT_SCAN.getDescription());
@@ -324,11 +323,16 @@ public class WorkspaceView extends VBox {
 
 		// --- Section 3: Task Parameter Flags Options ---
 		final Label paramsTitle = new Label("Erweiterte Ablaufparameter");
-		paramsTitle.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;");
+		paramsTitle.setStyle("-fx-font-size: 14px; -fx-font-weight: bold;");
 
 		final CheckBox subDirCheck = new CheckBox("Unterordner einbeziehen (SubDir)");
 		subDirCheck.setSelected(pref.isSubDir());
-		subDirCheck.setTooltip(new Tooltip("Aktueller Status"));
+		final String subDirText = """
+				Aktiviert: Kopiert nur die nackten Dateien und Unterordner DIREKT in das Zielverzeichnis
+				(ideal, um mehrere Quellen in einem einzigen Zielordner zusammenzuführen).
+				Deaktiviert: Erstellt für jeden Quellpfad einen eigenen Hauptordner im Zielverzeichnis, um die Quellen sauber voneinander zu trennen.
+				""";
+		subDirCheck.setTooltip(new Tooltip(subDirText));
 		final CheckBox trashbinCheck = new CheckBox("Papierkorb verwenden (Trashbin)");
 		trashbinCheck.setSelected(pref.isTrashbin());
 		trashbinCheck.setTooltip(new Tooltip("Verschiebt modifizierte/gelöschte Dateien temporär in Sicherungsstrukturen"));
@@ -356,7 +360,7 @@ public class WorkspaceView extends VBox {
 
 		// --- Section 4: Global Parameters Stack ---
 		final Label globalTitle = new Label("Globale System-Konfiguration");
-		globalTitle.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;");
+		globalTitle.setStyle("-fx-font-size: 14px; -fx-font-weight: bold;");
 
 		final CheckBox globalAutostartCheck = new CheckBox("DataSync beim Systemstart minimiert laden (Autostart OS)");
 		globalAutostartCheck.setSelected(PreferenceManager.getInstance().isGlobalAutoStart()); // Bind status fallback trace
@@ -433,7 +437,7 @@ public class WorkspaceView extends VBox {
 		pathsGrid.setVgap(10);
 
 		final Label title = new Label("Verzeichnis-Konfiguration (" + type.getDescription() + ")");
-		title.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;");
+		title.setStyle("-fx-font-size: 14px; -fx-font-weight: bold;");
 		container.getChildren().add(title);
 
 		if (ScanType.SYNCHRONIZE.equals(type) || ScanType.DUBLICATE_SCAN.equals(type)) {

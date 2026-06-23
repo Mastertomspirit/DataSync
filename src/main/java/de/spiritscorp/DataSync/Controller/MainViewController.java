@@ -80,9 +80,7 @@ public class MainViewController implements ViewController {
 
 	@Override
 	public void handleNavigate(Gui.ViewState state) {
-		// Wechselt den internen Zustand/Ansicht der GUI (z. B. auf MONITOR oder SETTINGS)
 		gui.setViewState(state);
-		// Falls die GUI versteckt war (durch das Tray), holen wir sie jetzt wieder auf den Bildschirm
 		if (!gui.getWindowStage().isShowing()) {
 			gui.getWindowStage().show();
 			gui.getWindowStage().toFront();

@@ -45,7 +45,7 @@ public class BgModel {
 	/**
 	 * List all files, equals them and make the prefer sync in the background
 	 *
-	 * @return <b>boolean</b> </br>
+	 * @return <b>boolean</b> <br>
 	 *         true if the process ran and both maps are empty
 	 */
 	public boolean runBgJob() {
@@ -75,13 +75,13 @@ public class BgModel {
 					Debug.printDebug("[DataSync BgModel] list ready");
 
 					Debug.printDebug("[DataSync BgModel] getSyncFiles start");
-					if (syncMap.isEmpty()) {
-						final Map<Path, FileAttributes> tempSyncMap = Model.createMap();
-						handler.listFiles(pref.getSourcePath(), tempSyncMap, ScanType.SYNCHRONIZE, false);
-						for (final Map.Entry<Path, FileAttributes> entry : tempSyncMap.entrySet()) {
-							syncMap.put(entry.getValue().getRelativeFilePath(), entry.getValue());
-						}
-					}
+//					if (syncMap.isEmpty()) {
+//						final Map<Path, FileAttributes> tempSyncMap = Model.createMap();
+//						handler.listFiles(pref.getSourcePath(), tempSyncMap, ScanType.SYNCHRONIZE, false);
+//						for (final Map.Entry<Path, FileAttributes> entry : tempSyncMap.entrySet()) {
+//							syncMap.put(entry.getValue().getRelativeFilePath(), entry.getValue());
+//						}
+//					}
 					final ArrayList<Map<Path, FileAttributes>> result = handler.getSyncFiles(sourceMap, destMap, startSourcePath, startDestPath, syncMap);
 					Debug.printDebug("[DataSync BgModel] getSyncFiles ready");
 

@@ -25,9 +25,11 @@ import java.awt.PopupMenu;
 import java.awt.SystemTray;
 import java.awt.TrayIcon;
 import java.awt.image.BufferedImage;
+import java.util.Objects;
 
 import javax.imageio.ImageIO;
 
+import de.spiritscorp.DataSync.Main;
 import de.spiritscorp.DataSync.Controller.BgController;
 import de.spiritscorp.DataSync.IO.Debug;
 import javafx.application.Platform;
@@ -64,11 +66,13 @@ public class BgView {
 		final MenuItem openItem = new MenuItem("öffnen");
 		openItem.setFont(font);
 		// CRITICAL: Bridge AWT event into the JavaFX Application Thread context safely
-		openItem.addActionListener(e -> Platform.runLater(() -> controller.interruptBgJob()));
+		openItem.addActionListener(e -> Platform.runLater(() -> {
+			controller.interruptBgJob(Main.BACKGROUND_THREAD_TIMEOUT);
+		}));
 
 		final MenuItem closeItem = new MenuItem("schließen");
 		closeItem.setFont(font);
-		closeItem.addActionListener(e -> Platform.runLater(controller::handleApplicationShutdown));
+		closeItem.addActionListener(e -> Platform.runLater(controller::requestApplicationShutdown));
 
 		popup.add(openItem);
 		popup.addSeparator();
@@ -87,11 +91,25 @@ public class BgView {
 		this.trayIcon.setImageAutoSize(true);
 
 		// Doppel-Klick auf das Icon öffnet die App direkt
-		this.trayIcon.addActionListener(e -> Platform.runLater(() -> controller.interruptBgJob()));
+		this.trayIcon.addActionListener(e -> Platform.runLater(() -> controller.interruptBgJob(Main.BACKGROUND_THREAD_TIMEOUT)));
 	}
 
 	/**
 	 * @return TrayIcon
 	 */
 	public TrayIcon getTrayIcon() { return trayIcon; }
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(controller, trayIcon);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) return true;
+		if (obj == null) return false;
+		if (getClass() != obj.getClass()) return false;
+		final BgView other = (BgView) obj;
+		return Objects.equals(controller, other.controller) && Objects.equals(trayIcon, other.trayIcon);
+	}
 }

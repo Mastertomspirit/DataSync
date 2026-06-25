@@ -42,7 +42,8 @@ import jakarta.json.JsonValue;
 
 /**
  * Isolated parameters state tracker mapped to a dedicated profile workspace scope.
- * * @author Tom Spirit
+ *
+ * @author Tom Spirit
  */
 public class Preference {
 
@@ -55,9 +56,9 @@ public class Preference {
 	private final Map<Path, FileAttributes> syncMap = Model.createMap();
 
 	private final String trashbinString = "Papierkorb";
-	private Path startSourcePath = Paths.get(System.getProperty("user.home"));
-	private Path startDestPath = Paths.get(System.getProperty("user.home"));
-	private Path trashbinPath = startDestPath.resolve(trashbinString);
+	private Path startSourcePath = Paths.get( System.getProperty( "user.home" ) );
+	private Path startDestPath = Paths.get( System.getProperty( "user.home" ) );
+	private Path trashbinPath = startDestPath.resolve( trashbinString );
 
 	private ScanType scanMode = ScanType.FLAT_SCAN;
 	private BgTime bgTime = BgTime.DAYLY;
@@ -66,23 +67,24 @@ public class Preference {
 	private boolean trashbin = true;
 	private boolean subDir, autoDel, autoSync, bgSync, autoBgDel;
 
-	private Preference(String jobName) {
+	private Preference( String jobName ) {
 		this.jobName = jobName;
-		sourcePaths.add(startSourcePath);
-		destPaths.add(startDestPath);
-		final String safeName = jobName.replaceAll("[^a-zA-Z0-9-_]", "_");
-		this.ioSyncMap = new IOSyncMap(safeName);
-		this.jobScanTimePath = PreferenceManager.getInstance().getConfigPath().getParent().resolve("lastScanTime_" + safeName);
+		sourcePaths.add( startSourcePath );
+		destPaths.add( startDestPath );
+		final String safeName = jobName.replaceAll( "[^a-zA-Z0-9-_]", "_" );
+		this.ioSyncMap = new IOSyncMap( safeName );
+		this.jobScanTimePath = PreferenceManager.getInstance().getConfigPath().getParent().resolve( "lastScanTime_" + safeName );
 	}
 
 	/**
 	 * Allocation factory generating tracking units separated by specific job profiles keys.
-	 * * @param jobName Unique target workspace identifier.
+	 *
+	 * @param jobName Unique target workspace identifier.
 	 *
 	 * @return Isolated configuration state scope.
 	 */
-	static Preference createSinglePreference(String jobName) {
-		return new Preference(jobName);
+	static Preference createSinglePreference( String jobName ) {
+		return new Preference( jobName );
 	}
 
 	/**
@@ -92,27 +94,27 @@ public class Preference {
 		final JsonObjectBuilder builder = Json.createObjectBuilder();
 
 		final JsonArrayBuilder srcArr = Json.createArrayBuilder();
-		for (final Path p : sourcePaths)
-			srcArr.add(p.toString());
+		for( final Path p : sourcePaths )
+			srcArr.add( p.toString() );
 
 		final JsonArrayBuilder destArr = Json.createArrayBuilder();
-		for (final Path p : destPaths)
-			destArr.add(p.toString());
+		for( final Path p : destPaths )
+			destArr.add( p.toString() );
 
-		builder.add("sourcePaths", srcArr.build())
-				.add("destPaths", destArr.build())
-				.add("startSourcePath", startSourcePath.toString())
-				.add("startDestPath", startDestPath.toString())
-				.add("trashbinPath", trashbinPath.toString())
-				.add("scanMode", scanMode.getDescription())
-				.add("bgTime", bgTime.getName())
-				.add("logOn", logOn)
-				.add("subDir", subDir)
-				.add("autoDel", autoDel)
-				.add("autoBgDel", autoBgDel)
-				.add("autoSync", autoSync)
-				.add("bgSync", bgSync)
-				.add("trashbin", trashbin);
+		builder.add( "sourcePaths", srcArr.build() )
+				.add( "destPaths", destArr.build() )
+				.add( "startSourcePath", startSourcePath.toString() )
+				.add( "startDestPath", startDestPath.toString() )
+				.add( "trashbinPath", trashbinPath.toString() )
+				.add( "scanMode", scanMode.getDescription() )
+				.add( "bgTime", bgTime.getName() )
+				.add( "logOn", logOn )
+				.add( "subDir", subDir )
+				.add( "autoDel", autoDel )
+				.add( "autoBgDel", autoBgDel )
+				.add( "autoSync", autoSync )
+				.add( "bgSync", bgSync )
+				.add( "trashbin", trashbin );
 
 		return builder.build();
 	}
@@ -125,89 +127,89 @@ public class Preference {
 	 * @param json The serialized JSON object payload mapping the profile configuration.
 	 * @throws ConfigException If the structural state context is completely unrecoverable or malformed.
 	 */
-	void deserialize(JsonObject json) throws ConfigException {
-		if (json == null) { throw new ConfigException("JSON payload context is null."); }
+	void deserialize( JsonObject json ) throws ConfigException {
+		if( json == null ) { throw new ConfigException( "JSON payload context is null." ); }
 
 		try {
 			// --- SOURCE PATHS VALIDATION ---
 			sourcePaths.clear();
-			final JsonArray srcArr = json.getJsonArray("sourcePaths");
-			if (srcArr != null) {
-				for (final JsonValue v : srcArr) {
+			final JsonArray srcArr = json.getJsonArray( "sourcePaths" );
+			if( srcArr != null ) {
+				for( final JsonValue v : srcArr ) {
 					// Strip literal quotes from stringification boundaries
-					final Path p = Paths.get(v.toString().replace("\"", ""));
+					final Path p = Paths.get( v.toString().replace( "\"", "" ) );
 					// Rigid validation requirement: Source directories MUST physically exist
-					if (Files.exists(p) && Files.isDirectory(p)) {
-						sourcePaths.add(p);
-					} else {
-						Debug.printDebug("[Preference] Warning: Source path no longer available on filesystem: " + p);
+					if( Files.exists( p ) && Files.isDirectory( p ) ) {
+						sourcePaths.add( p );
+					}else {
+						Debug.printDebug( "[Preference] Warning: Source path no longer available on filesystem: " + p );
 					}
 				}
 			}
 
 			// --- DESTINATION PATHS VALIDATION ---
 			destPaths.clear();
-			final JsonArray destArr = json.getJsonArray("destPaths");
-			if (destArr != null) {
-				for (final JsonValue v : destArr) {
-					final Path p = Paths.get(v.toString().replace("\"", ""));
+			final JsonArray destArr = json.getJsonArray( "destPaths" );
+			if( destArr != null ) {
+				for( final JsonValue v : destArr ) {
+					final Path p = Paths.get( v.toString().replace( "\"", "" ) );
 					// Target paths are allowed to be offline temporarily (e.g., disconnected network mounts)
-					destPaths.add(p);
+					destPaths.add( p );
 				}
 			}
 
 			// --- STARTING & SYSTEM PATHS VALIDATION ---
-			if (json.containsKey("startSourcePath")) {
-				final Path p = Paths.get(json.getString("startSourcePath"));
-				this.startSourcePath = (Files.exists(p)) ? p : Paths.get(System.getProperty("user.home"));
+			if( json.containsKey( "startSourcePath" ) ) {
+				final Path p = Paths.get( json.getString( "startSourcePath" ) );
+				this.startSourcePath = ( Files.exists( p ) ) ? p : Paths.get( System.getProperty( "user.home" ) );
 			}
 
-			if (json.containsKey("startDestPath")) {
-				final Path p = Paths.get(json.getString("startDestPath"));
-				setStartDestPath(p); // Internally forces tracking updates for trashbinPath coordinates
+			if( json.containsKey( "startDestPath" ) ) {
+				final Path p = Paths.get( json.getString( "startDestPath" ) );
+				setStartDestPath( p ); // Internally forces tracking updates for trashbinPath coordinates
 			}
 
-			if (json.containsKey("trashbinPath")) {
-				this.trashbinPath = Paths.get(json.getString("trashbinPath"));
+			if( json.containsKey( "trashbinPath" ) ) {
+				this.trashbinPath = Paths.get( json.getString( "trashbinPath" ) );
 			}
 
 			// --- PATH FALLBACK LOGIC ---
 			// Resilient protection layer: If structural filters left arrays empty, fall back to user home coordinates
-			if (sourcePaths.isEmpty() || destPaths.isEmpty()) {
-				final Path userHome = Paths.get(System.getProperty("user.home"));
-				if (sourcePaths.isEmpty()) sourcePaths.add(userHome);
-				if (destPaths.isEmpty()) destPaths.add(userHome);
+			if( sourcePaths.isEmpty() || destPaths.isEmpty() ) {
+				final Path userHome = Paths.get( System.getProperty( "user.home" ) );
+				if( sourcePaths.isEmpty() ) sourcePaths.add( userHome );
+				if( destPaths.isEmpty() ) destPaths.add( userHome );
 				this.startSourcePath = userHome;
 				this.startDestPath = userHome;
-				this.trashbinPath = userHome.resolve(trashbinString);
+				this.trashbinPath = userHome.resolve( trashbinString );
 			}
 
 			// --- PRIMITIVE ENUM CONFIGS (With Type-Checking & Fallbacks) ---
-			if (json.containsKey("scanMode")) {
-				final ScanType parsed = ScanType.get(json.getString("scanMode"));
-				this.scanMode = (parsed != null) ? parsed : ScanType.FLAT_SCAN;
+			if( json.containsKey( "scanMode" ) ) {
+				final ScanType parsed = ScanType.get( json.getString( "scanMode" ) );
+				this.scanMode = ( parsed != null ) ? parsed : ScanType.FLAT_SCAN;
 			}
-			if (json.containsKey("bgTime")) {
-				final BgTime parsed = BgTime.get(json.getString("bgTime"));
-				this.bgTime = (parsed != null) ? parsed : BgTime.DAYLY;
+			if( json.containsKey( "bgTime" ) ) {
+				final BgTime parsed = BgTime.get( json.getString( "bgTime" ) );
+				this.bgTime = ( parsed != null ) ? parsed : BgTime.DAYLY;
 			}
 
 			// --- RESILIENT BOOLEAN INJECTION LAYER ---
 			// Intercepts structural ClassCastExceptions if human operators modified primitive types illegally
-			this.logOn = getSafeBoolean(json, "logOn", true);
-			this.trashbin = getSafeBoolean(json, "trashbin", true);
-			this.subDir = getSafeBoolean(json, "subDir", false);
-			this.autoDel = getSafeBoolean(json, "autoDel", false);
-			this.autoBgDel = getSafeBoolean(json, "autoBgDel", false);
-			this.autoSync = getSafeBoolean(json, "autoSync", false);
-			this.bgSync = getSafeBoolean(json, "bgSync", false);
+			this.logOn = getSafeBoolean( json, "logOn", true );
+			this.trashbin = getSafeBoolean( json, "trashbin", true );
+			this.subDir = getSafeBoolean( json, "subDir", false );
+			this.autoDel = getSafeBoolean( json, "autoDel", false );
+			this.autoBgDel = getSafeBoolean( json, "autoBgDel", false );
+			this.autoSync = getSafeBoolean( json, "autoSync", false );
+			this.bgSync = getSafeBoolean( json, "bgSync", false );
 
 			// Trigger downstream initialization matrix cache tracking parsing
-			ioSyncMap.loadSyncMap(syncMap);
+			ioSyncMap.loadSyncMap( syncMap );
 
-		} catch (final Exception e) {
+		}catch( final Exception e ) {
 			// Wrap any nested unhandled parsing or type violations into a predictable lifecycle runtime exception
-			throw new ConfigException("JSON payload structure is corrupt or mismatched.", e);
+			throw new ConfigException( "JSON payload structure is corrupt or mismatched.", e );
 		}
 	}
 
@@ -221,12 +223,12 @@ public class Preference {
 	 * @param defaultValue The architectural primitive value fallback state if the verification sequence fails.
 	 * @return The evaluated value assigned to the target property key, or the predefined default.
 	 */
-	private boolean getSafeBoolean(JsonObject json, String key, boolean defaultValue) {
-		if (!json.containsKey(key)) { return defaultValue; }
+	private boolean getSafeBoolean( JsonObject json, String key, boolean defaultValue ) {
+		if( !json.containsKey( key ) ) { return defaultValue; }
 		try {
-			return json.getBoolean(key);
-		} catch (final ClassCastException e) {
-			Debug.printDebug("[Preference] Warning: Invalid data type mapping tracking key '" + key + "'. Falling back to default: " + defaultValue);
+			return json.getBoolean( key );
+		}catch( final ClassCastException e ) {
+			Debug.printDebug( "[Preference] Warning: Invalid data type mapping tracking key '" + key + "'. Falling back to default: " + defaultValue );
 			return defaultValue;
 		}
 	}
@@ -235,93 +237,94 @@ public class Preference {
 	 * Persists the current timestamp as the last successful scan execution time.
 	 */
 	public void saveLastScanTime() {
-		try (BufferedWriter bw = Files.newBufferedWriter(jobScanTimePath,
-				StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
-			bw.write(String.valueOf(System.currentTimeMillis()));
-		} catch (final IOException e) {
-			Debug.printException(this.getClass(), e);
+		try( BufferedWriter bw = Files.newBufferedWriter( jobScanTimePath,
+				StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING ) ) {
+			bw.write( String.valueOf( System.currentTimeMillis() ) );
+		}catch( final IOException e ) {
+			Debug.printException( this.getClass(), e );
 		}
 	}
 
 	/**
 	 * Retrieves the last recorded scan execution timestamp.
-	 * * @return Unix epoch millis, or 0 if no timer token exists yet.
+	 *
+	 * @return Unix epoch millis, or 0 if no timer token exists yet.
 	 */
 	public long getLastScanTime() {
-		if (!Files.exists(jobScanTimePath)) { return 0; }
-		try (BufferedReader br = Files.newBufferedReader(jobScanTimePath)) {
+		if( !Files.exists( jobScanTimePath ) ) { return 0; }
+		try( BufferedReader br = Files.newBufferedReader( jobScanTimePath ) ) {
 			final String str = br.readLine();
-			return (str != null) ? Long.parseLong(str.trim()) : 0;
-		} catch (final IOException | NumberFormatException e) {
+			return ( str != null ) ? Long.parseLong( str.trim() ) : 0;
+		}catch( final IOException | NumberFormatException e ) {
 			return 0;
 		}
 	}
 
 	public void writeSyncMap() {
-		ioSyncMap.writeSyncMap(syncMap);
+		ioSyncMap.writeSyncMap( syncMap );
 	}
 
 	// --- Setters and Getters ---
 	public String getJobName() { return jobName; }
 
-	void setJobNameFromManager(String newName) { this.jobName = newName; }
+	void setJobNameFromManager( String newName ) { this.jobName = newName; }
 
 	public ArrayList<Path> getSourcePath() { return sourcePaths; }
 
-	public void setSourcePath(ArrayList<Path> paths) { this.sourcePaths = paths; }
+	public void setSourcePath( ArrayList<Path> paths ) { this.sourcePaths = paths; }
 
 	public ArrayList<Path> getDestPath() { return destPaths; }
 
-	public void setDestPath(ArrayList<Path> paths) { this.destPaths = paths; }
+	public void setDestPath( ArrayList<Path> paths ) { this.destPaths = paths; }
 
 	public Path getStartSourcePath() { return startSourcePath; }
 
-	public void setStartSourcePath(Path p) { this.startSourcePath = p; }
+	public void setStartSourcePath( Path p ) { this.startSourcePath = p; }
 
 	public Path getStartDestPath() { return startDestPath; }
 
-	public void setStartDestPath(Path p) {
+	public void setStartDestPath( Path p ) {
 		this.startDestPath = p;
-		this.trashbinPath = p.resolve(trashbinString);
+		this.trashbinPath = p.resolve( trashbinString );
 	}
 
 	public Map<Path, FileAttributes> getSyncMap() { return syncMap; }
 
 	public ScanType getScanMode() { return scanMode; }
 
-	public void setScanMode(ScanType mode) { this.scanMode = mode; }
+	public void setScanMode( ScanType mode ) { this.scanMode = mode; }
 
 	public BgTime getBgTime() { return bgTime; }
 
-	public void setBgTime(BgTime time) { this.bgTime = time; }
+	public void setBgTime( BgTime time ) { this.bgTime = time; }
 
 	public boolean isLogOn() { return logOn; }
 
-	public void setLogOn(boolean logOn) { this.logOn = logOn; }
+	public void setLogOn( boolean logOn ) { this.logOn = logOn; }
 
 	public boolean isSubDir() { return subDir; }
 
-	public void setSubDir(boolean subDir) { this.subDir = subDir; }
+	public void setSubDir( boolean subDir ) { this.subDir = subDir; }
 
 	public boolean isAutoDel() { return autoDel; }
 
-	public void setAutoDel(boolean autoDel) { this.autoDel = autoDel; }
+	public void setAutoDel( boolean autoDel ) { this.autoDel = autoDel; }
 
 	public boolean isAutoBgDel() { return autoBgDel; }
 
-	public void setAutoBgDel(boolean autoBgDel) { this.autoBgDel = autoBgDel; }
+	public void setAutoBgDel( boolean autoBgDel ) { this.autoBgDel = autoBgDel; }
 
 	public boolean isAutoSync() { return autoSync; }
 
-	public void setAutoSync(boolean autoSync) { this.autoSync = autoSync; }
+	public void setAutoSync( boolean autoSync ) { this.autoSync = autoSync; }
 
 	public boolean isBgSync() { return bgSync; }
 
-	public void setBgSync(boolean bgSync) { this.bgSync = bgSync; }
+	public void setBgSync( boolean bgSync ) { this.bgSync = bgSync; }
 
 	public boolean isTrashbin() { return trashbin; }
 
-	public void setTrashbin(boolean trashbin) { this.trashbin = trashbin; }
+	public void setTrashbin( boolean trashbin ) { this.trashbin = trashbin; }
 
 	public Path getTrashbinPath() { return trashbinPath; }
 }

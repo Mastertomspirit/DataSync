@@ -49,18 +49,21 @@ import javafx.stage.Stage;
 /**
  * Main Entry Point Orchestrator managing operational state transactions switcher channels,
  * initialization parameters, and global view configuration lifecycle processes.
- * * @author Tom Spirit
+ *
+ * @author Tom Spirit
  */
 public class Gui extends Application {
+
+	private static final int ICON_SIZE = 20;
 
 	private final ObservableList<SyncJobContext> jobList = FXCollections.observableArrayList();
 	private ViewController controller;
 
-	private AppTheme currentTheme = new DarkSlateTheme();
 	private final ObservableList<AppTheme> availableThemes = FXCollections.observableArrayList(
 			new DarkSlateTheme(),
 			new MatrixTerminalTheme(),
-			new NordicLightTheme());
+			new NordicLightTheme() );
+	private AppTheme currentTheme = availableThemes.getFirst();
 
 	private Scene mainScene;
 	private SidebarView sidebarView;
@@ -69,11 +72,22 @@ public class Gui extends Application {
 	private Stage windowStage;
 
 	/**
-	 * Enumeration tracking the structural visibility layer of the main Viewport container.
+	 * Represents the structural visibility layers and active UI states of the main Viewport container.
 	 */
 	public enum ViewState {
+		/**
+		 * The main monitoring interface showing active background synchronizations and statistics.
+		 */
 		MONITOR,
+
+		/**
+		 * The configuration interface for application-wide rules and job setups.
+		 */
 		SETTINGS,
+
+		/**
+		 * The application info, versioning, and about page layer.
+		 */
 		INFO
 	}
 
@@ -81,74 +95,76 @@ public class Gui extends Application {
 
 	/**
 	 * Utility method allocating custom font vector metrics icons definitions graphics layouts.
-	 * * @param ikon Selected base vector item index.
+	 *
+	 * @param ikon Selected base vector item index.
 	 *
 	 * @return Prepared graphic FontIcon instance node.
 	 */
-	public static FontIcon createIcon(Ikon ikon) {
-		final FontIcon icon = new FontIcon(ikon);
-		icon.setIconSize(20);
+	public static FontIcon createIcon( Ikon ikon ) {
+		final FontIcon icon = new FontIcon( ikon );
+		icon.setIconSize( ICON_SIZE );
 		return icon;
 	}
 
 	@Override
-	public void start(Stage primaryStage) {
+	public void start( Stage primaryStage ) {
 		this.windowStage = primaryStage;
-		this.controller = new MainViewController(this);
+		this.controller = new MainViewController( this );
 		this.controller.registerNativeShutdownHook();
 		this.currentTheme = PreferenceManager.getInstance().getTheme();
 
-		primaryStage.setTitle("DataSync Advanced Management Platform");
-		primaryStage.getIcons().add(new Image(getClass().getResourceAsStream("/16x16.png")));
-		Platform.setImplicitExit(false);
-		primaryStage.setOnCloseRequest(event -> {
-			Debug.printDebug("[Info] Window hidden. Application processing stays active in background.");
-			controller.runInBackground(false);
-		});
+		primaryStage.setTitle( "DataSync Advanced Management Platform" );
+		primaryStage.getIcons().add( new Image( getClass().getResourceAsStream( "/16x16.png" ) ) );
+		Platform.setImplicitExit( false );
+		primaryStage.setOnCloseRequest( event -> {
+			Debug.printDebug( "[Info] Window hidden. Application processing stays active in background." );
+			controller.runInBackground( false );
+		} );
 
-		sidebarView = new SidebarView(this, controller);
-		workspaceView = new WorkspaceView(this, controller);
+		sidebarView = new SidebarView( this, controller );
+		workspaceView = new WorkspaceView( this, controller );
 
 		final BorderPane mainLayout = new BorderPane();
-		mainLayout.setLeft(sidebarView);
-		mainLayout.setCenter(workspaceView);
+		mainLayout.setLeft( sidebarView );
+		mainLayout.setCenter( workspaceView );
 
-		// Szene zuweisen und Theme anwenden
-		mainScene = new Scene(mainLayout, 1350, 800);
-		if (!getJobList().isEmpty()) {
-			sidebarView.getSidebarListView().getSelectionModel().select(0);
+		mainScene = new Scene( mainLayout, 1350, 800 );
+		if( !getJobList().isEmpty() ) {
+			sidebarView.getSidebarListView().getSelectionModel().select( 0 );
 		}
-		currentTheme.apply(mainScene);
+		currentTheme.apply( mainScene );
 
-		primaryStage.setScene(mainScene);
-		if (Main.isFirstStart()) {
-			controller.runInBackground(Main.isFirstStart());
-		} else {
+		primaryStage.setScene( mainScene );
+		if( Main.isFirstStart() ) {
+			controller.runInBackground( Main.isFirstStart() );
+		}else {
 			primaryStage.show();
 		}
 	}
 
 	/**
 	 * Updates global active tracking routes navigation indexes updating workspace render cycles.
-	 * * @param state Target destination navigation path selection layer.
+	 *
+	 * @param state Target destination navigation path selection layer.
 	 */
-	public void setViewState(ViewState state) {
+	public void setViewState( ViewState state ) {
 		this.currentViewState = state;
-		if (state == ViewState.INFO) {
-			workspaceView.displayCustomViewNode(buildAboutInfoNode());
-		} else {
-			workspaceView.refreshView(currentViewState, currentActiveJob);
+		if( state == ViewState.INFO ) {
+			workspaceView.displayCustomViewNode( buildAboutInfoNode() );
+		}else {
+			workspaceView.refreshView( currentViewState, currentActiveJob );
 		}
 	}
 
 	/**
 	 * Updates central contextual execution active jobs binding structures hooks.
-	 * * @param job Active core source entity context.
+	 *
+	 * @param job Active core source entity context.
 	 */
-	public void setCurrentActiveJob(SyncJobContext job) {
+	public void setCurrentActiveJob( SyncJobContext job ) {
 		this.currentActiveJob = job;
-		workspaceView.bindJob(job);
-		workspaceView.refreshView(currentViewState, job);
+		workspaceView.bindJob( job );
+		workspaceView.refreshView( currentViewState, job );
 	}
 
 	/**
@@ -156,12 +172,12 @@ public class Gui extends Application {
 	 *
 	 * @param newTheme The target AppTheme strategy implementation.
 	 */
-	public void changeTheme(AppTheme newTheme) {
-		if (newTheme != null && mainScene != null) {
+	public void changeTheme( AppTheme newTheme ) {
+		if( newTheme != null && mainScene != null ) {
 			this.currentTheme = newTheme;
 			// Clear previous runtime stylesheets to avoid collision matrix
 			mainScene.getStylesheets().clear();
-			this.currentTheme.apply(mainScene);
+			this.currentTheme.apply( mainScene );
 		}
 	}
 
@@ -172,32 +188,62 @@ public class Gui extends Application {
 	 * @param cssClassName The theme-defined CSS class for contextual coloring.
 	 * @param durationSec  The visibility lifespan of the message in seconds.
 	 */
-	public void showStatusNotification(String message, String cssClassName, int durationSec) {
-		if (workspaceView != null) {
-			workspaceView.displayTemporaryStatus(message, cssClassName, durationSec);
+	public void showStatusNotification( String message, String cssClassName, int durationSec ) {
+		if( workspaceView != null ) {
+			workspaceView.displayTemporaryStatus( message, cssClassName, durationSec );
 		}
 	}
 
-	// --- Standard Java-Bean Property Accessors APIs layer ---
+	/**
+	 * Initializes saved job configurations within the runtime context.
+	 * This resets the current tracking list and populates it with the provided synchronization jobs.
+	 *
+	 * @param jobList the observable list of {@link SyncJobContext} instances to set
+	 */
+	public void setInitialJobConfigurations( ObservableList<SyncJobContext> jobList ) {
+		this.jobList.clear();
+		this.jobList.addAll( jobList );
+	}
+
+	/**
+	 * Returns the observable list of currently tracked synchronization jobs.
+	 *
+	 * @return the observable list of {@link SyncJobContext} instances
+	 */
 	public ObservableList<SyncJobContext> getJobList() { return jobList; }
 
+	/**
+	 * Retrieves the primary JavaFX Stage window context associated with this manager.
+	 *
+	 * @return the current {@link Stage} instance
+	 */
 	public Stage getWindowStage() { return windowStage; }
 
+	/**
+	 * Returns the list of all application themes available for selection.
+	 *
+	 * @return an observable list of {@link AppTheme} options
+	 */
 	public ObservableList<AppTheme> getAvailableThemes() { return availableThemes; }
 
+	/**
+	 * Retrieves the currently active application theme configuration.
+	 *
+	 * @return the currently applied {@link AppTheme}
+	 */
 	public AppTheme getCurrentTheme() { return currentTheme; }
 
 	/**
 	 * Builds standard software information metrics description panels nodes.
 	 */
 	private Node buildAboutInfoNode() {
-		final VBox infoBox = new VBox(10);
-		infoBox.setStyle("-fx-padding: 15px;");
-		final Label appTitle = new Label("DataSync Core Engine");
-		appTitle.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
-		final Label version = new Label("Programmversion: " + Main.VERSION);
-		final Label vendor = new Label("Lizenznehmer / Entwickler: Tom Spirit");
-		final Label copyright = new Label("Copyright: Licensed under GNU GPL v3.0 Copyleft System.");
+		final VBox infoBox = new VBox( 10 );
+		infoBox.setStyle( "-fx-padding: 15px;" );
+		final Label appTitle = new Label( "DataSync Core Engine" );
+		appTitle.setStyle( "-fx-font-size: 18px; -fx-font-weight: bold;" );
+		final Label version = new Label( "Programmversion: " + Main.VERSION );
+		final Label vendor = new Label( "Lizenznehmer / Entwickler: Tom Spirit" );
+		final Label copyright = new Label( "Copyright: Licensed under GNU GPL v3.0 Copyleft System." );
 		final Separator sep = new Separator();
 		final TextArea legalText = new TextArea(
 				"""
@@ -206,20 +252,12 @@ public class Gui extends Application {
 						the Free Software Foundation; either version 3 of the License.
 
 						This program is distributed in the hope that it will be useful, without any warranty.
-						""");
-		legalText.setEditable(false);
-		legalText.setPrefHeight(150);
-		legalText.setStyle("-fx-font-family: monospace;");
+						""" );
+		legalText.setEditable( false );
+		legalText.setPrefHeight( 150 );
+		legalText.setStyle( "-fx-font-family: monospace;" );
 
-		infoBox.getChildren().addAll(appTitle, version, vendor, copyright, sep, legalText);
+		infoBox.getChildren().addAll( appTitle, version, vendor, copyright, sep, legalText );
 		return infoBox;
-	}
-
-	/**
-	 * Populates active runtime instances entries grids tracing mock startup properties tracking.
-	 */
-	public void setInitialJobConfigurations(ObservableList<SyncJobContext> jobList) {
-		this.jobList.clear();
-		this.jobList.addAll(jobList);
 	}
 }

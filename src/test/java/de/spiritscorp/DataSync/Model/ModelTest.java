@@ -30,10 +30,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -49,7 +51,7 @@ import de.spiritscorp.DataSync.IO.Logger;
  */
 class ModelTest {
 
-	public static final Path TEST_PATH = Paths.get(System.getProperty("user.home"), ".DataSyncTemp");
+	public static final Path TEST_PATH = Paths.get( System.getProperty( "user.home" ), ".DataSyncTemp" );
 
 	private Map<Path, FileAttributes> sourceMap, destMap, syncMap;
 	private TestHelper helper;
@@ -80,11 +82,11 @@ class ModelTest {
 		sourceMap = Model.createMap();
 		destMap = Model.createMap();
 		syncMap = Model.createMap();
-		helper = new TestHelper(TEST_PATH);
-		ctx = mock(SyncJobContext.class, RETURNS_DEEP_STUBS);
-		model = new Model(mock(Logger.class), sourceMap, destMap);
+		helper = new TestHelper( TEST_PATH );
+		ctx = mock( SyncJobContext.class, RETURNS_DEEP_STUBS );
+		model = new Model( mock( Logger.class ), sourceMap, destMap );
 
-		when(ctx.getPreference().getSourcePath()).thenReturn(new ArrayList<>());
+		when( ctx.getPreference().getSourcePath() ).thenReturn( new ArrayList<>() );
 	}
 
 	/**
@@ -92,14 +94,13 @@ class ModelTest {
 	 */
 	@AfterEach
 	void tearDown() throws Exception {
-		if (Files.exists(TEST_PATH)) {
-			final List<Path> paths = Files.walk(TEST_PATH).filter((a) -> !Files.isDirectory(a)).collect(Collectors.toList());
-			for (final Path path : paths) {
-				Files.delete(path);
-			}
-			final List<Path> dirs = Files.walk(TEST_PATH).filter((a) -> Files.isDirectory(a)).collect(Collectors.toList());
-			for (int i = dirs.size() - 1; i >= 0; i--) {
-				Files.delete(dirs.get(i));
+		if( Files.exists( TEST_PATH ) ) {
+			if( Files.exists( ModelTest.TEST_PATH ) ) {
+				try( Stream<Path> walk = Files.walk( ModelTest.TEST_PATH ) ) {
+					for( final Path path : (Iterable<Path>) walk.sorted( Comparator.reverseOrder() )::iterator ) {
+						Files.delete( path );
+					}
+				}
 			}
 		}
 	}
@@ -119,26 +120,28 @@ class ModelTest {
 	 */
 	@Test
 	final void testBackupFiles() throws IOException {
-		helper.createBackupFiles(sourceMap, destMap);
+		helper.createBackupFiles( sourceMap, destMap );
 		final Path[] destFiles = new Path[2];
 		int i = 0;
-		for (final Entry<Path, FileAttributes> entry : sourceMap.entrySet()) {
-			Files.createDirectories(entry.getKey().getParent());
-			Files.createFile(entry.getKey());
-			destFiles[i] = TEST_PATH.resolve("dest").resolve(entry.getValue().getRelativeFilePath());
+		for( final Entry<Path, FileAttributes> entry : sourceMap.entrySet() ) {
+			Files.createDirectories( entry.getKey().getParent() );
+			Files.createFile( entry.getKey() );
+			destFiles[i] = TEST_PATH.resolve( "dest" ).resolve( entry.getValue().getRelativeFilePath() );
 			i++;
 		}
-		for (final Entry<Path, FileAttributes> entry : destMap.entrySet()) {
-			Files.createDirectories(entry.getKey().getParent());
-			Files.createFile(entry.getKey());
+		for( final Entry<Path, FileAttributes> entry : destMap.entrySet() ) {
+			Files.createDirectories( entry.getKey().getParent() );
+			Files.createFile( entry.getKey() );
 		}
 
-		assertTrue(model.backupFiles(0, false, TEST_PATH.resolve("dest"), false, null), "Die listen sind nicht leer");
-		assertEquals(2, Files.walk(TEST_PATH.resolve("source")).filter((a) -> !Files.isDirectory(a)).count(), "source Ordner, anzahl passt nicht");
-		assertEquals(2, Files.walk(TEST_PATH.resolve("dest")).filter((a) -> !Files.isDirectory(a)).count(), "dest Ordner, anzahl passt nicht");
-		final List<Path> listDest = Files.walk(TEST_PATH.resolve("dest")).filter((a) -> !Files.isDirectory(a)).collect(Collectors.toList());
-		assertEquals(destFiles[0].getFileName(), listDest.get(0).getFileName(), "FileName passt nicht überein");
-		assertEquals(destFiles[1].getFileName(), listDest.get(1).getFileName(), "FileName passt nicht überein");
+		assertTrue( model.backupFiles( 0, false, TEST_PATH.resolve( "dest" ), false, null ), "Die listen sind nicht leer" );
+		final List<Path> listSource = getFileNamesInDirectory( TEST_PATH.resolve( "source" ) );
+		final List<Path> listDest = getFileNamesInDirectory( TEST_PATH.resolve( "dest" ) );
+
+		assertEquals( 2, listSource.size(), "source Ordner, anzahl passt nicht" );
+		assertEquals( 2, listDest.size(), "dest Ordner, anzahl passt nicht" );
+		assertEquals( destFiles[0].getFileName(), listDest.get( 0 ).getFileName(), "FileName passt nicht überein" );
+		assertEquals( destFiles[1].getFileName(), listDest.get( 1 ).getFileName(), "FileName passt nicht überein" );
 	}
 
 	/**
@@ -148,19 +151,19 @@ class ModelTest {
 	 */
 	@Test
 	final void testSyncFiles() throws IOException {
-		final ArrayList<Map<Path, FileAttributes>> expectedList = helper.createSyncMap(sourceMap, destMap, syncMap);
-		for (final Entry<Path, FileAttributes> entry : sourceMap.entrySet()) {
-			Files.createDirectories(entry.getKey().getParent());
-			Files.createFile(entry.getKey());
+		final ArrayList<Map<Path, FileAttributes>> expectedList = helper.createSyncMap( sourceMap, destMap, syncMap );
+		for( final Entry<Path, FileAttributes> entry : sourceMap.entrySet() ) {
+			Files.createDirectories( entry.getKey().getParent() );
+			Files.createFile( entry.getKey() );
 		}
-		for (final Entry<Path, FileAttributes> entry : destMap.entrySet()) {
-			Files.createDirectories(entry.getKey().getParent());
-			Files.createFile(entry.getKey());
+		for( final Entry<Path, FileAttributes> entry : destMap.entrySet() ) {
+			Files.createDirectories( entry.getKey().getParent() );
+			Files.createFile( entry.getKey() );
 		}
-		assertTrue(model.syncFiles(ctx, expectedList, syncMap, TEST_PATH.resolve("source"), TEST_PATH.resolve("dest"), true), "Die listen sind nicht leer");
-		final List<Path> destList = Files.walk(TEST_PATH.resolve("dest")).filter((a) -> !Files.isDirectory(a)).map((a) -> a.getFileName()).collect(Collectors.toList());
-		final List<Path> sourceList = Files.walk(TEST_PATH.resolve("source")).filter((a) -> !Files.isDirectory(a)).map((a) -> a.getFileName()).collect(Collectors.toList());
-		assertEquals(destList, sourceList, "Quelle und Ziel passen nicht überein");
+		assertTrue( model.syncFiles( ctx, expectedList, syncMap, TEST_PATH.resolve( "source" ), TEST_PATH.resolve( "dest" ), true ), "Die listen sind nicht leer" );
+		final List<Path> destList = getFileNamesInDirectory( TEST_PATH.resolve( "dest" ) );
+		final List<Path> sourceList = getFileNamesInDirectory( TEST_PATH.resolve( "source" ) );
+		assertEquals( destList, sourceList, "Quelle und Ziel passen nicht überein" );
 	}
 
 	/**
@@ -170,22 +173,35 @@ class ModelTest {
 	 */
 	@Test
 	final void testGetSyncFiles() throws IOException {
-		final ArrayList<Map<Path, FileAttributes>> expectedLists = helper.createSyncMap(sourceMap, destMap, syncMap);
-		for (final Entry<Path, FileAttributes> entry : sourceMap.entrySet()) {
-			Files.createDirectories(entry.getKey().getParent());
-			Files.createFile(entry.getKey());
+		final ArrayList<Map<Path, FileAttributes>> expectedLists = helper.createSyncMap( sourceMap, destMap, syncMap );
+		for( final Entry<Path, FileAttributes> entry : sourceMap.entrySet() ) {
+			Files.createDirectories( entry.getKey().getParent() );
+			Files.createFile( entry.getKey() );
 		}
-		for (final Entry<Path, FileAttributes> entry : destMap.entrySet()) {
-			Files.createDirectories(entry.getKey().getParent());
-			Files.createFile(entry.getKey());
+		for( final Entry<Path, FileAttributes> entry : destMap.entrySet() ) {
+			Files.createDirectories( entry.getKey().getParent() );
+			Files.createFile( entry.getKey() );
 		}
-		final ArrayList<Map<Path, FileAttributes>> result = model.getSyncFiles(syncMap, TEST_PATH.resolve("source"), TEST_PATH.resolve("dest"));
-		for (int i = 0; i < expectedLists.size(); i++) {
-			assertEquals(expectedLists.get(i).size(), result.get(i).size(), "Die Größe der Liste passt nicht!");
-			for (final Path path : expectedLists.get(i).keySet()) {
-				assertTrue(result.get(i).containsKey(path), "Key stimmt nicht!");
-				assertTrue(result.get(i).containsValue(expectedLists.get(i).get(path)), "Werte stimmen nicht");
+		final ArrayList<Map<Path, FileAttributes>> result = model.getSyncFiles( syncMap, TEST_PATH.resolve( "source" ), TEST_PATH.resolve( "dest" ) );
+		for( int i = 0; i < expectedLists.size(); i++ ) {
+			assertEquals( expectedLists.get( i ).size(), result.get( i ).size(), "Die Größe der Liste passt nicht!" );
+			for( final Path path : expectedLists.get( i ).keySet() ) {
+				assertTrue( result.get( i ).containsKey( path ), "Key stimmt nicht!" );
+				assertTrue( result.get( i ).containsValue( expectedLists.get( i ).get( path ) ), "Werte stimmen nicht" );
 			}
+		}
+	}
+
+	/**
+	 * Safely extracts all non-directory file names from a target directory path.
+	 * Guarantees immediate closure of native file system handles.
+	 */
+	static List<Path> getFileNamesInDirectory( Path directory ) throws IOException {
+		try( Stream<Path> stream = Files.walk( directory ) ) {
+			return stream
+					.filter( path -> !Files.isDirectory( path ) )
+					.map( Path::getFileName )
+					.collect( Collectors.toList() );
 		}
 	}
 }

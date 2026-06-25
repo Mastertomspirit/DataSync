@@ -50,11 +50,11 @@ import jakarta.json.stream.JsonGenerator;
  */
 public class PreferenceManager {
 
-	private static Path rootPath = Paths.get(System.getProperty("user.home"), "DataSync");
-	private static Path configPath = rootPath.resolve("conf.json");
-	private static Path logPath = rootPath.resolve("log.json");
-	private static Path debugPath = rootPath.resolve("debug.log");
-	private static Path errorPath = rootPath.resolve("debug.err");
+	private static Path rootPath = Paths.get( System.getProperty( "user.home" ), "DataSync" );
+	private static Path configPath = rootPath.resolve( "conf.json" );
+	private static Path logPath = rootPath.resolve( "log.json" );
+	private static Path debugPath = rootPath.resolve( "debug.log" );
+	private static Path errorPath = rootPath.resolve( "debug.err" );
 
 	private final Map<String, Preference> loadedProfiles = new HashMap<>();
 	private static final PreferenceManager INSTANCE = new PreferenceManager();
@@ -78,16 +78,18 @@ public class PreferenceManager {
 	/**
 	 * Reconfigures and overrides the global operational ecosystem workspace root coordinates.
 	 * Re-initializes all system-dependent structural path mappings dynamically.
+	 * <p>
+	 * Fallback at <b>(user.home)/DataSync</b> if the target path is not writeable or not valid
 	 *
 	 * @param customRoot The new target base directory path, or null to retain the home default context.
 	 */
-	public static synchronized void initGlobalRoot(Path customRoot) {
-		if (customRoot != null && Files.exists(customRoot, LinkOption.NOFOLLOW_LINKS)) {
-			rootPath = customRoot;
-			configPath = rootPath.resolve("conf.json");
-			logPath = rootPath.resolve("log.json");
-			debugPath = rootPath.resolve("debug.log");
-			errorPath = rootPath.resolve("debug.err");
+	public static synchronized void initGlobalRootConfigPath( Path customRoot ) {
+		if( customRoot != null && Files.exists( customRoot, LinkOption.NOFOLLOW_LINKS ) ) {
+			rootPath = customRoot.toAbsolutePath().normalize();
+			configPath = rootPath.resolve( "conf.json" );
+			logPath = rootPath.resolve( "log.json" );
+			debugPath = rootPath.resolve( "debug.log" );
+			errorPath = rootPath.resolve( "debug.err" );
 		}
 	}
 
@@ -99,9 +101,9 @@ public class PreferenceManager {
 	 *
 	 * @return An unpopulated, isolated configuration state segment tracker.
 	 */
-	public synchronized Preference createProfile(String jobName) {
-		final Preference pref = Preference.createSinglePreference(jobName);
-		loadedProfiles.put(pref.getJobName(), pref);
+	public synchronized Preference createProfile( String jobName ) {
+		final Preference pref = Preference.createSinglePreference( jobName );
+		loadedProfiles.put( pref.getJobName(), pref );
 		return pref;
 	}
 
@@ -111,8 +113,8 @@ public class PreferenceManager {
 	 * @param jobName The unique profile registry lookup key.
 	 * @return The matching configuration instance state, or null if no mapping tracks the parameter.
 	 */
-	public synchronized Preference getProfile(String jobName) {
-		return loadedProfiles.get(jobName);
+	public synchronized Preference getProfile( String jobName ) {
+		return loadedProfiles.get( jobName );
 	}
 
 	/**
@@ -124,11 +126,11 @@ public class PreferenceManager {
 	 * @param pref    Associated configuration parameters data segment instance.
 	 * @return true if persistence succeeded; false if parameters were invalid or execution failed.
 	 */
-	public synchronized boolean renameProfile(String oldName, String newName, Preference pref) {
-		if (oldName == null || newName == null || pref == null || oldName.equals(newName)) { return false; }
-		loadedProfiles.remove(oldName);
-		pref.setJobNameFromManager(newName);
-		loadedProfiles.put(newName, pref);
+	public synchronized boolean renameProfile( String oldName, String newName, Preference pref ) {
+		if( oldName == null || newName == null || pref == null || oldName.equals( newName ) ) { return false; }
+		loadedProfiles.remove( oldName );
+		pref.setJobNameFromManager( newName );
+		loadedProfiles.put( newName, pref );
 		return saveAllPreferences();
 	}
 
@@ -139,9 +141,9 @@ public class PreferenceManager {
 	 * @param job The high-level UI task context container targeted for decommissioning.
 	 * @return true if structural extraction and serialization completed successfully.
 	 */
-	public synchronized boolean removeProfile(SyncJobContext job) {
-		if (job == null) return false;
-		loadedProfiles.remove(job.getJobName(), job.getPreference());
+	public synchronized boolean removeProfile( SyncJobContext job ) {
+		if( job == null ) return false;
+		loadedProfiles.remove( job.getJobName(), job.getPreference() );
 		return saveAllPreferences();
 	}
 
@@ -151,7 +153,7 @@ public class PreferenceManager {
 	 *
 	 * @return An unmodifiable structural read-only view tracking live preference profiles.
 	 */
-	public synchronized Map<String, Preference> getLoadedProfiles() { return Collections.unmodifiableMap(loadedProfiles); }
+	public synchronized Map<String, Preference> getLoadedProfiles() { return Collections.unmodifiableMap( loadedProfiles ); }
 
 	/**
 	 * Compiles all active in-memory profile matrices and flushes them into a single unified JSON structure.
@@ -161,37 +163,37 @@ public class PreferenceManager {
 	 */
 	public synchronized boolean saveAllPreferences() {
 		try {
-			if (!Files.exists(rootPath)) {
-				Files.createDirectories(rootPath);
+			if( !Files.exists( rootPath ) ) {
+				Files.createDirectories( rootPath );
 			}
 
 			final JsonObjectBuilder rootBuilder = Json.createObjectBuilder();
 
 			// Embed global properties
 			final JsonObject globalDoc = Json.createObjectBuilder()
-					.add("autoStart", globalAutoStart)
-					.add("theme", theme.getClass().getName())
+					.add( "autoStart", globalAutoStart )
+					.add( "theme", theme.getClass().getName() )
 					.build();
-			rootBuilder.add("globalSettings", globalDoc);
+			rootBuilder.add( "globalSettings", globalDoc );
 
 			// Append dynamic profile segments
-			for (final Map.Entry<String, Preference> entry : loadedProfiles.entrySet()) {
-				rootBuilder.add(entry.getKey(), entry.getValue().serialize());
+			for( final Map.Entry<String, Preference> entry : loadedProfiles.entrySet() ) {
+				rootBuilder.add( entry.getKey(), entry.getValue().serialize() );
 			}
 
 			final Map<String, Object> writerConfig = new HashMap<>();
-			writerConfig.put(JsonGenerator.PRETTY_PRINTING, true);
-			final JsonWriterFactory factory = Json.createWriterFactory(writerConfig);
+			writerConfig.put( JsonGenerator.PRETTY_PRINTING, true );
+			final JsonWriterFactory factory = Json.createWriterFactory( writerConfig );
 
-			try (OutputStream os = Files.newOutputStream(configPath, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
-				final JsonWriter writer = factory.createWriter(os);
-				writer.write(rootBuilder.build());
+			try( OutputStream os = Files.newOutputStream( configPath, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING ) ) {
+				final JsonWriter writer = factory.createWriter( os );
+				writer.write( rootBuilder.build() );
 				writer.close();
 				return true;
 			}
-		} catch (final IOException e) {
-			Debug.printDebug("[Error] Critical: Failed to serialize active memory states to 'conf.json'. Reason: %s", e.getMessage());
-			Debug.printException(this.getClass(), e);
+		}catch( final IOException e ) {
+			Debug.printDebug( "[Error] Critical: Failed to serialize active memory states to 'conf.json'. Reason: %s", e.getMessage() );
+			Debug.printException( this.getClass(), e );
 			return false;
 		}
 	}
@@ -203,53 +205,53 @@ public class PreferenceManager {
 	 * @return true if filesystem parsing completed entirely; false if tracking token was absent or corrupt.
 	 */
 	public synchronized boolean loadAllPreferences() {
-		if (!Files.exists(configPath)) { return false; }
+		if( !Files.exists( configPath ) ) { return false; }
 
-		try (InputStream is = Files.newInputStream(configPath)) {
-			final JsonReader reader = Json.createReader(is);
+		try( InputStream is = Files.newInputStream( configPath ) ) {
+			final JsonReader reader = Json.createReader( is );
 			final JsonObject rootObj = reader.readObject();
 			reader.close();
-			if (rootObj.isEmpty()) return false;
+			if( rootObj.isEmpty() ) return false;
 
 			// Extract global runtime parameters
-			if (rootObj.containsKey("globalSettings")) {
-				final JsonObject globalDoc = rootObj.getJsonObject("globalSettings");
-				this.globalAutoStart = globalDoc.getBoolean("autoStart", false);
-				if (globalDoc.containsKey("theme")) {
+			if( rootObj.containsKey( "globalSettings" ) ) {
+				final JsonObject globalDoc = rootObj.getJsonObject( "globalSettings" );
+				this.globalAutoStart = globalDoc.getBoolean( "autoStart", false );
+				if( globalDoc.containsKey( "theme" ) ) {
 					try {
-						final String className = globalDoc.getString("theme");
-						final Class<?> themeClass = Class.forName(className);
+						final String className = globalDoc.getString( "theme" );
+						final Class<?> themeClass = Class.forName( className );
 
 						this.theme = (AppTheme) themeClass.getDeclaredConstructor().newInstance();
 
-					} catch (final Exception e) {
-						Debug.printDebug("[Error] Failed to instantiate theme class. Falling back to default.");
-						Debug.printException(getClass(), e);
+					}catch( final Exception e ) {
+						Debug.printDebug( "[Error] Failed to instantiate theme class. Falling back to default." );
+						Debug.printException( getClass(), e );
 						this.theme = new DarkSlateTheme();
 					}
-				} else {
-					Debug.printDebug("[Warn] No value for instantiate theme class. Falling back to default.");
+				}else {
+					Debug.printDebug( "[Warn] No value for instantiate theme class. Falling back to default." );
 				}
 			}
 			loadedProfiles.clear();
 
 			// Extract distinct automation tasks profiles
-			for (final String jobName : rootObj.keySet()) {
-				if (jobName.equals("globalSettings")) continue;
-				final JsonObject jobData = rootObj.getJsonObject(jobName);
-				final Preference pref = Preference.createSinglePreference(jobName);
+			for( final String jobName : rootObj.keySet() ) {
+				if( jobName.equals( "globalSettings" ) ) continue;
+				final JsonObject jobData = rootObj.getJsonObject( jobName );
+				final Preference pref = Preference.createSinglePreference( jobName );
 				try {
-					pref.deserialize(jobData);
-					loadedProfiles.put(jobName, pref);
-				} catch (final ConfigException e) {
-					Debug.printDebug("[Error] Critical: Failed to load job profile '%s'. Skipping entry. Reason: %s", jobName, e.getMessage());
-					Debug.printException(this.getClass(), e);
+					pref.deserialize( jobData );
+					loadedProfiles.put( jobName, pref );
+				}catch( final ConfigException e ) {
+					Debug.printDebug( "[Error] Critical: Failed to load job profile '%s'. Skipping entry. Reason: %s", jobName, e.getMessage() );
+					Debug.printException( this.getClass(), e );
 				}
 			}
 			return true;
-		} catch (final ClassCastException | IOException e) {
-			Debug.printDebug("[Error] Critical: Failed to load profiles. Reason: %s", e.getMessage());
-			Debug.printException(this.getClass(), e);
+		}catch( final ClassCastException | IOException e ) {
+			Debug.printDebug( "[Error] Critical: Failed to load profiles. Reason: %s", e.getMessage() );
+			Debug.printException( this.getClass(), e );
 			return false;
 		}
 	}
@@ -270,7 +272,7 @@ public class PreferenceManager {
 	 *
 	 * @param globalAutoStart Target state flag to determine automated deployment behavior.
 	 */
-	public void setGlobalAutoStart(boolean globalAutoStart) { this.globalAutoStart = globalAutoStart; }
+	public void setGlobalAutoStart( boolean globalAutoStart ) { this.globalAutoStart = globalAutoStart; }
 
 	// --- Instanced System Properties Accessors (Formerly Static) ---
 
@@ -302,7 +304,7 @@ public class PreferenceManager {
 	 */
 	public Path getErrorPath() { return errorPath; }
 
-	public void setTheme(AppTheme theme) { this.theme = theme; }
+	public void setTheme( AppTheme theme ) { this.theme = theme; }
 
 	public AppTheme getTheme() { return theme; }
 }

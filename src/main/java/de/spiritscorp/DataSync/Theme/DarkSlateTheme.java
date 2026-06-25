@@ -25,9 +25,10 @@ import javafx.scene.Scene;
  * DarkSlateTheme provides a professional dark mode interface using slate and deep blue tones.
  */
 public class DarkSlateTheme implements AppTheme {
+	// CHECKSTYLE:OFF
 	@Override
-	public void apply(Scene scene) {
-		scene.getRoot().setStyle("-fx-font-size: 14; -fx-font-family: 'Comic Sans MS', 'Segoe UI'; -fx-background-color: #f4f6f9;");
+	public void apply( Scene scene ) {
+		scene.getRoot().setStyle( "-fx-font-size: 14; -fx-font-family: 'Comic Sans MS', 'Segoe UI'; -fx-background-color: #f4f6f9;" );
 		final String css = """
 				/* Global & Core Controls */
 				.label {
@@ -66,7 +67,7 @@ public class DarkSlateTheme implements AppTheme {
 				    -fx-background-color: #2c3e50;
 				    -fx-background: #f4f6f9 !important;
 					-fx-text-fill: #ffffff;
-								-fx-border-color: #bdc3c7 !important; /* Rahmen um das Hauptfenster */
+					-fx-border-color: #bdc3c7 !important; /* Rahmen um das Hauptfenster */
 				    -fx-border-width: 1px !important;
 				}
 				.scroll-pane .label {
@@ -286,9 +287,11 @@ public class DarkSlateTheme implements AppTheme {
 				.status-error   { -fx-text-fill: #c0392b; -fx-font-weight: bold; }
 				.status-warning { -fx-text-fill: #f39c12; -fx-font-weight: bold; }
 				""";
+
 		scene.getStylesheets().clear();
-		scene.getStylesheets().add("data:text/css," + css.replace("\n", "").replace(" ", "%20"));
+		scene.getStylesheets().add( "data:text/css," + css.replace( "\n", "" ).replace( " ", "%20" ) );
 	}
+	// CHECKSTYLE:OFF
 
 	@Override
 	public String toString() {

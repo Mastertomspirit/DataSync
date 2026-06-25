@@ -11,29 +11,37 @@
 	<url>https://github.com/Mastertomspirit/DataSync</url>
 
 	<properties>
-		<version_jpackage>1.1.0.0</version_jpackage>
+		<stable_version_for_jpackage>1.1.0.0</stable_version_for_jpackage>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<javaVersion>21</javaVersion>
 		<maven.build.timestamp.format>dd.MM.yyy - HH:mm</maven.build.timestamp.format>
 
 		<!-- Plugin versions -->
 		<pl_git_commit_id>10.0.0</pl_git_commit_id>
+		<pl_license>4.3</pl_license>
+		<pl_formatter>2.29.0</pl_formatter>
 		<pl_antrun.version>3.2.0</pl_antrun.version>
 		<pl_compiler.version>3.15.0</pl_compiler.version>
-		<pl_shade.version>3.5.0</pl_shade.version>
 		<pl_jar.version>3.5.0</pl_jar.version>
-		<pl_assembly.version>3.8.0</pl_assembly.version>
+		<pl_shade.version>3.5.0</pl_shade.version>
 		<pl_surefire.version>3.5.6</pl_surefire.version>
 		<pl_dependency.version>3.11.0</pl_dependency.version>
+		<pl_failsafe>3.5.6</pl_failsafe>
 		<pl_jlink.version>3.3.0</pl_jlink.version>
 		<pl_jpackage.version>0.1.5</pl_jpackage.version>
 		<pl_resources.version>3.5.0</pl_resources.version>
+		<pl_assembly.version>3.8.0</pl_assembly.version>
+		<pl_checkstyle>3.6.0</pl_checkstyle>
+		<pl_spotbugs>4.9.8.3</pl_spotbugs>
 		<pl_release>3.3.1</pl_release>
 		<pl_source>3.4.0</pl_source>
 		<pl_javadoc>3.12.0</pl_javadoc>
 		<pl_gpg>3.2.8</pl_gpg>
 
 		<!-- Dependency versions -->
+		<dep_surefire_tree>0.1.0</dep_surefire_tree>
+		<dep_sb_contrib>7.7.4</dep_sb_contrib>
+		<dep_findsecbugs>1.14.0</dep_findsecbugs>
 		<dep_javafx_controls.version>25</dep_javafx_controls.version>
 		<dep_ikonli_javafx.version>12.4.0</dep_ikonli_javafx.version>
 		<dep_ikonli_materialdesign2..version>12.4.0</dep_ikonli_materialdesign2..version>
@@ -63,6 +71,7 @@
 			</testResource>
 		</testResources>
 		<plugins>
+			<!-- Integrates Git metadata (such as commit hash and branch) into the application artifacts. -->
 			<plugin>
 				<groupId>io.github.git-commit-id</groupId>
 				<artifactId>git-commit-id-maven-plugin</artifactId>
@@ -81,6 +90,75 @@
 					<injectAllReactorProjects>true</injectAllReactorProjects>
 				</configuration>
 			</plugin>
+			<!-- Manages, formats, and validates license headers across source code files. -->
+			<plugin>
+				<groupId>com.mycila</groupId>
+				<artifactId>license-maven-plugin</artifactId>
+				<version>${pl_license}</version>
+				<configuration>
+					<licenseSets>
+						<licenseSet>
+							<properties>
+								<owner>Tom Spirit / ${finalName}</owner>
+								<email>thespirit@spiritscorp.network</email>
+								<year>${project.inceptionYear}</year>
+							</properties>
+							<header>license-header.txt</header>
+							<includes>
+								<include>src/main/java/**</include>
+								<include>src/test/java/**</include>
+							</includes>
+							<excludes>
+								<exclude>src/main/java/de/spiritscxorp/DataSync/Main.java</exclude>
+								<exclude>**/package-info.java</exclude>
+								<exclude>src/main/resources/**</exclude>
+								<exclude>src/test/resources/**</exclude>
+							</excludes>
+							<mapping>
+								<java>JAVAPKG_STYLE</java>
+							</mapping>
+						</licenseSet>
+					</licenseSets>
+				</configuration>
+				<executions>
+					<execution>
+						<id>check-license</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>check</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<!-- Cleans up whitespaces, organizes imports, and formats source code according to style guides. -->
+			<plugin>
+				<groupId>net.revelc.code.formatter</groupId>
+				<artifactId>formatter-maven-plugin</artifactId>
+				<version>${pl_formatter}</version>
+				<configuration>
+					<configFile>formatter.xml</configFile>
+					<encoding>UTF-8</encoding>
+					<compilerSource>${javaVersion}</compilerSource>
+					<compilerCompliance>${javaVersion}</compilerCompliance>
+					<removeTrailingWhitespace>true</removeTrailingWhitespace>
+					<includes>
+						<include>**/*.java</include>
+						<include>**/*.properties</include>
+					</includes>
+					<excludes>
+						<exclude>**/target/**</exclude>
+					</excludes>
+				</configuration>
+				<executions>
+					<execution>
+						<phase>process-sources</phase>
+						<goals>
+							<goal>format</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<!-- Provides the ability to run Ant tasks (e.g., copying files or creating directories) within Maven. -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-antrun-plugin</artifactId>
@@ -141,6 +219,7 @@
 					</execution>
 				</executions>
 			</plugin>
+			<!-- Compiles Java source files (`.java`) into Java bytecode (`.class`). -->
 			<plugin>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>${pl_compiler.version}</version>
@@ -148,6 +227,7 @@
 					<release>${javaVersion}</release>
 				</configuration>
 			</plugin>
+			<!-- Packages compiled classes and project resources into a reusable or executable JAR file. -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>
@@ -169,6 +249,7 @@
 					</archive>
 				</configuration>
 			</plugin>
+			<!-- Creates an "Uber-JAR" (Fat-JAR) and provides dependency relocation to prevent classpath conflicts. -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-shade-plugin</artifactId>
@@ -193,22 +274,16 @@
 										<addDefaultImplementationEntries>true</addDefaultImplementationEntries>
 										<addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
 										<addBuildEnvironmentEntries>true</addBuildEnvironmentEntries>
-										<!-- MANIFEST-ENTRIES (wie in deinem
-										ursprünglichen Jar-Plugin) -->
+										<!-- MANIFEST-ENTRIES (wie in deinem ursprünglichen Jar-Plugin) -->
 										<Built-By>${user.name}</Built-By>
 										<Project-Name>${project.name}</Project-Name>
-										<X-Compile-Source-JDK>
-											${maven.compiler.source}</X-Compile-Source-JDK>
-										<X-Compile-Target-JDK>
-											${maven.compiler.target}</X-Compile-Target-JDK>
+										<X-Compile-Source-JDK> ${maven.compiler.source}</X-Compile-Source-JDK>
+										<X-Compile-Target-JDK> ${maven.compiler.target}</X-Compile-Target-JDK>
 									</manifestEntries>
 								</transformer>
-								<transformer
-									implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
-								<transformer
-									implementation="org.apache.maven.plugins.shade.resource.ApacheLicenseResourceTransformer" />
-								<transformer
-									implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer" />
+								<transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
+								<transformer implementation="org.apache.maven.plugins.shade.resource.ApacheLicenseResourceTransformer" />
+								<transformer implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer" />
 							</transformers>
 							<!-- Filter für Signaturdateien (optional) -->
 							<filters>
@@ -216,8 +291,7 @@
 									<artifact>*:*</artifact>
 									<excludes>
 										<exclude>module-info.class</exclude>
-										<exclude>
-											META-INF/versions/9/module-info.class</exclude>
+										<exclude> META-INF/versions/9/module-info.class</exclude>
 										<exclude>META-INF/*.SF</exclude>
 										<exclude>META-INF/*.DSA</exclude>
 										<exclude>META-INF/*.RSA</exclude>
@@ -228,17 +302,47 @@
 					</execution>
 				</executions>
 			</plugin>
+			<!-- Executes automated unit tests (e.g., JUnit) during the test phase of the build lifecycle. -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
 				<version>${pl_surefire.version}</version>
+				<dependencies>
+					<dependency>
+						<groupId>me.fabriciorby</groupId>
+						<artifactId>maven-surefire-junit5-tree-reporter</artifactId>
+						<version>${dep_surefire_tree}</version>
+					</dependency>
+				</dependencies>
 				<configuration>
-					<argLine>-javaagent:${net.bytebuddy:byte-buddy-agent:jar}</argLine>
+					<argLine>-XX:+EnableDynamicAgentLoading</argLine>
+					<reportFormat>plain</reportFormat>
+					<consoleOutputReporter>
+						<disable>false</disable>
+					</consoleOutputReporter>
+					<statelessTestsetInfoReporter implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5StatelessTestsetInfoTreeReporter" />
 				</configuration>
 			</plugin>
-			<!-- Dependency Plugin: Löst Abhängigkeiten auf und stellt deren
-			Systempfade als Properties bereit (wird für den Surefire-Javaagent
-			benötigt) -->
+			<!-- Runs automated integration tests in a separate phase, isolating them from unit tests. -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-failsafe-plugin</artifactId>
+				<version>${pl_failsafe}</version>
+				<configuration>
+					<argLine>-XX:+EnableDynamicAgentLoading</argLine>
+					<useModulePath>false</useModulePath>
+				</configuration>
+				<executions>
+					<execution>
+						<phase>prepare-package</phase>
+						<goals>
+							<goal>integration-test</goal>
+							<goal>verify</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<!-- Resolves, manipulates, and analyzes dependencies, exposing system paths as properties (required for Surefire javaagent setup).) -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-dependency-plugin</artifactId>
@@ -251,6 +355,7 @@
 					</execution>
 				</executions>
 			</plugin>
+			<!-- Generates a stripped-down, customized Java Runtime Environment (JRE) containing only the required modules. -->
 			<plugin>
 				<artifactId>maven-jlink-plugin</artifactId>
 				<version>${pl_jlink.version}</version>
@@ -263,6 +368,7 @@
 					</addModules>
 				</configuration>
 			</plugin>
+			<!-- Packages the application and runtime into platform-specific native installers (requires `export JPACKAGE_HOME="/usr/bin"`). -->
 			<plugin>
 				<groupId>com.github.akman</groupId>
 				<artifactId>jpackage-maven-plugin</artifactId>
@@ -287,10 +393,9 @@
 							<name>${project.artifactId}</name>
 							<type>IMAGE</type>
 							<runtimeimage>target/maven-jlink/default</runtimeimage>
-							<appversion>${version_jpackage}</appversion>
+							<appversion>${stable_version_for_jpackage}</appversion>
 							<copyright>GPL 3.0</copyright>
-							<description>Data Sync -- Software zum
-								Syncronisieren von Dateien</description>
+							<description>Data Sync -- Software zum Syncronisieren von Dateien</description>
 							<vendor>Tom Spirit</vendor>
 							<icon>64x64.ico</icon>
 							<module>de.spiritscorp.DataSync/de.spiritscorp.DataSync.Main</module>
@@ -299,6 +404,7 @@
 					</execution>
 				</executions>
 			</plugin>
+			<!-- Copies project resource files (e.g., the generated `info.xml`) into the designated build target or package structure. -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-resources-plugin</artifactId>
@@ -311,8 +417,7 @@
 							<goal>copy-resources</goal>
 						</goals>
 						<configuration>
-							<outputDirectory>
-								target/${project.artifactId}/jar/${project.artifactId}</outputDirectory>
+							<outputDirectory> target/${project.artifactId}/jar/${project.artifactId}</outputDirectory>
 							<resources>
 								<resource>
 									<directory>target/maven-jlink/default</directory>
@@ -330,8 +435,7 @@
 							<goal>copy-resources</goal>
 						</goals>
 						<configuration>
-							<outputDirectory>
-								target/${project.artifactId}/jar/${project.artifactId}</outputDirectory>
+							<outputDirectory> target/${project.artifactId}/jar/${project.artifactId}</outputDirectory>
 							<resources>
 								<resource>
 									<directory>target/classes</directory>
@@ -367,8 +471,7 @@
 							<goal>copy-resources</goal>
 						</goals>
 						<configuration>
-							<outputDirectory>
-								target/${project.artifactId}/jar/${project.artifactId}</outputDirectory>
+							<outputDirectory> target/${project.artifactId}/jar/${project.artifactId}</outputDirectory>
 							<resources>
 								<resource>
 									<directory>target</directory>
@@ -386,8 +489,7 @@
 							<goal>copy-resources</goal>
 						</goals>
 						<configuration>
-							<outputDirectory>
-								target/${project.artifactId}/image/${project.artifactId}</outputDirectory>
+							<outputDirectory> target/${project.artifactId}/image/${project.artifactId}</outputDirectory>
 							<resources>
 								<resource>
 									<directory>target/classes</directory>
@@ -400,6 +502,7 @@
 					</execution>
 				</executions>
 			</plugin>
+			<!-- Copies project resource files (e.g., the generated `info.xml`) into the designated build target or package structure. -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-assembly-plugin</artifactId>
@@ -414,8 +517,7 @@
 						<configuration>
 							<finalName>${project.artifactId}-jar</finalName>
 							<appendAssemblyId>false</appendAssemblyId>
-							<outputDirectory>
-								${project.build.directory}/${project.artifactId}/jar</outputDirectory>
+							<outputDirectory> ${project.build.directory}/${project.artifactId}/jar</outputDirectory>
 							<descriptors>
 								<descriptor>src/main/assembly/zip-full-jar.xml</descriptor>
 							</descriptors>
@@ -430,8 +532,7 @@
 						<configuration>
 							<finalName>${project.artifactId}-image</finalName>
 							<appendAssemblyId>false</appendAssemblyId>
-							<outputDirectory>
-								${project.build.directory}/${project.artifactId}/image</outputDirectory>
+							<outputDirectory> ${project.build.directory}/${project.artifactId}/image</outputDirectory>
 							<descriptors>
 								<descriptor>src/main/assembly/zip-jpackage.xml</descriptor>
 							</descriptors>
@@ -439,6 +540,59 @@
 					</execution>
 				</executions>
 			</plugin>
+			<!-- Inspects Java source code to enforce strict adherence to defined coding standards and conventions. -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-checkstyle-plugin</artifactId>
+				<version>${pl_checkstyle}</version>
+				<configuration>
+					<configLocation>checkstyle.xml</configLocation>
+					<consoleOutput>true</consoleOutput>
+					<failsOnError>false</failsOnError>
+					<linkXRef>false</linkXRef>
+					<propertyExpansion>checkstyle.enableExternalDtdLoad=true</propertyExpansion>
+				</configuration>
+				<executions>
+					<execution>
+						<phase>validate</phase>
+						<goals>
+							<goal>checkstyle</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<!-- Performs static analysis on bytecode to detect performance issues, potential bugs, and security vulnerabilities. -->
+			<plugin>
+				<groupId>com.github.spotbugs</groupId>
+				<artifactId>spotbugs-maven-plugin</artifactId>
+				<version>${pl_spotbugs}</version>
+				<configuration>
+					<effort>Max</effort>
+					<threshold>Low</threshold>
+					<failOnError>false</failOnError>
+				</configuration>
+				<dependencies>
+					<dependency>
+						<groupId>com.mebigfatguy.sb-contrib</groupId>
+						<artifactId>sb-contrib</artifactId>
+						<version>${dep_sb_contrib}</version>
+					</dependency>
+					<dependency>
+						<groupId>com.h3xstream.findsecbugs</groupId>
+						<artifactId>findsecbugs-plugin</artifactId>
+						<version>${dep_findsecbugs}</version>
+					</dependency>
+				</dependencies>
+				<executions>
+					<execution>
+						<phase>verify</phase>
+						<goals>
+							<goal>check</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<!-- Automates release management, including VCS tagging, updating POM versions, and deploying artifacts. -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-release-plugin</artifactId>
@@ -449,6 +603,7 @@
 					<autoVersionSubmodules>true</autoVersionSubmodules>
 				</configuration>
 			</plugin>
+			<!-- Packages the project's source code into a separate JAR archive for debugging and reference purposes. -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-source-plugin</artifactId>
@@ -463,6 +618,7 @@
 					</execution>
 				</executions>
 			</plugin>
+			<!-- Generates comprehensive HTML API documentation from the structured Javadoc comments in the source code. -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
@@ -481,6 +637,7 @@
 					</execution>
 				</executions>
 			</plugin>
+			<!-- Digitally signs built artifacts using GnuPG to guarantee authenticity and integrity during distribution. -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-gpg-plugin</artifactId>
@@ -509,8 +666,7 @@
 	</build>
 	<dependencies>
 		<dependency>
-			<!-- Source:
-			https://mvnrepository.com/artifact/org.openjfx/javafx-controls -->
+			<!-- Source: https://mvnrepository.com/artifact/org.openjfx/javafx-controls -->
 			<groupId>org.openjfx</groupId>
 			<artifactId>javafx-controls</artifactId>
 			<version>${dep_javafx_controls.version}</version>
@@ -540,24 +696,21 @@
 			<artifactId>ikonli-materialdesign2-pack</artifactId>
 			<version>${dep_ikonli_materialdesign2..version}</version>
 		</dependency>
-		<!--
-		https://mvnrepository.com/artifact/org.junit.jupiter/junit-jupiter-engine -->
+		<!-- https://mvnrepository.com/artifact/org.junit.jupiter/junit-jupiter-engine -->
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
 			<artifactId>junit-jupiter</artifactId>
 			<version>${dep_junit-jupiter}</version>
 			<scope>test</scope>
 		</dependency>
-		<!--
-		https://mvnrepository.com/artifact/org.junit.platform/junit-platform-suite-api -->
+		<!-- https://mvnrepository.com/artifact/org.junit.platform/junit-platform-suite-api -->
 		<dependency>
 			<groupId>org.junit.platform</groupId>
 			<artifactId>junit-platform-suite</artifactId>
 			<version>${dep_junit-platform}</version>
 			<scope>test</scope>
 		</dependency>
-		<!--
-		https://mvnrepository.com/artifact/org.mockito/mockito-junit-jupiter -->
+		<!-- https://mvnrepository.com/artifact/org.mockito/mockito-junit-jupiter -->
 		<dependency>
 			<groupId>org.mockito</groupId>
 			<artifactId>mockito-junit-jupiter</artifactId>

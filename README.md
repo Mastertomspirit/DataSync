@@ -85,14 +85,14 @@ Automated background processing tasks can be bound to profiles independently. Ea
 
 ## ⚙️ Command Line Flags
 
-Fine-tune the application startup behavior using the following flags:
+Fine-tune the application startup behavior using the following CLI arguments:
 
-| Flag | Description |
-| :--- | :--- |
-| `firstStart` | Delays the application execution for 5 minutes after system startup (useful for boot-start scripts). |
-| `debug` | Enables detailed debug output in the console. |
-| `debugToFile` | Redirects all debug and error logs to a file located at `user.home/DataSync/`. |
-| `--configFile=` | Set another configDirectory `/myNewDir/`. |
+| Short | Long Flag | Description | Example |
+| :--- | :--- | :--- | :--- |
+| `-b` | `--boot-delay` | Delays the application execution for 5 minutes after system startup (useful for boot-start scripts). | `java -jar DataSync-full.java -b` |
+| `-d` | `--debug` | Enables detailed debug output in the system console. | `./bin/java -jar DataSync.jar --debug` |
+| `-f` | `--debug-to-file` | Redirects all debug and error logs to a file located at `user.home/DataSync/` (implicitly enables debug mode). | `DataSync.exe -f` |
+| `-c` | `--config-dir` | Sets a custom path for the configuration directory instead of the default location. Supports both space and `=` separators. | `-c /myNewDir/` or `--config-dir=/myNewDir/` |
 
 ---
 

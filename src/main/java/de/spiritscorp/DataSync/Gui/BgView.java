@@ -25,6 +25,7 @@ import java.awt.PopupMenu;
 import java.awt.SystemTray;
 import java.awt.TrayIcon;
 import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.util.Objects;
 
 import javax.imageio.ImageIO;
@@ -50,48 +51,48 @@ public class BgView {
 	 *
 	 * @param controller The controller
 	 */
-	public BgView(BgController controller) {
+	public BgView( BgController controller ) {
 		this.controller = controller;
-		if (SystemTray.isSupported()) {
+		if( SystemTray.isSupported() ) {
 			initTray();
-		} else {
-			Debug.printDebug("[DataSync Core] SystemTray wird von diesem Betriebssystem nicht unterstützt.");
+		}else {
+			Debug.printDebug( "[DataSync Core] SystemTray wird von diesem Betriebssystem nicht unterstützt." );
 		}
 	}
 
 	private void initTray() {
 		final PopupMenu popup = new PopupMenu();
-		final Font font = new Font("Comic Sans MS", Font.PLAIN, 14);
+		final Font font = new Font( "Comic Sans MS", Font.PLAIN, 14 );
 
-		final MenuItem openItem = new MenuItem("öffnen");
-		openItem.setFont(font);
+		final MenuItem openItem = new MenuItem( "öffnen" );
+		openItem.setFont( font );
 		// CRITICAL: Bridge AWT event into the JavaFX Application Thread context safely
-		openItem.addActionListener(e -> Platform.runLater(() -> {
-			controller.interruptBgJob(Main.BACKGROUND_THREAD_TIMEOUT);
-		}));
+		openItem.addActionListener( e -> Platform.runLater( () -> {
+			controller.interruptBgJob( Main.BACKGROUND_THREAD_TIMEOUT );
+		} ) );
 
-		final MenuItem closeItem = new MenuItem("schließen");
-		closeItem.setFont(font);
-		closeItem.addActionListener(e -> Platform.runLater(controller::requestApplicationShutdown));
+		final MenuItem closeItem = new MenuItem( "schließen" );
+		closeItem.setFont( font );
+		closeItem.addActionListener( e -> Platform.runLater( controller::requestApplicationShutdown ) );
 
-		popup.add(openItem);
+		popup.add( openItem );
 		popup.addSeparator();
-		popup.add(closeItem);
+		popup.add( closeItem );
 
 		// Robustes Laden des Icons über den Context-ClassLoader
 		BufferedImage trayImage;
 		try {
-			trayImage = ImageIO.read(getClass().getResourceAsStream("/16x16.png"));
-		} catch (final Exception e) {
-			System.err.println("[DataSync] Tray-Icon nicht gefunden, erstelle Fallback-Pixel.");
-			trayImage = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
+			trayImage = ImageIO.read( getClass().getResourceAsStream( "/icons/16x16.png" ) );
+		}catch( final IOException e ) {
+			Debug.printError( "[DataSync] Tray-Icon nicht gefunden, erstelle Fallback-Pixel." );
+			trayImage = new BufferedImage( 16, 16, BufferedImage.TYPE_INT_ARGB );
 		}
 
-		this.trayIcon = new TrayIcon(trayImage, "DataSync Platform Console", popup);
-		this.trayIcon.setImageAutoSize(true);
+		this.trayIcon = new TrayIcon( trayImage, "DataSync Platform Console", popup );
+		this.trayIcon.setImageAutoSize( true );
 
 		// Doppel-Klick auf das Icon öffnet die App direkt
-		this.trayIcon.addActionListener(e -> Platform.runLater(() -> controller.interruptBgJob(Main.BACKGROUND_THREAD_TIMEOUT)));
+		this.trayIcon.addActionListener( e -> Platform.runLater( () -> controller.interruptBgJob( Main.BACKGROUND_THREAD_TIMEOUT ) ) );
 	}
 
 	/**
@@ -101,15 +102,15 @@ public class BgView {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(controller, trayIcon);
+		return Objects.hash( controller, trayIcon );
 	}
 
 	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) return true;
-		if (obj == null) return false;
-		if (getClass() != obj.getClass()) return false;
+	public boolean equals( final Object obj ) {
+		if( this == obj ) { return true; }
+		if( obj == null ) { return false; }
+		if( getClass() != obj.getClass() ) { return false; }
 		final BgView other = (BgView) obj;
-		return Objects.equals(controller, other.controller) && Objects.equals(trayIcon, other.trayIcon);
+		return Objects.equals( controller, other.controller ) && Objects.equals( trayIcon, other.trayIcon );
 	}
 }

@@ -36,6 +36,7 @@ import java.awt.SystemTray;
 import java.awt.TrayIcon;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -167,10 +168,12 @@ class BgControllerTest {
 	/**
 	 * Test 02 - Verifies standard execution tick scheduling parameter mapping.
 	 * Target: {@code startBgJob(false)}
+	 *
+	 * @throws ExecutionException
 	 */
 	@Test
 	@DisplayName( "02: Executor Ticking Verification - startBgJob maps interval math perfectly into the executor core parameters" )
-	void testStartBgJobConfiguresExecutorTickRates() {
+	void testStartBgJobConfiguresExecutorTickRates() throws ExecutionException {
 		final BgTime time = BgTime.MIN_30;
 		testJobList.add( createMockJob( "Job-30Min", true, time, System.currentTimeMillis() ) );
 
@@ -190,10 +193,12 @@ class BgControllerTest {
 	/**
 	 * Test 03 - Verifies initial delay shifts when processing cold application boot states.
 	 * Target: {@code startBgJob(true)}
+	 *
+	 * @throws ExecutionException
 	 */
 	@Test
 	@DisplayName( "03: Executor Boot Verification - startBgJob maps interval into initial_delay after system boot" )
-	void testStartBgJobConfiguresExecutorBootDelay() {
+	void testStartBgJobConfiguresExecutorBootDelay() throws ExecutionException {
 		final BgTime time = BgTime.MIN_30;
 		testJobList.add( createMockJob( "Job-30Min", true, time, System.currentTimeMillis() ) );
 
@@ -229,10 +234,12 @@ class BgControllerTest {
 	/**
 	 * Test 05 - Exercises the critical polling pipeline and task transition rules synchronizing states.
 	 * Target: {@code checkAndQueueJobs()} Deterministic Thread Execution
+	 *
+	 * @throws ExecutionException
 	 */
 	@Test
 	@DisplayName( "05: Asynchronous Execution Lifecycle - Tracking job state mutation hooks, thread injection, and Model execution loops" )
-	void testCheckAndQueueJobsStateOrchestration() {
+	void testCheckAndQueueJobsStateOrchestration() throws ExecutionException {
 		final long expiredTimeDelta = System.currentTimeMillis() - BgTime.HOURLY.getTime();
 		final SyncJobContext overdueJob = createMockJob( "Overdue-Process", true, BgTime.MIN_30, expiredTimeDelta );
 
@@ -274,10 +281,12 @@ class BgControllerTest {
 	/**
 	 * Test 06 - Assures total fallback isolation when individual background tasks experience runtime errors.
 	 * Target: {@code checkAndQueueJobs()} Robust Exception Isolation
+	 *
+	 * @throws ExecutionException
 	 */
 	@Test
 	@DisplayName( "06: Interrupt & Exception Resilience - Worker thread failures or abort signals must fully roll back active execution states" )
-	void testCheckAndQueueJobsResilienceUnderInterrupts() {
+	void testCheckAndQueueJobsResilienceUnderInterrupts() throws ExecutionException {
 		final long expiredTimeDelta = System.currentTimeMillis() - ( BgTime.MIN_30.getTime() + 5000 );
 		final SyncJobContext faultyJob = createMockJob( "Faulty-Process", true, BgTime.MIN_30, expiredTimeDelta );
 
@@ -338,10 +347,12 @@ class BgControllerTest {
 	/**
 	 * Test 08 - Verifies immediate initialization abort stress boundaries.
 	 * Target: {@code handleApplicationShutdown()} Race Condition Resistance
+	 *
+	 * @throws ExecutionException
 	 */
 	@Test
 	@DisplayName( "08: Stress Case - Fast application shutdown directly after background routine initialization" )
-	void testImmediateShutdownResilience() {
+	void testImmediateShutdownResilience() throws ExecutionException {
 		testJobList.add( createMockJob( "Stress-Job", true, BgTime.WEEKLY, System.currentTimeMillis() ) );
 
 		final BgController controller = new BgController( mockGui, mockViewController, testJobList, mockLogger );
@@ -358,10 +369,12 @@ class BgControllerTest {
 	/**
 	 * Test 09 - Assures explicit user background preference flags are respected.
 	 * Target: {@code checkAndQueueJobs()} Polling Skips
+	 *
+	 * @throws ExecutionException
 	 */
 	@Test
 	@DisplayName( "09: Skip Conditions - Polling routine must ignore jobs where background synchronization is disabled" )
-	void testCheckAndQueueJobsSkipsWhenBgSyncIsDisabled() {
+	void testCheckAndQueueJobsSkipsWhenBgSyncIsDisabled() throws ExecutionException {
 		// Even if the job is heavily overdue, bgSync = false must prevent any queueing actions
 		final long overdueTimestamp = System.currentTimeMillis();
 		final SyncJobContext disabledJobMIN30 = createMockJob( "Disabled-Min30", false, BgTime.MIN_30, overdueTimestamp );
@@ -384,10 +397,12 @@ class BgControllerTest {
 	/**
 	 * Test 10 - Tests absolute time limit boundaries to avoid double scheduling tasks.
 	 * Target: {@code checkAndQueueJobs()} Threshold Fencing
+	 *
+	 * @throws ExecutionException
 	 */
 	@Test
 	@DisplayName( "10: Boundary Verification - Polling routine must skip executions when intervals are within valid time limits" )
-	void testCheckAndQueueJobsSkipsWhenIntervalHasNotElapsed() {
+	void testCheckAndQueueJobsSkipsWhenIntervalHasNotElapsed() throws ExecutionException {
 		// Simulate that all jobs have just been scanned 5 seconds ago (well within any interval limit)
 		final long recentScanTimestamp = System.currentTimeMillis() - 5000;
 
@@ -454,16 +469,18 @@ class BgControllerTest {
 
 	/**
 	 * Internal reflection abstraction utility to swap default instances with custom testing mocks.
+	 *
+	 * @throws ExecutionException
 	 */
-	private void injectMockExecutors( BgController controller ) {
+	private void injectMockExecutors( BgController controller ) throws ExecutionException {
 		try {
 			final Method setEnvironment = BgController.class.getDeclaredMethod( "setEnvironment", double.class, BgView.class, ScheduledExecutorService.class, ExecutorService.class );
 			setEnvironment.setAccessible( true );
 			setEnvironment.invoke( controller, 1.0, mockBgView, mockScheduler, mockWorkerQueue );
 		}catch( IllegalAccessException | NoSuchMethodException | SecurityException e ) {
-			throw new RuntimeException( "Failed to inject architectural test values via reflection.", e );
+			throw new ExecutionException( "Failed to inject architectural test values via reflection.", e );
 		}catch( final InvocationTargetException e ) {
-			throw new RuntimeException( "Failed to invoke the methode via reflection.", e );
+			throw new ExecutionException( "Failed to invoke the methode via reflection.", e );
 		}
 	}
 }

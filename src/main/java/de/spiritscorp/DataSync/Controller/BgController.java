@@ -82,13 +82,13 @@ public class BgController {
 	 * @param jobList    The reactive data backing list containing operational task metrics and execution state tokens
 	 * @param logger     The standardized system logging framework interface
 	 */
-	BgController(final Gui gui, ViewController controller, final ObservableList<SyncJobContext> jobList, final Logger logger) {
+	BgController( final Gui gui, ViewController controller, final ObservableList<SyncJobContext> jobList, final Logger logger ) {
 		this.gui = gui;
 		this.controller = controller;
 		this.jobList = jobList;
 		this.logger = logger;
 		this.sysTray = SystemTray.isSupported() ? SystemTray.getSystemTray() : null;
-		setEnvironment(timeMultiplier, new BgView(this), Executors.newSingleThreadScheduledExecutor(), Executors.newSingleThreadExecutor());
+		setEnvironment( timeMultiplier, new BgView( this ), Executors.newSingleThreadScheduledExecutor(), Executors.newSingleThreadExecutor() );
 	}
 
 	/**
@@ -104,7 +104,7 @@ public class BgController {
 	 */
 	public void requestApplicationShutdown() {
 		// Disassemble concurrent tracking frameworks before global window exit procedures trigger
-		shutdownExecutors(Main.BACKGROUND_THREAD_TIMEOUT);
+		shutdownExecutors( Main.BACKGROUND_THREAD_TIMEOUT );
 		controller.handleApplicationShutdown();
 	}
 
@@ -122,10 +122,10 @@ public class BgController {
 	 *                           interruption signal is enforced.
 	 * @see #shutdownExecutors(long)
 	 */
-	public void interruptBgJob(long timeoutPerThreadMs) {
+	public void interruptBgJob( long timeoutPerThreadMs ) {
 		gui.getWindowStage().show();
-		shutdownExecutors(timeoutPerThreadMs);
-		Debug.printDebug("[DataSync Daemon] Background routine interrupted");
+		shutdownExecutors( timeoutPerThreadMs );
+		Debug.printDebug( "[DataSync Daemon] Background routine interrupted" );
 	}
 
 	/**
@@ -143,32 +143,32 @@ public class BgController {
 	 * @param bootDelay Enforces an extended cold-boot initialization timeout buffer if set to {@code true};
 	 *                  allocates a standard near-instant scheduling offset if set to {@code false}.
 	 */
-	void startBgJob(final boolean bootDelay) {
+	void startBgJob( final boolean bootDelay ) {
 		gui.getWindowStage().hide();
-		if (sysTray != null && bgView.getTrayIcon() != null) {
+		if( sysTray != null && bgView.getTrayIcon() != null ) {
 			try {
-				sysTray.add(bgView.getTrayIcon());
-			} catch (final AWTException e) {
-				Debug.printError("[DataSync Daemon] Failed to register TrayIcon context.");
-				Debug.printException(getClass(), e);
+				sysTray.add( bgView.getTrayIcon() );
+			}catch( final AWTException e ) {
+				Debug.printError( "[DataSync Daemon] Failed to register TrayIcon context." );
+				Debug.printException( getClass(), e );
 				gui.getWindowStage().show();
 				return;
 			}
 		}
 
-		Debug.printDebug("[DataSync Daemon] Multi-Job Background-Daemon initialization started.");
+		Debug.printDebug( "[DataSync Daemon] Multi-Job Background-Daemon initialization started." );
 
 		// Dynamically determine the optimal check interval based on active jobs
 		final long calculatedTick = determineOptimalCheckTime();
-		final long tickInterval = (long) (calculatedTick * timeMultiplier);
-		final long initialDelay = (long) ((bootDelay ? BOOT_START_DELAY : INITIAL_DELAY) * timeMultiplier);
-		Debug.printDebug("[DataSync Daemon] Heartbeat configured to tick every %d ms based on job preferences.", calculatedTick);
+		final long tickInterval = (long) ( calculatedTick * timeMultiplier );
+		final long initialDelay = (long) ( ( bootDelay ? BOOT_START_DELAY : INITIAL_DELAY ) * timeMultiplier );
+		Debug.printDebug( "[DataSync Daemon] Heartbeat configured to tick every %d ms based on job preferences.", calculatedTick );
 		jobList.stream()
-				.filter((job) -> job.getPreference()
-						.isBgSync())
-				.forEach((job) -> Debug.printDebug("[DataSync Daemon] Executing background routine is deactivated for task: %s", job.getJobName()));
+				.filter( ( job ) -> job.getPreference()
+						.isBgSync() )
+				.forEach( ( job ) -> Debug.printDebug( "[DataSync Daemon] Executing background routine is deactivated for task: %s", job.getJobName() ) );
 		// Begin tracking task list rules loops
-		this.scheduler.scheduleAtFixedRate(this::checkAndQueueJobs, initialDelay, tickInterval, TimeUnit.MILLISECONDS);
+		this.scheduler.scheduleAtFixedRate( this::checkAndQueueJobs, initialDelay, tickInterval, TimeUnit.MILLISECONDS );
 	}
 
 	/**
@@ -179,11 +179,11 @@ public class BgController {
 		long minCheckTime = 10000; // Default fallback: 10 seconds
 		boolean foundActiveJob = false;
 
-		for (final SyncJobContext job : jobList) {
+		for( final SyncJobContext job : jobList ) {
 			final var pref = job.getPreference();
-			if (pref != null && pref.isBgSync() && pref.getBgTime() != null) {
+			if( pref != null && pref.isBgSync() && pref.getBgTime() != null ) {
 				final long currentCheck = pref.getBgTime().getCheckTime();
-				if (!foundActiveJob || currentCheck < minCheckTime) {
+				if( !foundActiveJob || currentCheck < minCheckTime ) {
 					minCheckTime = currentCheck;
 					foundActiveJob = true;
 				}
@@ -209,37 +209,37 @@ public class BgController {
 	 * <p>
 	 */
 	private void checkAndQueueJobs() {
-		for (final SyncJobContext job : jobList) {
+		for( final SyncJobContext job : jobList ) {
 			// Skip tasks if they are actively running or already waiting inside the execution queue lane
-			if (job.isRunning()) continue;
+			if( job.isRunning() ) continue;
 
 			final var pref = job.getPreference();
 			// Only process if background execution is explicitly requested for this task context
-			if (pref != null && pref.isBgSync()) {
+			if( pref != null && pref.isBgSync() ) {
 				final long timeDelta = System.currentTimeMillis() - pref.getLastScanTime();
-				final long targetInterval = (long) (pref.getBgTime().getTime() * timeMultiplier);
+				final long targetInterval = (long) ( pref.getBgTime().getTime() * timeMultiplier );
 
-				if (timeDelta > targetInterval) {
-					Debug.printDebug("[DataSync Daemon] Polling threshold triggered for task: %s. Queueing worker task.", job.getJobName());
-					job.setRunning(true);
+				if( timeDelta > targetInterval ) {
+					Debug.printDebug( "[DataSync Daemon] Polling threshold triggered for task: %s. Queueing worker task.", job.getJobName() );
+					job.setRunning( true );
 					// Dispatch into the dedicated loop queue lane (prevents hardware disk I/O thrashing)
-					workerQueue.execute(() -> {
+					workerQueue.execute( () -> {
 						try {
-							final BgModel bgModel = new BgModel(pref, logger, Model.createMap(), Model.createMap());
+							final BgModel bgModel = new BgModel( pref, logger, Model.createMap(), Model.createMap() );
 
 							// Map active thread to the context token to let external shutdown requests throw interrupts
-							job.setActiveWorkerThread(Thread.currentThread());
-							Debug.printDebug("[DataSync Daemon] Executing background routine for task: %s", job.getJobName());
+							job.setActiveWorkerThread( Thread.currentThread() );
+							Debug.printDebug( "[DataSync Daemon] Executing background routine for task: %s", job.getJobName() );
 							bgModel.runBgJob();
-						} catch (final Exception e) {
-							Debug.printDebug("[Error DataSync Daemon] Critical fault captured inside background thread execution pipeline for: %s", job.getJobName());
-							Debug.printException(this.getClass(), e);
-						} finally {
-							job.setRunning(false);
-							job.setActiveWorkerThread(null);
-							Debug.printDebug("[DataSync Daemon] Finished executing background routine for task: %s", job.getJobName());
+						}catch( final Exception e ) {
+							Debug.printDebug( "[Error DataSync Daemon] Critical fault captured inside background thread execution pipeline for: %s", job.getJobName() );
+							Debug.printException( this.getClass(), e );
+						}finally {
+							job.setRunning( false );
+							job.setActiveWorkerThread( null );
+							Debug.printDebug( "[DataSync Daemon] Finished executing background routine for task: %s", job.getJobName() );
 						}
-					});
+					} );
 				}
 			}
 		}
@@ -262,37 +262,37 @@ public class BgController {
 	 *                           I/O operations to complete task evaluation loops before
 	 *                           the lifecycle boundary is forcibly closed.
 	 */
-	private void shutdownExecutors(long timeoutPerThreadMs) {
-		Debug.printDebug("[DataSync Daemon] Dissolving executor pools and cleaning up task contexts.");
+	private void shutdownExecutors( long timeoutPerThreadMs ) {
+		Debug.printDebug( "[DataSync Daemon] Dissolving executor pools and cleaning up task contexts." );
 
-		if (scheduler != null) {
+		if( scheduler != null ) {
 			scheduler.shutdownNow();
 		}
 
-		if (workerQueue != null) {
+		if( workerQueue != null ) {
 			// Drops instant interrupt signals down to the thread executing the active copy sequence
 			workerQueue.shutdownNow();
 			try {
-				if (!workerQueue.awaitTermination(timeoutPerThreadMs, TimeUnit.MILLISECONDS)) {
-					Debug.printDebug("[DataSync Daemon] Worker queue termination delayed. Enforcing lifecycle exit.");
+				if( !workerQueue.awaitTermination( timeoutPerThreadMs, TimeUnit.MILLISECONDS ) ) {
+					Debug.printDebug( "[DataSync Daemon] Worker queue termination delayed. Enforcing lifecycle exit." );
 				}
-			} catch (final InterruptedException e) {
+			}catch( final InterruptedException e ) {
 				Thread.currentThread().interrupt();
 			}
 		}
 
 		// Clean up framework tracking tokens across the execution stack
-		for (final SyncJobContext job : jobList) {
-			job.setRunning(false);
-			job.setActiveWorkerThread(null);
+		for( final SyncJobContext job : jobList ) {
+			job.setRunning( false );
+			job.setActiveWorkerThread( null );
 		}
 
 		// Remove indicator shell icons
-		if (sysTray != null && bgView != null && bgView.getTrayIcon() != null) {
-			sysTray.remove(bgView.getTrayIcon());
+		if( sysTray != null && bgView != null && bgView.getTrayIcon() != null ) {
+			sysTray.remove( bgView.getTrayIcon() );
 		}
 
-		Debug.printDebug("[DataSync Daemon] Background-Daemon terminated cleanly.");
+		Debug.printDebug( "[DataSync Daemon] Background-Daemon terminated cleanly." );
 	}
 
 	/**
@@ -308,10 +308,10 @@ public class BgController {
 	 * @param scheduler   The scheduled executor tracking the heartbeat loops
 	 * @param workerQueue The sequential worker queue processing pending sync transfers
 	 */
-	private void setEnvironment(double multiplier, BgView bgView, ScheduledExecutorService scheduler, ExecutorService workerQueue) {
-		if (multiplier > 0.0) this.timeMultiplier = multiplier;
-		if (bgView != null) this.bgView = bgView;
-		if (scheduler != null) this.scheduler = scheduler;
-		if (workerQueue != null) this.workerQueue = workerQueue;
+	private void setEnvironment( double multiplier, BgView bgView, ScheduledExecutorService scheduler, ExecutorService workerQueue ) {
+		if( multiplier > 0.0 ) this.timeMultiplier = multiplier;
+		if( bgView != null ) this.bgView = bgView;
+		if( scheduler != null ) this.scheduler = scheduler;
+		if( workerQueue != null ) this.workerQueue = workerQueue;
 	}
 }

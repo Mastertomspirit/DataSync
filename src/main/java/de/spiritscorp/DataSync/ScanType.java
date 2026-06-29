@@ -30,17 +30,20 @@ package de.spiritscorp.DataSync;
 public enum ScanType {
 
 	/** Standard synchronization mode comparing file metadata between targets. */
-	SYNCHRONIZE("Synchronisieren"),
+	SYNCHRONIZE( "Synchronisieren"),
 
 	/** Shallow scan mode that only evaluates root level or basic file availability. */
-	FLAT_SCAN("flacher Scan"),
+	FLAT_SCAN( "flacher Scan"),
 
 	/** Intensive scan mode processing deep file structures, modification timestamps, or checksums. */
-	DEEP_SCAN("tiefer Scan"),
+	DEEP_SCAN( "tiefer Scan"),
 
 	/** Dedicated analysis mode used exclusively to detect and aggregate identical file duplicates. */
-	DUBLICATE_SCAN("Dublikate suchen");
+	DUBLICATE_SCAN( "Dublikate suchen");
 
+	/**
+	 * The description about a scan type
+	 */
 	private final String description;
 
 	/**
@@ -48,7 +51,7 @@ public enum ScanType {
 	 *
 	 * @param description the localized, human-readable description of the scanning strategy
 	 */
-	private ScanType(String description) {
+	ScanType( final String description ) {
 		this.description = description;
 	}
 
@@ -60,11 +63,11 @@ public enum ScanType {
 	 * @return a String array containing the human-readable description texts in order of definition
 	 */
 	public static String[] getAllDescriptions() {
-		final String[] ret = new String[ScanType.values().length];
-		int i = 0;
-		for (final ScanType s : ScanType.values()) {
-			ret[i] = s.getDescription();
-			i++;
+		final String[] ret = new String[values().length];
+		int index = 0;
+		for( final ScanType s : values() ) {
+			ret[index] = s.getDescription();
+			index++;
 		}
 		return ret;
 	}
@@ -75,9 +78,9 @@ public enum ScanType {
 	 * @param str the description string to look up (e.g., "tiefer Scan")
 	 * @return the matching ScanType constant, or null if no matching description is found
 	 */
-	public static ScanType get(String str) {
-		for (final ScanType st : ScanType.values()) {
-			if (str.equals(st.getDescription())) return st;
+	public static ScanType get( final String str ) {
+		for( final ScanType st : values() ) {
+			if( str.equals( st.getDescription() ) ) return st;
 		}
 		return null;
 	}

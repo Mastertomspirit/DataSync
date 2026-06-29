@@ -19,11 +19,13 @@ along with this program; if not, write to the Free Software Foundation,
 Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import java.nio.file.Path;
 import java.util.stream.Stream;
@@ -54,14 +56,17 @@ import de.spiritscorp.DataSync.IO.PreferenceManager;
  * @version 1.0.0
  * @see Main
  */
-@DisplayName( "Main Application CLI Parser Test Suite" )
+// @DisplayName( "Main Application CLI Parser Test Suite" )
 class MainTest {
 
 	/** Insulates the static {@link PreferenceManager} subsystem during test execution. */
-	private MockedStatic<PreferenceManager> mockedPreferenceManager;
+	private MockedStatic<PreferenceManager> mockPrefManager;
 
 	/** Insulates the static {@link Debug} diagnostics subsystem during test execution. */
-	private MockedStatic<Debug> mockedDebug;
+	private MockedStatic<Debug> mockDebug;
+
+	/** Insulates the {@link PreferenceManager} instance. */
+	private PreferenceManager mockInstance;
 
 	/**
 	 * Initializes the static test environment prior to each individual test execution.
@@ -74,12 +79,12 @@ class MainTest {
 	void setUp() {
 		Main.resetForTesting();
 
-		mockedPreferenceManager = Mockito.mockStatic( PreferenceManager.class );
-		mockedDebug = Mockito.mockStatic( Debug.class );
+		mockPrefManager = Mockito.mockStatic( PreferenceManager.class );
+		mockDebug = Mockito.mockStatic( Debug.class );
 
-		final PreferenceManager mockInstance = Mockito.mock( PreferenceManager.class );
+		mockInstance = Mockito.mock( PreferenceManager.class );
 		Mockito.when( mockInstance.getConfigPath() ).thenReturn( Path.of( "/mock/default/path" ) );
-		mockedPreferenceManager.when( PreferenceManager::getInstance ).thenReturn( mockInstance );
+		mockPrefManager.when( PreferenceManager::getInstance ).thenReturn( mockInstance );
 	}
 
 	/**
@@ -90,11 +95,11 @@ class MainTest {
 	 */
 	@AfterEach
 	void tearDown() {
-		if( mockedPreferenceManager != null ) {
-			mockedPreferenceManager.close();
+		if( mockPrefManager != null ) {
+			mockPrefManager.close();
 		}
-		if( mockedDebug != null ) {
-			mockedDebug.close();
+		if( mockDebug != null ) {
+			mockDebug.close();
 		}
 	}
 
@@ -106,10 +111,11 @@ class MainTest {
 	@ParameterizedTest
 	@ValueSource( strings = { "--boot-delay", "-b" } )
 	@DisplayName( "1. Should enable boot delay when corresponding flags are provided" )
-	void testBootDelayFlags( String flag ) {
-		Main.parseArguments( new String[] { flag } );
-		assertTrue( Main.isFirstStart(), "Boot delay should be active" );
-		assertFalse( Main.isDebug(), "Debug mode should remain disabled" );
+	void testBootDelayFlags( final String flag ) {
+		Main.parseArguments( flag );
+		assertAll(
+				() -> assertTrue( Main.isFirstStart(), "Boot delay should be active" ),
+				() -> assertFalse( Main.isDebug(), "Debug mode should remain disabled" ) );
 	}
 
 	/**
@@ -120,12 +126,13 @@ class MainTest {
 	@ParameterizedTest
 	@ValueSource( strings = { "--debug", "-d" } )
 	@DisplayName( "2. Should enable debug mode when console debug flags are provided" )
-	void testDebugFlags( String flag ) {
-		Main.parseArguments( new String[] { flag } );
-		assertTrue( Main.isDebug(), "Debug mode should be active" );
-		assertFalse( Main.isFirstStart(), "Boot delay should remain disabled" );
+	void testDebugFlags( final String flag ) {
+		Main.parseArguments( flag );
 
-		mockedDebug.verify( () -> Debug.printDebug( any(), Mockito.any( Object[].class ) ), times( 2 ) );
+		assertAll(
+				() -> assertTrue( Main.isDebug(), "Debug mode should be active" ),
+				() -> assertFalse( Main.isFirstStart(), "Boot delay should remain disabled" ),
+				() -> mockDebug.verify( () -> Debug.printDebug( any(), any( Object[].class ) ), times( 2 ) ) );
 	}
 
 	/**
@@ -137,12 +144,13 @@ class MainTest {
 	@ParameterizedTest
 	@ValueSource( strings = { "--debug-to-file", "-f" } )
 	@DisplayName( "3. Should redirect debug logs to file when file logging flags are provided" )
-	void testDebugToFileFlags( String flag ) {
-		Main.parseArguments( new String[] { flag } );
-		assertTrue( Main.isDebug(), "Debug mode should be implicitly active" );
+	void testDebugToFileFlags( final String flag ) {
+		Main.parseArguments( flag );
 
-		mockedDebug.verify( Debug::setDebugToFile, times( 1 ) );
-		mockedDebug.verify( () -> Debug.printDebug( any(), Mockito.any( Object[].class ) ), times( 2 ) );
+		assertAll(
+				() -> assertTrue( Main.isDebug(), "Debug mode should be implicitly active" ),
+				() -> mockDebug.verify( Debug::setDebugToFile, times( 1 ) ),
+				() -> mockDebug.verify( () -> Debug.printDebug( any(), any( Object[].class ) ), times( 2 ) ) );
 	}
 
 	/**
@@ -155,9 +163,9 @@ class MainTest {
 	@ParameterizedTest( name = "{index} ==> Variant: {2}" )
 	@MethodSource( "provideConfigDirTestCases" )
 	@DisplayName( "4. Should successfully resolve all 4 variations of config directory routing parameters" )
-	void testAllConfigDirPermutations( String[] args, String expectedPath, String description ) {
+	void testAllConfigDirPermutations( final String[] args, final String expectedPath, final String description ) {
 		Main.parseArguments( args );
-		mockedPreferenceManager.verify( () -> PreferenceManager.initGlobalRootConfigPath( Path.of( expectedPath ) ), times( 1 ) );
+		verify( mockInstance, times( 1 ) ).initGlobalRootConfigPath( Path.of( expectedPath ) );
 	}
 
 	/**
@@ -181,8 +189,9 @@ class MainTest {
 	@Test
 	@DisplayName( "5. Should gracefully handle configuration flag missing its value token at the array end boundary" )
 	void testConfigDirMissingValueAtArrayEnd() {
-		assertDoesNotThrow( () -> Main.parseArguments( new String[] { "-c" } ) );
-		mockedPreferenceManager.verify( () -> PreferenceManager.initGlobalRootConfigPath( any() ), times( 0 ) );
+		assertAll(
+				() -> assertDoesNotThrow( () -> Main.parseArguments( "-c" ) ),
+				() -> verify( mockInstance, times( 0 ) ).initGlobalRootConfigPath( any() ) );
 	}
 
 	/**
@@ -192,9 +201,9 @@ class MainTest {
 	@DisplayName( "6. Should handle complex platform paths containing spaces or backslashes" )
 	void testComplexPathFormatting() {
 		final String windowsPath = "D:\\App Data\\DataSync Config";
-		Main.parseArguments( new String[] { "-c", windowsPath } );
+		Main.parseArguments( "-c", windowsPath );
 
-		mockedPreferenceManager.verify( () -> PreferenceManager.initGlobalRootConfigPath( Path.of( windowsPath ) ), times( 1 ) );
+		verify( mockInstance, times( 1 ) ).initGlobalRootConfigPath( Path.of( windowsPath ) );
 	}
 
 	/**
@@ -204,10 +213,11 @@ class MainTest {
 	@Test
 	@DisplayName( "7. Should not consume subsequent flag as configuration directory path" )
 	void testConfigDirLookaheadSafeguard() {
-		Main.parseArguments( new String[] { "-c", "--debug" } );
+		Main.parseArguments( "-c", "--debug" );
 
-		mockedPreferenceManager.verify( () -> PreferenceManager.initGlobalRootConfigPath( any() ), times( 0 ) );
-		assertTrue( Main.isDebug(), "Subsequent flag '--debug' should still be processed" );
+		assertAll(
+				() -> verify( mockInstance, times( 0 ) ).initGlobalRootConfigPath( any() ),
+				() -> assertTrue( Main.isDebug(), "Subsequent flag '--debug' should still be processed" ) );
 	}
 
 	/**
@@ -219,10 +229,10 @@ class MainTest {
 		final String[] args = { "-b", "--config-dir=/custom/path", "-d" };
 
 		Main.parseArguments( args );
-
-		assertTrue( Main.isFirstStart(), "Boot delay should be enabled" );
-		assertTrue( Main.isDebug(), "Debug logging should be enabled" );
-		mockedPreferenceManager.verify( () -> PreferenceManager.initGlobalRootConfigPath( Path.of( "/custom/path" ) ), times( 1 ) );
+		assertAll(
+				() -> assertTrue( Main.isFirstStart(), "Boot delay should be enabled" ),
+				() -> assertTrue( Main.isDebug(), "Debug logging should be enabled" ),
+				() -> verify( mockInstance, times( 1 ) ).initGlobalRootConfigPath( Path.of( "/custom/path" ) ) );
 	}
 
 	/**
@@ -234,9 +244,10 @@ class MainTest {
 	void testUnknownAndUnregisteredFlags() {
 		final String[] mixedArgs = { "-m", "--config-file=/etc/unsupported.json", "-b", "--unknown-flag", "-d" };
 
-		assertDoesNotThrow( () -> Main.parseArguments( mixedArgs ) );
-		assertTrue( Main.isFirstStart(), "Valid subsequent flag '-b' should be honored" );
-		assertTrue( Main.isDebug(), "Valid subsequent flag '-d' should be honored" );
+		assertAll(
+				() -> assertDoesNotThrow( () -> Main.parseArguments( mixedArgs ) ),
+				() -> assertTrue( Main.isFirstStart(), "Valid subsequent flag '-b' should be honored" ),
+				() -> assertTrue( Main.isDebug(), "Valid subsequent flag '-d' should be honored" ) );
 	}
 
 	/**
@@ -246,8 +257,10 @@ class MainTest {
 	@Test
 	@DisplayName( "10. Should resiliently ignore null or empty input arguments" )
 	void testResilienceAgainstNullAndEmptyArgs() {
-		assertDoesNotThrow( () -> Main.parseArguments( new String[] { "   ", "", null } ) );
-		assertFalse( Main.isDebug() );
-		assertFalse( Main.isFirstStart() );
+
+		assertAll(
+				() -> assertDoesNotThrow( () -> Main.parseArguments( "   ", "", null ), "Empty, blank or null should not throw an exception" ),
+				() -> assertFalse( Main.isDebug(), "Debug logging should be disabled" ),
+				() -> assertFalse( Main.isFirstStart(), "Boot delay should be disabled" ) );
 	}
 }

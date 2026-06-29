@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
@@ -37,9 +37,19 @@ import de.spiritscorp.DataSync.Main;
  * errors, and exception tracking. All outputs are automatically enriched with a timestamp
  * and the active application instance name.
  */
-public class Debug {
+public final class Debug {
 
+	/**
+	 * The unique name of this application instance, used as a prefix in log outputs.
+	 * <p>
+	 * The value is dynamically retrieved from the system property {@code app.instance.name} at startup.
+	 * If this property is not defined, it falls back to the default value "Standard Instance".
+	 * </p>
+	 */
 	private static final String INSTANCE_NAME = System.getProperty( "app.instance.name", "Standard Instance" );
+
+	private Debug() {
+	}
 
 	/**
 	 * Writes a formatted debugging message to the standard output stream (stdout).
@@ -50,7 +60,7 @@ public class Debug {
 	 *               the extra arguments are ignored. The number of arguments is variable and may be zero. The maximum number of arguments is limited
 	 *               by the maximum dimension of a Java array as defined by The Java Virtual Machine Specification.
 	 */
-	public static final void printDebug( String format, Object... args ) {
+	public static void printDebug( final String format, final Object... args ) {
 		print( System.out, format, args );
 	}
 
@@ -63,7 +73,7 @@ public class Debug {
 	 *               the extra arguments are ignored. The number of arguments is variable and may be zero. The maximum number of arguments is limited
 	 *               by the maximum dimension of a Java array as defined by The Java Virtual Machine Specification.
 	 */
-	public static final void printError( String format, Object... args ) {
+	public static void printError( final String format, final Object... args ) {
 		print( System.err, format, args );
 	}
 
@@ -86,17 +96,17 @@ public class Debug {
 	 * ...
 	 * <p>
 	 *
-	 * @param clazz the {@link Class} context where the exception was caught, used for identification
-	 * @param e     the {@link Exception} instance containing the error details and stack trace
+	 * @param clazz     the {@link Class} context where the exception was caught, used for identification
+	 * @param exception the {@link Exception} instance containing the error details and stack trace
 	 */
-	public static final void printException( Class<?> clazz, Exception e ) {
-		printError( "Exception in Class: [%s]: Message -> %s", clazz.getName(), e.getMessage() );
-		if( e.getCause() != null ) {
-			printError( "  ↳ Cause: %s -> Message: %s", e.getCause().getClass().getName(), e.getCause().getMessage() );
+	public static void printException( final Class<?> clazz, final Exception exception ) {
+		printError( "Exception in Class: [%s]: Message -> %s", clazz.getName(), exception.getMessage() );
+		if( exception.getCause() != null ) {
+			printError( "  ↳ Cause: %s -> Message: %s", exception.getCause().getClass().getName(), exception.getCause().getMessage() );
 		}
-		final StringWriter sw = new StringWriter();
-		e.printStackTrace( new PrintWriter( sw ) );
-		printError( "Full Info:%n%s", sw.toString() );
+		final StringWriter writer = new StringWriter();
+		exception.printStackTrace( new PrintWriter( writer ) );
+		printError( "Full Info:%n%s", writer.toString() );
 	}
 
 	/**
@@ -107,9 +117,10 @@ public class Debug {
 	 *               the extra arguments are ignored. The number of arguments is variable and may be zero. The maximum number of arguments is limited
 	 *               by the maximum dimension of a Java array as defined by The Java Virtual Machine Specification.
 	 */
-	public static final void printDebugTimeless( String format, Object... args ) {
+	@SuppressWarnings( { "java:S3457", "java:S106" } )
+	public static void printDebugTimeless( final String format, final Object... args ) {
 		if( Main.isDebug() ) {
-			System.out.printf( format + "%n", args );
+			System.out.printf( format + "%n", args ); // NOPMD
 		}
 	}
 
@@ -118,25 +129,34 @@ public class Debug {
 	 * Once invoked, messages processed by this utility will be appended to the designated
 	 * log file infrastructure instead of solely printing to the console.
 	 */
-	public static final void setDebugToFile() {
+	@SuppressWarnings( {
+			"PMD.SystemPrintln", "PMD.AvoidPrintStackTrace", // PMD
+			"java:S106", "java:S4507" // SonarLint
+	} )
+	public static void setDebugToFile() {
 		try {
 			if( !Files.exists( PreferenceManager.getInstance().getDebugPath() ) ) Files.createDirectories( PreferenceManager.getInstance().getDebugPath().getParent() );
-			System.setOut(
-					new PrintStream( Files.newOutputStream( PreferenceManager.getInstance().getDebugPath(), StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.APPEND ), true,
-							Charset.forName( "UTF-8" ) ) );
-			System.setErr(
-					new PrintStream( Files.newOutputStream( PreferenceManager.getInstance().getErrorPath(), StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.APPEND ), true,
-							Charset.forName( "UTF-8" ) ) );
+			System.setOut( new PrintStream(
+					Files.newOutputStream(
+							PreferenceManager.getInstance().getDebugPath(),
+							StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.APPEND ),
+					true, StandardCharsets.UTF_8 ) );
+			System.setErr( new PrintStream(
+					Files.newOutputStream(
+							PreferenceManager.getInstance().getErrorPath(),
+							StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.APPEND ),
+					true, StandardCharsets.UTF_8 ) );
 		}catch( final IOException e ) {
 			System.err.println( e.getMessage() );
 			e.printStackTrace();
 		}
 	}
 
-	private static void print( PrintStream stream, String format, Object[] args ) {
+	private static void print( final PrintStream stream, final String format, final Object... args ) {
 		if( Main.isDebug() ) {
 			final String time = LocalDateTime.now( ZoneId.systemDefault() ).format( DateTimeFormatter.ofPattern( "dd-MM-yyyy HH:mm:ss.SSSSS" ) );
-			stream.printf( time + " [" + INSTANCE_NAME + "]  " + format + "%n", args );
+			final String message = String.format( format, args );
+			stream.printf( "%s [ %s ] %s%n", time, INSTANCE_NAME, message );
 		}
 	}
 }

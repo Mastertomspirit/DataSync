@@ -24,6 +24,7 @@ import java.util.Map;
 import de.spiritscorp.DataSync.Main;
 import de.spiritscorp.DataSync.ScanType;
 import de.spiritscorp.DataSync.Gui.Gui;
+import de.spiritscorp.DataSync.Gui.WorkspaceView.NotifyStatus;
 import de.spiritscorp.DataSync.IO.Debug;
 import de.spiritscorp.DataSync.IO.Logger;
 import de.spiritscorp.DataSync.IO.Preference;
@@ -107,8 +108,8 @@ public class MainViewController implements ViewController {
 		}
 	}
 
-	@Override
-	public void loadInitialJobList() {
+//	@Override
+	private void loadInitialJobList() {
 		final ObservableList<SyncJobContext> jobList = FXCollections.observableArrayList();
 
 		if( manager.loadAllPreferences() ) {
@@ -144,9 +145,9 @@ public class MainViewController implements ViewController {
 				final String trimmedName = newName.trim();
 				if( !trimmedName.isEmpty() && !trimmedName.equals( oldName ) ) {
 					selectedJob.setJobName( trimmedName );
-					gui.showStatusNotification( oldName + " wurde ersetzt und gespeichert durch" + newName, "status-sucess", Main.INFO_DELAY );
+					gui.showStatusNotification( oldName + " wurde ersetzt und gespeichert durch" + newName, NotifyStatus.SUCESS, Main.INFO_DELAY );
 				}else {
-					gui.showStatusNotification( oldName + " wurde nicht ersetzt", "status-warning", Main.INFO_DELAY );
+					gui.showStatusNotification( oldName + " wurde nicht ersetzt", NotifyStatus.WARNING, Main.INFO_DELAY );
 				}
 			} );
 		}
@@ -170,9 +171,9 @@ public class MainViewController implements ViewController {
 				if( response == ButtonType.YES ) {
 					gui.getJobList().remove( job );
 					PreferenceManager.getInstance().removeProfile( job );
-					gui.showStatusNotification( job.getJobName() + " wurde erfolgreich gelöscht", "status-sucess", Main.INFO_DELAY );
+					gui.showStatusNotification( job.getJobName() + " wurde erfolgreich gelöscht", NotifyStatus.SUCESS, Main.INFO_DELAY );
 				}else {
-					gui.showStatusNotification( job.getJobName() + " wurde nicht gelöscht", "status-warning", Main.INFO_DELAY );
+					gui.showStatusNotification( job.getJobName() + " wurde nicht gelöscht", NotifyStatus.WARNING, Main.INFO_DELAY );
 				}
 			} );
 		}
@@ -184,8 +185,7 @@ public class MainViewController implements ViewController {
 			switch( job.getSelectedMode() ) {
 			case ScanType.SYNCHRONIZE -> helper.startSynchronize( job );
 			case ScanType.DUBLICATE_SCAN -> helper.startDuplicateScan( job );
-			case ScanType.DEEP_SCAN -> helper.startBackup( job );
-			case ScanType.FLAT_SCAN -> helper.startBackup( job );
+			case DEEP_SCAN, FLAT_SCAN -> helper.startBackup( job );
 			default -> throw new IllegalArgumentException( "Unexpected value: " + job.getSelectedMode() );
 			}
 		}
@@ -222,11 +222,11 @@ public class MainViewController implements ViewController {
 
 		// Trigger visual feedback via the global GUI proxy method using theme classes
 		if( prefsSaved && autostartSaved ) {
-			gui.showStatusNotification( "✔ Settings successfully persisted to the configuration registry.", "status-success", Main.INFO_DELAY );
+			gui.showStatusNotification( "Settings successfully persisted to the configuration registry.", NotifyStatus.SUCESS, Main.INFO_DELAY );
 		}else if( !prefsSaved ) {
-			gui.showStatusNotification( "❌ Error: Failed to write configuration payload to 'conf.json'.", "status-error", Main.INFO_DELAY );
+			gui.showStatusNotification( "Error: Failed to write configuration payload to 'conf.json'.", NotifyStatus.ERROR, Main.INFO_DELAY );
 		}else {
-			gui.showStatusNotification( "⚠ Warning: Profiles saved, but host operating system autostart configuration failed.", "status-warning", Main.INFO_DELAY );
+			gui.showStatusNotification( "Warning: Profiles saved, but host operating system autostart configuration failed.", NotifyStatus.WARNING, Main.INFO_DELAY );
 		}
 	}
 

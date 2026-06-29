@@ -6,42 +6,88 @@
 	<artifactId>DataSync</artifactId>
 	<version>1.1.0.0-alpha</version>
 	<name>Data Sync</name>
-	<description>Application to synchronize your data</description>
+	<description>
+	    DataSync is a high-performance, multi-threaded file synchronization and data management solution designed for robust asset alignment and backup automation. 
+	    Engineered with concurrency in mind, it features intelligent background job scheduling, advanced duplicate detection mechanisms, and high-efficiency scanning. 
+	    With integrated structured JSON logging, DataSync provides enterprise-grade observability and seamless integration into automated server monitoring stacks.
+	</description>
 	<inceptionYear>2022</inceptionYear>
 	<url>https://github.com/Mastertomspirit/DataSync</url>
-
+	<developers>
+		<developer>
+			<id>${app.developer.id}</id>
+			<name>${app.owner}</name>
+			<email>${app.developer.email}</email>
+			<url>${app.developer.url}</url>
+			<roles>
+				<role>${app.developer.role.lead}</role>
+			    <role>${app.developer.role.arch}</role>
+			</roles>
+		</developer>
+	</developers>
+	<issueManagement>
+		<system>GitHub Issues</system>
+		<url>https://github.com/Mastertomspirit/DataSync/issues</url>
+	</issueManagement>
+	<scm>
+		<connection>scm:git:git://github.com/Mastertomspirit/DataSync.git</connection>
+		<developerConnection>scm:git:ssh://github.com/Mastertomspirit/DataSync.git</developerConnection>
+		<url>https://github.com/Mastertomspirit/DataSync/tree/main</url>
+	</scm>
+	<licenses>
+		<license>
+			<name>GNU General Public License v3.0</name>
+			<url>https://raw.githubusercontent.com/spdx/license-list-data/main/text/GPL-3.0-only.txt</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
 	<properties>
 		<stable_version_for_jpackage>1.1.0.0</stable_version_for_jpackage>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<javaVersion>21</javaVersion>
 		<maven.build.timestamp.format>dd.MM.yyy - HH:mm</maven.build.timestamp.format>
-
+		<maven.compiler.source>${javaVersion}</maven.compiler.source>
+		<maven.compiler.target>${javaVersion}</maven.compiler.target>
+		<maven.compiler.release>${javaVersion}</maven.compiler.release>
+		
+		<app.owner>The Spirit</app.owner>
+        <app.developer.id>mastertomspirit</app.developer.id>
+        <app.developer.email>tomspirit@spiritscorp.network</app.developer.email>
+        <app.developer.url>https://github.com/mastertomspirit</app.developer.url>
+        
+        <app.description.short>Hochperformante Anwendung zur Dateisynchronisation und Duplikaterkennung mit automatisiertem Job-Scheduling.</app.description.short>
+		<app.developer.role.lead>Lead Developer</app.developer.role.lead>
+	    <app.developer.role.arch>Software Architect</app.developer.role.arch>
+	    <app.developer.role.ui>UI Engineer</app.developer.role.ui>
+    
 		<!-- Plugin versions -->
 		<pl_git_commit_id>10.0.0</pl_git_commit_id>
-		<pl_license>4.3</pl_license>
+		<pl_license>5.0.0</pl_license>
 		<pl_formatter>2.29.0</pl_formatter>
 		<pl_antrun.version>3.2.0</pl_antrun.version>
 		<pl_compiler.version>3.15.0</pl_compiler.version>
 		<pl_jar.version>3.5.0</pl_jar.version>
 		<pl_shade.version>3.5.0</pl_shade.version>
-		<pl_surefire.version>3.5.6</pl_surefire.version>
+		<pl_surefire.version>3.6.0-M1</pl_surefire.version>
 		<pl_dependency.version>3.11.0</pl_dependency.version>
-		<pl_failsafe>3.5.6</pl_failsafe>
+		<pl_failsafe>3.6.0-M1</pl_failsafe>
 		<pl_jlink.version>3.3.0</pl_jlink.version>
 		<pl_jpackage.version>0.1.5</pl_jpackage.version>
 		<pl_resources.version>3.5.0</pl_resources.version>
 		<pl_assembly.version>3.8.0</pl_assembly.version>
-		<pl_checkstyle>3.6.0</pl_checkstyle>
-		<pl_spotbugs>4.9.8.3</pl_spotbugs>
+		<pl_jxr.version>3.6.0</pl_jxr.version>
+		<pl_checkstyle.version>3.6.0</pl_checkstyle.version>
+		<pl_checkstyle_puppycrawl.version>13.7.0</pl_checkstyle_puppycrawl.version>
+		<pl_pmd.version>3.28.0</pl_pmd.version>
 		<pl_release>3.3.1</pl_release>
 		<pl_source>3.4.0</pl_source>
 		<pl_javadoc>3.12.0</pl_javadoc>
 		<pl_gpg>3.2.8</pl_gpg>
+		<pl_project_info.version>3.9.0</pl_project_info.version>
+		<pl_site.version>3.21.0</pl_site.version>
 
 		<!-- Dependency versions -->
-		<dep_surefire_tree>0.1.0</dep_surefire_tree>
-		<dep_sb_contrib>7.7.4</dep_sb_contrib>
-		<dep_findsecbugs>1.14.0</dep_findsecbugs>
+		<dep_surefire_tree>1.5.1</dep_surefire_tree>
 		<dep_javafx_controls.version>25</dep_javafx_controls.version>
 		<dep_ikonli_javafx.version>12.4.0</dep_ikonli_javafx.version>
 		<dep_ikonli_materialdesign2..version>12.4.0</dep_ikonli_materialdesign2..version>
@@ -71,6 +117,105 @@
 			</testResource>
 		</testResources>
 		<plugins>
+			<!-- Cleans up whitespaces, organizes imports, and formats source code according to style guides. -->
+			<plugin>
+				<groupId>net.revelc.code.formatter</groupId>
+				<artifactId>formatter-maven-plugin</artifactId>
+				<version>${pl_formatter}</version>
+				<configuration>
+					<configFile>buildConfig/formatter.xml</configFile>
+					<encoding>UTF-8</encoding>
+					<compilerSource>${javaVersion}</compilerSource>
+					<compilerCompliance>${javaVersion}</compilerCompliance>
+					<removeTrailingWhitespace>true</removeTrailingWhitespace>
+					<includes>
+						<include>**/*.java</include>
+						<include>**/*.properties</include>
+					</includes>
+					<excludes>
+						<exclude>**/target/**</exclude>
+					</excludes>
+				</configuration>
+				<executions>
+					<execution>
+						<phase>validate</phase>
+						<goals>
+							<goal>format</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<!-- Inspects Java source code to enforce strict adherence to defined coding standards and conventions. -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-checkstyle-plugin</artifactId>
+				<version>${pl_checkstyle.version}</version>
+				<dependencies>
+       				<dependency>
+           				<groupId>com.puppycrawl.tools</groupId>
+      		    		<artifactId>checkstyle</artifactId>
+        	    		<version>${pl_checkstyle_puppycrawl.version}</version>
+             		</dependency>
+    			</dependencies>
+				<configuration>
+					<configLocation>buildConfig/checkstyle.xml</configLocation>
+					<consoleOutput>true</consoleOutput>
+					<failsOnError>false</failsOnError>
+					<linkXRef>true</linkXRef>
+					<cacheFile>${project.basedir}/.cache/checkstyle.cache</cacheFile>
+					<propertyExpansion>checkstyle.enableExternalDtdLoad=true</propertyExpansion>
+				</configuration>
+				<executions>
+					<execution>
+						<phase>validate</phase>
+						<goals>
+							<goal>checkstyle</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<!-- Manages, formats, and validates license headers across source code files. -->
+			<plugin>
+				<groupId>com.mycila</groupId>
+				<artifactId>license-maven-plugin</artifactId>
+				<version>${pl_license}</version>
+				<configuration>
+					<skip>true</skip>
+					<properties>
+						<owner>${app.owner}</owner>
+			            <email>${app.developer.email}</email>
+					</properties>
+					<licenseSets>
+						<licenseSet>
+							<header>buildConfig/license-header.txt</header>
+							<includes>
+								<include>src/main/java/**</include>
+								<include>src/test/java/**</include>
+							</includes>
+							<excludes>
+								<exclude>**/Main.java</exclude>
+								<exclude>**/package-info.java</exclude>
+								<exclude>**/module-info.java</exclude>
+								<exclude>src/main/resources/**</exclude>
+								<exclude>src/test/resources/**</exclude>
+							</excludes>
+						</licenseSet>
+					</licenseSets>
+					<useDefaultMapping>false</useDefaultMapping>
+					<mapping>
+						<java>JAVAPKG_STYLE</java>
+					</mapping>
+				</configuration>
+				<executions>
+					<execution>
+						<id>check-license</id>
+						<phase>validate</phase>
+						<goals>
+							<goal>check</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
 			<!-- Integrates Git metadata (such as commit hash and branch) into the application artifacts. -->
 			<plugin>
 				<groupId>io.github.git-commit-id</groupId>
@@ -89,74 +234,6 @@
 					<generateGitPropertiesFile>false</generateGitPropertiesFile>
 					<injectAllReactorProjects>true</injectAllReactorProjects>
 				</configuration>
-			</plugin>
-			<!-- Manages, formats, and validates license headers across source code files. -->
-			<plugin>
-				<groupId>com.mycila</groupId>
-				<artifactId>license-maven-plugin</artifactId>
-				<version>${pl_license}</version>
-				<configuration>
-					<licenseSets>
-						<licenseSet>
-							<properties>
-								<owner>Tom Spirit / ${finalName}</owner>
-								<email>thespirit@spiritscorp.network</email>
-								<year>${project.inceptionYear}</year>
-							</properties>
-							<header>license-header.txt</header>
-							<includes>
-								<include>src/main/java/**</include>
-								<include>src/test/java/**</include>
-							</includes>
-							<excludes>
-								<exclude>src/main/java/de/spiritscxorp/DataSync/Main.java</exclude>
-								<exclude>**/package-info.java</exclude>
-								<exclude>src/main/resources/**</exclude>
-								<exclude>src/test/resources/**</exclude>
-							</excludes>
-							<mapping>
-								<java>JAVAPKG_STYLE</java>
-							</mapping>
-						</licenseSet>
-					</licenseSets>
-				</configuration>
-				<executions>
-					<execution>
-						<id>check-license</id>
-						<phase>verify</phase>
-						<goals>
-							<goal>check</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-			<!-- Cleans up whitespaces, organizes imports, and formats source code according to style guides. -->
-			<plugin>
-				<groupId>net.revelc.code.formatter</groupId>
-				<artifactId>formatter-maven-plugin</artifactId>
-				<version>${pl_formatter}</version>
-				<configuration>
-					<configFile>formatter.xml</configFile>
-					<encoding>UTF-8</encoding>
-					<compilerSource>${javaVersion}</compilerSource>
-					<compilerCompliance>${javaVersion}</compilerCompliance>
-					<removeTrailingWhitespace>true</removeTrailingWhitespace>
-					<includes>
-						<include>**/*.java</include>
-						<include>**/*.properties</include>
-					</includes>
-					<excludes>
-						<exclude>**/target/**</exclude>
-					</excludes>
-				</configuration>
-				<executions>
-					<execution>
-						<phase>process-sources</phase>
-						<goals>
-							<goal>format</goal>
-						</goals>
-					</execution>
-				</executions>
 			</plugin>
 			<!-- Provides the ability to run Ant tasks (e.g., copying files or creating directories) within Maven. -->
 			<plugin>
@@ -187,8 +264,13 @@
 </app>
 <developers>
     <developer>
-        <name>The Spirit</name>
-        <role>Lead Developer</role>
+        <name>${app.owner}</name>
+        <email>${app.developer.email}</email>
+        <url>${app.developer.url}</url>
+        <roles>
+			<role>${app.developer.role.lead}</role>
+		    <role>${app.developer.role.arch}</role>
+        </roles>
     </developer>
 </developers>
 <buildEnvironment>
@@ -321,6 +403,12 @@
 						<disable>false</disable>
 					</consoleOutputReporter>
 					<statelessTestsetInfoReporter implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5StatelessTestsetInfoTreeReporter" />
+					<statelessTestsetReporter implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5Xml30StatelessReporter">
+						<usePhrasedFileName>false</usePhrasedFileName>
+						<usePhrasedTestSuiteClassName>false</usePhrasedTestSuiteClassName>
+						<usePhrasedTestCaseClassName>true</usePhrasedTestCaseClassName>
+						<usePhrasedTestCaseMethodName>true</usePhrasedTestCaseMethodName>
+					</statelessTestsetReporter>
 				</configuration>
 			</plugin>
 			<!-- Runs automated integration tests in a separate phase, isolating them from unit tests. -->
@@ -328,9 +416,30 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-failsafe-plugin</artifactId>
 				<version>${pl_failsafe}</version>
+				<dependencies>
+					<dependency>
+						<groupId>me.fabriciorby</groupId>
+						<artifactId>maven-surefire-junit5-tree-reporter</artifactId>
+						<version>${dep_surefire_tree}</version>
+					</dependency>
+				</dependencies>
 				<configuration>
-					<argLine>-XX:+EnableDynamicAgentLoading</argLine>
+					<systemPropertyVariables>
+						<surefire.dump>false</surefire.dump>
+					</systemPropertyVariables>
+					<argLine>-XX:+EnableDynamicAgentLoading -Xshare:off</argLine>
 					<useModulePath>false</useModulePath>
+					<reportFormat>plain</reportFormat>
+					<consoleOutputReporter>
+						<disable>false</disable>
+					</consoleOutputReporter>
+					<statelessTestsetInfoReporter implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5StatelessTestsetInfoTreeReporter" />
+					<statelessTestsetReporter implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5Xml30StatelessReporter">
+						<usePhrasedFileName>false</usePhrasedFileName>
+						<usePhrasedTestSuiteClassName>false</usePhrasedTestSuiteClassName>
+						<usePhrasedTestCaseClassName>false</usePhrasedTestCaseClassName>
+						<usePhrasedTestCaseMethodName>true</usePhrasedTestCaseMethodName>
+					</statelessTestsetReporter>
 				</configuration>
 				<executions>
 					<execution>
@@ -395,9 +504,9 @@
 							<runtimeimage>target/maven-jlink/default</runtimeimage>
 							<appversion>${stable_version_for_jpackage}</appversion>
 							<copyright>GPL 3.0</copyright>
-							<description>Data Sync -- Software zum Syncronisieren von Dateien</description>
-							<vendor>Tom Spirit</vendor>
-							<icon>64x64.ico</icon>
+							<description>${app.description.short}</description>
+							<vendor>${app.owner}</vendor>
+							<icon>src/main/resources/icons/64x64.ico</icon>
 							<module>de.spiritscorp.DataSync/de.spiritscorp.DataSync.Main</module>
 							<javaoptions>-Dfile.encoding=UTF-8 -Xms32m -Xmx4096m -Dapp.instance.name="${project.artifactId}_v${project.version}"</javaoptions>
 						</configuration>
@@ -519,7 +628,7 @@
 							<appendAssemblyId>false</appendAssemblyId>
 							<outputDirectory> ${project.build.directory}/${project.artifactId}/jar</outputDirectory>
 							<descriptors>
-								<descriptor>src/main/assembly/zip-full-jar.xml</descriptor>
+								<descriptor>buildConfig/assembly/zip-full-jar.xml</descriptor>
 							</descriptors>
 						</configuration>
 					</execution>
@@ -534,60 +643,35 @@
 							<appendAssemblyId>false</appendAssemblyId>
 							<outputDirectory> ${project.build.directory}/${project.artifactId}/image</outputDirectory>
 							<descriptors>
-								<descriptor>src/main/assembly/zip-jpackage.xml</descriptor>
+								<descriptor>buildConfig/assembly/zip-jpackage.xml</descriptor>
 							</descriptors>
 						</configuration>
 					</execution>
 				</executions>
 			</plugin>
-			<!-- Inspects Java source code to enforce strict adherence to defined coding standards and conventions. -->
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-checkstyle-plugin</artifactId>
-				<version>${pl_checkstyle}</version>
-				<configuration>
-					<configLocation>checkstyle.xml</configLocation>
-					<consoleOutput>true</consoleOutput>
-					<failsOnError>false</failsOnError>
-					<linkXRef>false</linkXRef>
-					<propertyExpansion>checkstyle.enableExternalDtdLoad=true</propertyExpansion>
-				</configuration>
-				<executions>
-					<execution>
-						<phase>validate</phase>
-						<goals>
-							<goal>checkstyle</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
 			<!-- Performs static analysis on bytecode to detect performance issues, potential bugs, and security vulnerabilities. -->
 			<plugin>
-				<groupId>com.github.spotbugs</groupId>
-				<artifactId>spotbugs-maven-plugin</artifactId>
-				<version>${pl_spotbugs}</version>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-pmd-plugin</artifactId>
+				<version>${pl_pmd.version}</version>
 				<configuration>
-					<effort>Max</effort>
-					<threshold>Low</threshold>
-					<failOnError>false</failOnError>
+					<failOnViolation>true</failOnViolation>
+					<printFailingErrors>true</printFailingErrors>
+					<analysisCache>true</analysisCache>
+					<excludes>
+						<exclude>**/generated/**</exclude>
+					</excludes>
+					<analysisCacheLocation>${project.basedir}/.cache/pmd.cache</analysisCacheLocation>
+					<rulesets>
+						<ruleset>${project.basedir}/buildConfig/pmd-ruleset.xml</ruleset>
+					</rulesets>
 				</configuration>
-				<dependencies>
-					<dependency>
-						<groupId>com.mebigfatguy.sb-contrib</groupId>
-						<artifactId>sb-contrib</artifactId>
-						<version>${dep_sb_contrib}</version>
-					</dependency>
-					<dependency>
-						<groupId>com.h3xstream.findsecbugs</groupId>
-						<artifactId>findsecbugs-plugin</artifactId>
-						<version>${dep_findsecbugs}</version>
-					</dependency>
-				</dependencies>
 				<executions>
 					<execution>
 						<phase>verify</phase>
 						<goals>
-							<goal>check</goal>
+							<goal>pmd</goal>
+							<goal>cpd</goal>
 						</goals>
 					</execution>
 				</executions>
@@ -598,7 +682,7 @@
 				<artifactId>maven-release-plugin</artifactId>
 				<version>${pl_release}</version>
 				<configuration>
-					<goals>clean verify</goals>
+					<goals>clean compile jlink:jlink verify</goals>
 					<tagNameFormat>v@{project.version}</tagNameFormat>
 					<autoVersionSubmodules>true</autoVersionSubmodules>
 				</configuration>
@@ -623,6 +707,10 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
 				<version>${pl_javadoc}</version>
+				<configuration>
+					<!--					<legacyMode>true</legacyMode>  -->
+					<doclint>none</doclint>
+				</configuration>
 				<executions>
 					<execution>
 						<id>attach-javadocs</id>
@@ -630,10 +718,6 @@
 						<goals>
 							<goal>jar</goal>
 						</goals>
-						<configuration>
-							<legacyMode>true</legacyMode>
-							<doclint>none</doclint>
-						</configuration>
 					</execution>
 				</executions>
 			</plugin>
@@ -655,15 +739,122 @@
 								<arg>--pinentry-mode</arg>
 								<arg>loopback</arg>
 							</gpgArguments>
-							<keyname>thespirit@spiritscorp.network</keyname>
+							<keyname>${app.developer.email}</keyname>
 							<passphraseEnvName>GPG_PASSPHRASE</passphraseEnvName>
 							<skip>${gpg.skip}</skip>
 						</configuration>
 					</execution>
 				</executions>
 			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jxr-plugin</artifactId>
+				<version>${pl_jxr.version}</version>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-site-plugin</artifactId>
+				<version>${pl_site.version}</version>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-report-plugin</artifactId>
+				<version>${pl_surefire.version}</version>
+			</plugin>
 		</plugins>
 	</build>
+	<reporting>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-project-info-reports-plugin</artifactId>
+				<version>${pl_project_info.version}</version>
+				<reportSets>
+                <reportSet>
+                    <reports>
+                        <report>dependencies</report>
+                        <report>index</report>
+                        <report>summary</report>
+                        <report>licenses</report>
+                        <report>scm</report>
+                        <report>issue-management</report>
+                        <report>plugins</report>
+                        <report>plugin-management</report>
+                        <report>team</report>
+                   </reports>
+                </reportSet>
+            </reportSets>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jxr-plugin</artifactId>
+				<version>${pl_jxr.version}</version>
+				<configuration>
+					<linkJavadoc>true</linkJavadoc>
+				</configuration>
+				<reportSets>
+					<reportSet>
+						<reports>
+							<report>jxr</report>
+							<report>test-jxr</report>
+						</reports>
+					</reportSet>
+				</reportSets>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-checkstyle-plugin</artifactId>
+				<version>${pl_checkstyle.version}</version>
+				<configuration>
+					<linkXRef>true</linkXRef>
+					<configLocation>buildConfig/checkstyle.xml</configLocation>
+					<cacheFile>${project.basedir}/.cache/checkstyle.cache</cacheFile>
+					<propertyExpansion>checkstyle.enableExternalDtdLoad=true</propertyExpansion>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-pmd-plugin</artifactId>
+				<version>${pl_pmd.version}</version>
+				<configuration>
+					<analysisCache>true</analysisCache>
+					<excludes>
+						<exclude>**/generated/**</exclude>
+					</excludes>
+					<analysisCacheLocation>${project.basedir}/.cache/pmd.cache</analysisCacheLocation>
+					<rulesets>
+						<ruleset>${project.basedir}/buildConfig/pmd-ruleset.xml</ruleset>
+					</rulesets>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<version>${pl_javadoc}</version>
+				<configuration>
+					<!--					<legacyMode>true</legacyMode>  -->
+					<doclint>none</doclint>
+				</configuration>
+				<reportSets>
+					<reportSet>
+						<reports>
+							<report>javadoc</report>
+						</reports>
+					</reportSet>
+				</reportSets>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-report-plugin</artifactId>
+				<version>${pl_surefire.version}</version>
+			</plugin>
+		</plugins>
+	</reporting>
 	<dependencies>
 		<dependency>
 			<!-- Source: https://mvnrepository.com/artifact/org.openjfx/javafx-controls -->

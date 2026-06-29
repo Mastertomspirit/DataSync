@@ -27,6 +27,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Locale;
 import java.util.Map;
 
 import de.spiritscorp.DataSync.ScanType;
@@ -325,7 +326,9 @@ public class ContHelper {
 		final String exePath = System.getProperty( "jpackage.app-path" );
 		final String datei = System.getProperty( "sun.java.command" );
 		final String fullPath = Paths.get( "" ).toAbsolutePath().toString() + System.getProperty( "file.separator" ) + datei;
-		final String os = System.getProperty( "os.name" ).toLowerCase();
+		final String possibleOS = System.getProperty( "os.name" );
+		String os = "";
+		if( possibleOS != null ) os = possibleOS.toLowerCase( Locale.ROOT );
 
 		if( os.contains( "win" ) ) {
 			final String regCmd = "HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run";
@@ -399,7 +402,7 @@ public class ContHelper {
 	 */
 	private String formatMaps( ScanType deepScan, Map<Path, FileAttributes> sourceMap, Map<Path, FileAttributes> destMap, Map<Path, FileAttributes> failMap ) {
 		final String line = System.lineSeparator();
-		final StringBuffer sb = new StringBuffer();
+		final StringBuilder sb = new StringBuilder();
 		final int displayLimit = 10000;
 		if( deepScan == ScanType.SYNCHRONIZE ) {
 			sb.append( "Scan abgeschlossen!" + line );
@@ -460,7 +463,7 @@ public class ContHelper {
 				}
 			}
 		}
-		return new String( sb );
+		return sb.toString();
 	}
 
 	private String getEndTimeFormatted( long endTimeNano ) {
@@ -477,7 +480,7 @@ public class ContHelper {
 
 	private String getReadableBytes( long bytes ) {
 		if( bytes > 1073741824 )
-			return String.format( "%.3f GiB", ( (double) ( bytes / 1048576 ) ) / 1024 );
+			return String.format( "%.3f GiB", bytes / 1048576.0 / 1024.0 );
 		else if( bytes > 1048576 )
 			return ( bytes / 1048576 ) + " MiB";
 		else if( bytes > 1024 )

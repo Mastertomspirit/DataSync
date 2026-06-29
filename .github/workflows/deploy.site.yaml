@@ -1,0 +1,55 @@
+name: Deploy Maven Site to GitHub Pages
+
+on:
+    workflow_dispatch: # Allows manual triggering via the GitHub UI
+    push:
+        branches:  [ "dev" ] 
+    pull_request:
+        branches:  [ "main" ]  # Triggers on pull requests targeting the dev branch
+			  
+permissions:
+    contents: read
+    pages: write
+    id-token: write
+
+concurrency:
+    group: "pages"
+    cancel-in-progress: false
+
+jobs:
+    deploy:
+        environment:
+            name: github-pages
+            url: ${{ steps:deployment.outputs.page_url }}
+        runs-on: ubuntu-latest
+
+		# Conditional filter: Execute only if triggered via the UI button
+		# OR if the push title contains the specific flag.
+		# OR if the pull request title contains the specific flag.
+        if: |
+            github.event_name == 'workflow_dispatch' || 
+            (github.event_name == 'push' && contains(github.event.head_commit.message, '[deploy site]')  ||
+            (github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[deploy site]'))
+
+        steps:
+            - name: Checkout Repository
+              uses: actions/checkout@v4
+
+            - name: Set up JDK 21
+              uses: actions/setup-java@v4
+              with:
+                  java-version: "21"
+                  distribution: "temurin"
+                  cache: "maven"
+
+            - name: Build Site
+              run: mvn clean compile jlink:jlink verify site
+
+            - name: Upload Artifact
+              uses: actions/upload-pages-artifact@v3
+              with:
+                  path: "target/site"
+
+            - name: Deploy to GitHub Pages
+              id: deployment
+              uses: actions/deploy-pages@v4

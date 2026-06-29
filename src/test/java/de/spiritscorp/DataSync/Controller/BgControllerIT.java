@@ -36,6 +36,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -325,16 +326,18 @@ class BgControllerIT {
 
 	/**
 	 * Internal reflection abstraction utility to swap default instances with custom testing mocks.
+	 *
+	 * @throws ExecutionException
 	 */
-	private void injectMockExecutors( BgController controller, double multiplier ) {
+	private void injectMockExecutors( BgController controller, double multiplier ) throws ExecutionException {
 		try {
 			final Method setEnvironment = BgController.class.getDeclaredMethod( "setEnvironment", double.class, BgView.class, ScheduledExecutorService.class, ExecutorService.class );
 			setEnvironment.setAccessible( true );
 			setEnvironment.invoke( controller, multiplier, mockBgView, null, null );
 		}catch( IllegalAccessException | NoSuchMethodException | SecurityException e ) {
-			throw new RuntimeException( "Failed to inject architectural test values via reflection.", e );
+			throw new ExecutionException( "Failed to inject architectural test values via reflection.", e );
 		}catch( final InvocationTargetException e ) {
-			throw new RuntimeException( "Failed to invoke the methode via reflection.", e );
+			throw new ExecutionException( "Failed to invoke the methode via reflection.", e );
 		}
 	}
 }

@@ -272,22 +272,26 @@ class FileHandler {
 	 * @param trashbinPath Path to trashbin directory
 	 */
 	void deleteFiles( Map<Path, FileAttributes> map, boolean logOn, boolean trashbin, Path trashbinPath ) {
-		for( final Path path : map.keySet() ) {
+		for( final Map.Entry<Path, FileAttributes> entry : map.entrySet() ) {
 			// Guard: Check thread interrupt status before executing file operations
 			if( Thread.currentThread().isInterrupted() ) {
 				Debug.printDebug( "[Engine] Safe loop interruption caught within file deletion loop vector." );
 				break;
 			}
+
+			final FileAttributes fileAttr = entry.getValue();
+			final Path path = entry.getKey();
+			if( fileAttr == null ) continue;
 			try {
-				if( trashbin ) {
-					Files.createDirectories( trashbinPath.resolve( map.get( path ).getRelativeFilePath() ) );
-					Files.copy( path, trashbinPath.resolve( map.get( path ).getRelativeFilePath() ), StandardCopyOption.REPLACE_EXISTING );
+				if( trashbin && trashbinPath != null ) {
+					Files.createDirectories( trashbinPath.resolve( fileAttr.getRelativeFilePath() ) );
+					Files.copy( path, trashbinPath.resolve( fileAttr.getRelativeFilePath() ), StandardCopyOption.REPLACE_EXISTING );
 				}
 				if( !path.toFile().canWrite() ) path.toFile().setWritable( true );
 				Files.delete( path );
-				log.setEntry( path.toString(), "gelöscht", map.get( path ) );
+				log.setEntry( path.toString(), "gelöscht", fileAttr );
 			}catch( final IOException e ) {
-				log.setEntry( path.toString(), "FEHLER BEIM LÖSCHEN", map.get( path ) );
+				log.setEntry( path.toString(), "FEHLER BEIM LÖSCHEN", fileAttr );
 				Debug.printDebug( "delete failed: %s", path.toString() );
 				Debug.printException( this.getClass(), e );
 			}
@@ -320,20 +324,23 @@ class FileHandler {
 				Debug.printDebug( "[Engine] Safe loop interruption caught within file replication loop vector." );
 				break;
 			}
-			final Path path = destPath.resolve( entry.getValue().getRelativeFilePath() );
+			final FileAttributes fileAttr = entry.getValue();
+			if( fileAttr == null ) continue;
+			final Path path = destPath.resolve( fileAttr.getRelativeFilePath() );
+			final Path parentPath = path.getParent();
 			try {
-				if( !Files.exists( path.getParent() ) )
-					Files.createDirectories( path.getParent() );
+				if( parentPath != null && !Files.exists( parentPath ) )
+					Files.createDirectories( parentPath );
 				else if( Files.exists( path ) && !path.toFile().canWrite() ) path.toFile().setWritable( true );
 				Files.copy(
 						entry.getKey(),
 						path,
 						StandardCopyOption.REPLACE_EXISTING,
 						StandardCopyOption.COPY_ATTRIBUTES );
-				Files.setAttribute( path, "creationTime", entry.getValue().getCreateTime() );
-				log.setEntry( path.toString(), "kopiert", entry.getValue() );
+				Files.setAttribute( path, "creationTime", fileAttr.getCreateTime() );
+				log.setEntry( path.toString(), "kopiert", fileAttr );
 			}catch( final IOException e ) {
-				log.setEntry( path.toString(), "FEHLER BEIM KOPIEREN", entry.getValue() );
+				log.setEntry( path.toString(), "FEHLER BEIM KOPIEREN", fileAttr );
 				Debug.printDebug( "copy failed: %s", path.toString() );
 				Debug.printException( this.getClass(), e );
 			}

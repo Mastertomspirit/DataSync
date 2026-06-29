@@ -4,8 +4,9 @@ release-nodes*
 
 .classpath
 .project
-.settings/
 .checkstyle
+.settings/
+.cache/
 
 target/
 pom.xml.tag

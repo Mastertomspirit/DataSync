@@ -41,7 +41,7 @@ public interface ViewController {
 	 *
 	 * @param state The target structural navigation layer.
 	 */
-	void handleNavigate(Gui.ViewState state);
+	void handleNavigate( Gui.ViewState state );
 
 	/**
 	 * Requests termination of the entire application environment, safely stopping background hooks.
@@ -51,7 +51,7 @@ public interface ViewController {
 	/**
 	 * Load the whole jobList from the Preferences.
 	 */
-	void loadInitialJobList();
+//	void loadInitialJobList();
 
 	/**
 	 * Handles the creation and append workflow for a new managed task synchronization context instance.
@@ -63,35 +63,35 @@ public interface ViewController {
 	 *
 	 * @param cell The graphical ListCell context container hosting the target model entity.
 	 */
-	void handleRenameJob(ListCell<SyncJobContext> cell);
+	void handleRenameJob( ListCell<SyncJobContext> cell );
 
 	/**
 	 * Creates an independent copy of the currently selected task parameters profile mapping.
 	 *
 	 * @param job The source configuration instance payload.
 	 */
-	void handleDuplicateJob(SyncJobContext job);
+	void handleDuplicateJob( SyncJobContext job );
 
 	/**
 	 * Permanently removes a task entity context from the global orchestrator matrix tracking layer.
 	 *
 	 * @param job The target configuration instance to wipe.
 	 */
-	void handleDeleteJob(SyncJobContext job);
+	void handleDeleteJob( SyncJobContext job );
 
 	/**
 	 * Initiates execution of processing operations based on active configuration parameters.
 	 *
 	 * @param job The active task configuration processing target.
 	 */
-	void handleExecuteTask(SyncJobContext job);
+	void handleExecuteTask( SyncJobContext job );
 
 	/**
 	 * Stop execution of processing operations based on active configuration parameters.
 	 *
 	 * @param job The active task configuration processing target.
 	 */
-	void handleStopTask(SyncJobContext job);
+	void handleStopTask( SyncJobContext job );
 
 	/**
 	 * Commits altered orchestration state variables using the encapsulated properties entity carrier.
@@ -99,8 +99,8 @@ public interface ViewController {
 	 * @param localPreferences Altered context data parameters container reference.
 	 * @param targetTheme      Visual presentation theme strategy selection.
 	 */
-	void handleSaveSettings(Preference localPreferences, AppTheme targetTheme);
+	void handleSaveSettings( Preference localPreferences, AppTheme targetTheme );
 
-	void runInBackground(boolean firstStart);
+	void runInBackground( boolean firstStart );
 
 }

@@ -45,7 +45,7 @@ import jakarta.json.JsonValue;
  *
  * @author Tom Spirit
  */
-public class Preference {
+public final class Preference {
 
 	private String jobName;
 	private final IOSyncMap ioSyncMap;
@@ -55,17 +55,21 @@ public class Preference {
 	private ArrayList<Path> destPaths = new ArrayList<>();
 	private final Map<Path, FileAttributes> syncMap = Model.createMap();
 
-	private final String trashbinString = "Papierkorb";
+	private static final String TRASHBIN_STRING = "Papierkorb";
 	private Path startSourcePath = Paths.get( System.getProperty( "user.home" ) );
 	private Path startDestPath = Paths.get( System.getProperty( "user.home" ) );
-	private Path trashbinPath = startDestPath.resolve( trashbinString );
+	private Path trashbinPath = startDestPath.resolve( TRASHBIN_STRING );
 
 	private ScanType scanMode = ScanType.FLAT_SCAN;
 	private BgTime bgTime = BgTime.DAYLY;
 
 	private boolean logOn = true;
 	private boolean trashbin = true;
-	private boolean subDir, autoDel, autoSync, bgSync, autoBgDel;
+	private boolean subDir;
+	private boolean autoDel;
+	private boolean autoSync;
+	private boolean bgSync;
+	private boolean autoBgDel;
 
 	private Preference( String jobName ) {
 		this.jobName = jobName;
@@ -161,7 +165,7 @@ public class Preference {
 			// --- STARTING & SYSTEM PATHS VALIDATION ---
 			if( json.containsKey( "startSourcePath" ) ) {
 				final Path p = Paths.get( json.getString( "startSourcePath" ) );
-				this.startSourcePath = ( Files.exists( p ) ) ? p : Paths.get( System.getProperty( "user.home" ) );
+				this.startSourcePath = Files.exists( p ) ? p : Paths.get( System.getProperty( "user.home" ) );
 			}
 
 			if( json.containsKey( "startDestPath" ) ) {
@@ -181,7 +185,7 @@ public class Preference {
 				if( destPaths.isEmpty() ) destPaths.add( userHome );
 				this.startSourcePath = userHome;
 				this.startDestPath = userHome;
-				this.trashbinPath = userHome.resolve( trashbinString );
+				this.trashbinPath = userHome.resolve( TRASHBIN_STRING );
 			}
 
 			// --- PRIMITIVE ENUM CONFIGS (With Type-Checking & Fallbacks) ---
@@ -228,7 +232,7 @@ public class Preference {
 		try {
 			return json.getBoolean( key );
 		}catch( final ClassCastException e ) {
-			Debug.printDebug( "[Preference] Warning: Invalid data type mapping tracking key '" + key + "'. Falling back to default: " + defaultValue );
+			Debug.printDebug( "[Preference] Warning: Invalid data type mapping tracking key '%s'. Falling back to default: %s", key, defaultValue );
 			return defaultValue;
 		}
 	}
@@ -285,7 +289,7 @@ public class Preference {
 
 	public void setStartDestPath( Path p ) {
 		this.startDestPath = p;
-		this.trashbinPath = p.resolve( trashbinString );
+		this.trashbinPath = p.resolve( TRASHBIN_STRING );
 	}
 
 	public Map<Path, FileAttributes> getSyncMap() { return syncMap; }

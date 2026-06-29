@@ -1,7 +1,11 @@
 		${project.name} 
-			${project.description}
+		*	${project.description}
 		
-		Copyright © ${year} ${owner} (${email})
+		@date ${year} 
+		@author ${owner}
+		@email ${email}
+		
+		Copyright © 
 
 		This program is free software; you can redistribute it and/or modify
 		it under the terms of the GNU General Public License as published by

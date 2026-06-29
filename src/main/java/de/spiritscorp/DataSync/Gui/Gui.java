@@ -26,6 +26,7 @@ import de.spiritscorp.DataSync.Main;
 import de.spiritscorp.DataSync.Controller.MainViewController;
 import de.spiritscorp.DataSync.Controller.SyncJobContext;
 import de.spiritscorp.DataSync.Controller.ViewController;
+import de.spiritscorp.DataSync.Gui.WorkspaceView.NotifyStatus;
 import de.spiritscorp.DataSync.IO.Debug;
 import de.spiritscorp.DataSync.IO.PreferenceManager;
 import de.spiritscorp.DataSync.Theme.AppTheme;
@@ -114,7 +115,7 @@ public class Gui extends Application {
 		this.currentTheme = PreferenceManager.getInstance().getTheme();
 
 		primaryStage.setTitle( "DataSync Advanced Management Platform" );
-		primaryStage.getIcons().add( new Image( getClass().getResourceAsStream( "/16x16.png" ) ) );
+		primaryStage.getIcons().add( new Image( getClass().getResourceAsStream( "/icons/16x16.png" ) ) );
 		Platform.setImplicitExit( false );
 		primaryStage.setOnCloseRequest( event -> {
 			Debug.printDebug( "[Info] Window hidden. Application processing stays active in background." );
@@ -185,12 +186,12 @@ public class Gui extends Application {
 	 * Proxy method to delegate temporary status messages to the active workspace view boundary.
 	 *
 	 * @param message      The localized text string to display.
-	 * @param cssClassName The theme-defined CSS class for contextual coloring.
+	 * @param notifyStatus The theme-defined CSS class for contextual coloring.
 	 * @param durationSec  The visibility lifespan of the message in seconds.
 	 */
-	public void showStatusNotification( String message, String cssClassName, int durationSec ) {
+	public void showStatusNotification( String message, NotifyStatus notifyStatus, int durationSec ) {
 		if( workspaceView != null ) {
-			workspaceView.displayTemporaryStatus( message, cssClassName, durationSec );
+			workspaceView.displayTemporaryStatus( message, notifyStatus, durationSec );
 		}
 	}
 

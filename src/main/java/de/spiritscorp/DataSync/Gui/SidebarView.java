@@ -47,7 +47,7 @@ import javafx.scene.layout.VBox;
  * managed tasks instances, and dynamic manipulation actions via context menus.
  * * @author Tom Spirit
  */
-public class SidebarView extends VBox {
+public final class SidebarView extends VBox {
 
 	private final ListView<SyncJobContext> sidebarListView;
 	private final Gui mainGui;
@@ -59,107 +59,107 @@ public class SidebarView extends VBox {
 	 * @param mainGui    Application root shell container.
 	 * @param controller Associated decoupled interaction pipeline boundary coordinator.
 	 */
-	public SidebarView(Gui mainGui, ViewController controller) {
+	public SidebarView( Gui mainGui, ViewController controller ) {
 		this.mainGui = mainGui;
 		this.controller = controller;
-		this.setSpacing(16);
-		this.setPadding(new Insets(16, 16, 24, 16));
-		this.setPrefWidth(300);
+		this.setSpacing( 16 );
+		this.setPadding( new Insets( 16, 16, 24, 16 ) );
+		this.setPrefWidth( 300 );
 
 		// Initialize application navigation switcher menu
-		final MenuButton hamburgerMenu = new MenuButton("Navigation", Gui.createIcon(MaterialDesignH.HAMBURGER));
-		hamburgerMenu.setMaxWidth(Double.MAX_VALUE);
+		final MenuButton hamburgerMenu = new MenuButton( "Navigation", Gui.createIcon( MaterialDesignH.HAMBURGER ) );
+		hamburgerMenu.setMaxWidth( Double.MAX_VALUE );
 
-		final MenuItem taskViewItem = new MenuItem("Aktiver Task-Monitor", Gui.createIcon(MaterialDesignF.FOLDER));
-		taskViewItem.setOnAction(e -> controller.handleNavigate(Gui.ViewState.MONITOR));
+		final MenuItem taskViewItem = new MenuItem( "Aktiver Task-Monitor", Gui.createIcon( MaterialDesignF.FOLDER ) );
+		taskViewItem.setOnAction( e -> controller.handleNavigate( Gui.ViewState.MONITOR ) );
 
-		final MenuItem settingsItem = new MenuItem("Erweiterte Parameter", Gui.createIcon(MaterialDesignS.STORE_SETTINGS));
-		settingsItem.setOnAction(e -> controller.handleNavigate(Gui.ViewState.SETTINGS));
+		final MenuItem settingsItem = new MenuItem( "Erweiterte Parameter", Gui.createIcon( MaterialDesignS.STORE_SETTINGS ) );
+		settingsItem.setOnAction( e -> controller.handleNavigate( Gui.ViewState.SETTINGS ) );
 
-		final MenuItem infoItem = new MenuItem("System-Informationen", Gui.createIcon(MaterialDesignI.INFORMATION));
-		infoItem.setOnAction(e -> controller.handleNavigate(Gui.ViewState.INFO));
+		final MenuItem infoItem = new MenuItem( "System-Informationen", Gui.createIcon( MaterialDesignI.INFORMATION ) );
+		infoItem.setOnAction( e -> controller.handleNavigate( Gui.ViewState.INFO ) );
 
-		hamburgerMenu.getItems().addAll(taskViewItem, settingsItem, new SeparatorMenuItem(), infoItem);
+		hamburgerMenu.getItems().addAll( taskViewItem, settingsItem, new SeparatorMenuItem(), infoItem );
 
 		// Section header label
-		final Label sidebarHeader = new Label("VERWALTETE TASK-INSTANZEN");
-		sidebarHeader.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-letter-spacing: 0.8px;");
+		final Label sidebarHeader = new Label( "VERWALTETE TASK-INSTANZEN" );
+		sidebarHeader.setStyle( "-fx-font-size: 11px; -fx-font-weight: bold; -fx-letter-spacing: 0.8px;" );
 
 		// Main ListView layout for tasks mapping
-		sidebarListView = new ListView<>(mainGui.getJobList());
+		sidebarListView = new ListView<>( mainGui.getJobList() );
 		setupCellFactory();
 
 		// Control operation triggers
-		final Button addJobButton = new Button("Task hinzufügen", Gui.createIcon(MaterialDesignP.PLUS));
-		addJobButton.setMaxWidth(Double.MAX_VALUE);
-		addJobButton.setStyle("-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 11px;");
-		addJobButton.setOnAction(e -> controller.handleCreateNewJob());
+		final Button addJobButton = new Button( "Task hinzufügen", Gui.createIcon( MaterialDesignP.PLUS ) );
+		addJobButton.setMaxWidth( Double.MAX_VALUE );
+		addJobButton.setStyle( "-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 11px;" );
+		addJobButton.setOnAction( e -> controller.handleCreateNewJob() );
 
-		final Button exitButton = new Button("Programm beenden", Gui.createIcon(MaterialDesignP.POWER));
-		exitButton.getGraphic().setStyle("-fx-icon-color: white;");
-		exitButton.setMaxWidth(Double.MAX_VALUE);
-		exitButton.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 11px;");
-		exitButton.setOnAction(e -> controller.handleApplicationShutdown());
+		final Button exitButton = new Button( "Programm beenden", Gui.createIcon( MaterialDesignP.POWER ) );
+		exitButton.getGraphic().setStyle( "-fx-icon-color: white;" );
+		exitButton.setMaxWidth( Double.MAX_VALUE );
+		exitButton.setStyle( "-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 11px;" );
+		exitButton.setOnAction( e -> controller.handleApplicationShutdown() );
 
-		this.getChildren().addAll(hamburgerMenu, sidebarHeader, sidebarListView, addJobButton, exitButton);
-		VBox.setVgrow(sidebarListView, Priority.ALWAYS);
+		this.getChildren().addAll( hamburgerMenu, sidebarHeader, sidebarListView, addJobButton, exitButton );
+		VBox.setVgrow( sidebarListView, Priority.ALWAYS );
 	}
 
 	/**
 	 * Builds and styles custom Cell rendering including interactive management items.
 	 */
 	private void setupCellFactory() {
-		sidebarListView.setCellFactory(lv -> {
+		sidebarListView.setCellFactory( lv -> {
 			final ListCell<SyncJobContext> cell = new ListCell<>() {
 				@Override
-				protected void updateItem(SyncJobContext item, boolean empty) {
-					super.updateItem(item, empty);
+				protected void updateItem( SyncJobContext item, boolean empty ) {
+					super.updateItem( item, empty );
 					textProperty().unbind();
-					if (empty || item == null) {
-						setText("");
-						setGraphic(null);
-					} else {
-						textProperty().bind(item.jobNameProperty());
-						final FontIcon itemIcon = Gui.createIcon(MaterialDesignF.FOLDER);
-						itemIcon.setStyle("-fx-icon-color: #3498db;");
-						setGraphic(itemIcon);
+					if( empty || item == null ) {
+						setText( "" );
+						setGraphic( null );
+					}else {
+						textProperty().bind( item.jobNameProperty() );
+						final FontIcon itemIcon = Gui.createIcon( MaterialDesignF.FOLDER );
+						itemIcon.setStyle( "-fx-icon-color: #3498db;" );
+						setGraphic( itemIcon );
 					}
 				}
 			};
 
 			final ContextMenu contextMenu = new ContextMenu();
 
-			final MenuItem renameItem = new MenuItem("Task umbenennen", Gui.createIcon(MaterialDesignS.SWAP_HORIZONTAL));
-			renameItem.setOnAction(event -> controller.handleRenameJob(cell));
+			final MenuItem renameItem = new MenuItem( "Task umbenennen", Gui.createIcon( MaterialDesignS.SWAP_HORIZONTAL ) );
+			renameItem.setOnAction( event -> controller.handleRenameJob( cell ) );
 
-			final MenuItem duplicateItem = new MenuItem("Task duplizieren", Gui.createIcon(MaterialDesignC.CONTENT_DUPLICATE));
-			duplicateItem.setOnAction(event -> controller.handleDuplicateJob(cell.getItem()));
+			final MenuItem duplicateItem = new MenuItem( "Task duplizieren", Gui.createIcon( MaterialDesignC.CONTENT_DUPLICATE ) );
+			duplicateItem.setOnAction( event -> controller.handleDuplicateJob( cell.getItem() ) );
 
-			final MenuItem deleteItem = new MenuItem("Task löschen", Gui.createIcon(MaterialDesignD.DELETE));
-			deleteItem.setStyle("-fx-text-fill: #c0392b;");
-			deleteItem.setOnAction(event -> controller.handleDeleteJob(cell.getItem()));
+			final MenuItem deleteItem = new MenuItem( "Task löschen", Gui.createIcon( MaterialDesignD.DELETE ) );
+			deleteItem.setStyle( "-fx-text-fill: #c0392b;" );
+			deleteItem.setOnAction( event -> controller.handleDeleteJob( cell.getItem() ) );
 
-			contextMenu.getItems().addAll(renameItem, duplicateItem, new SeparatorMenuItem(), deleteItem);
+			contextMenu.getItems().addAll( renameItem, duplicateItem, new SeparatorMenuItem(), deleteItem );
 
-			cell.setOnContextMenuRequested(event -> {
+			cell.setOnContextMenuRequested( event -> {
 				// Guard clause: Block popup triggers on empty rows or missing models
-				if (cell.isEmpty() || cell.getItem() == null) {
+				if( cell.isEmpty() || cell.getItem() == null ) {
 					event.consume();
 					return;
 				}
 
 				// Explicitly verify if the mouse coordinates hit the bounded layout area of the graphic/text
 				// This prevents triggers on empty spaces inside extended high-width list cells
-				contextMenu.show(cell, event.getScreenX(), event.getScreenY());
+				contextMenu.show( cell, event.getScreenX(), event.getScreenY() );
 				event.consume();
-			});
+			} );
 
 			return cell;
-		});
+		} );
 
-		sidebarListView.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
-			if (newVal != null) mainGui.setCurrentActiveJob(newVal);
-		});
+		sidebarListView.getSelectionModel().selectedItemProperty().addListener( ( obs, oldVal, newVal ) -> {
+			if( newVal != null ) mainGui.setCurrentActiveJob( newVal );
+		} );
 	}
 
 	/**

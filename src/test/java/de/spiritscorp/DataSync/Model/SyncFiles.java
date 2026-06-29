@@ -19,9 +19,8 @@
 */
 package de.spiritscorp.DataSync.Model;
 
-import java.io.FileReader;
 import java.io.IOException;
-import java.nio.charset.Charset;
+import java.io.InputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.FileTime;
@@ -78,9 +77,9 @@ class SyncFiles {
 	 *
 	 * @param rootPath The root path for test operations, containing 'source' and 'dest' subdirectories
 	 */
-	SyncFiles(Path rootPath) {
-		sourcePath = rootPath.resolve("source");
-		destPath = rootPath.resolve("dest");
+	SyncFiles( Path rootPath ) {
+		sourcePath = rootPath.resolve( "source" );
+		destPath = rootPath.resolve( "dest" );
 	}
 
 	/**
@@ -113,22 +112,22 @@ class SyncFiles {
 	ArrayList<Map<Path, FileAttributes>> createSyncFiles(
 			Map<Path, FileAttributes> sourceMap,
 			Map<Path, FileAttributes> destMap,
-			Map<Path, FileAttributes> syncMap) {
+			Map<Path, FileAttributes> syncMap ) {
 
-		try (FileReader reader = new FileReader(SyncFiles.class.getResource("/syncFiles.json").getFile(), Charset.forName("UTF-8"))) {
+		try( InputStream reader = SyncFiles.class.getResourceAsStream( "/syncFiles.json" ) ) {
 
-			jr = Json.createReader(reader);
+			jr = Json.createReader( reader );
 			jo = jr.readObject();
 			jr.close();
 
-		} catch (final IOException e) {
+		}catch( final IOException e ) {
 			e.printStackTrace();
 		}
 
 		expectedFileLists = new ArrayList<>();
-		expectedFileLists.add(Model.createMap()); // Files to copy from source to dest
-		expectedFileLists.add(Model.createMap()); // Files to copy from dest to source
-		expectedFileLists.add(Model.createMap()); // Files to delete
+		expectedFileLists.add( Model.createMap() ); // Files to copy from source to dest
+		expectedFileLists.add( Model.createMap() ); // Files to copy from dest to source
+		expectedFileLists.add( Model.createMap() ); // Files to delete
 
 		// Clear all input maps to ensure clean state
 		sourceMap.clear();
@@ -142,180 +141,180 @@ class SyncFiles {
 		// Scenario 1: schnurrend.txt - IDENTICAL FILE
 		// Should do nothing: file is identical in all three locations
 		// ============================================================
-		entry = jo.get("schnurrend");
-		file = createFileAttributesFromJson(entry);
-		sourceMap.put(sourcePath.resolve(entry.asJsonObject().getString("relativeFilePath")), file);
-		destMap.put(destPath.resolve(entry.asJsonObject().getString("relativeFilePath")), file);
-		syncMap.put(Paths.get(entry.asJsonObject().getString("relativeFilePath")), file);
+		entry = jo.get( "schnurrend" );
+		file = createFileAttributesFromJson( entry );
+		sourceMap.put( sourcePath.resolve( entry.asJsonObject().getString( "relativeFilePath" ) ), file );
+		destMap.put( destPath.resolve( entry.asJsonObject().getString( "relativeFilePath" ) ), file );
+		syncMap.put( Paths.get( entry.asJsonObject().getString( "relativeFilePath" ) ), file );
 
 		// ============================================================
 		// Scenario 2: vorsichtig.txt - MODIFIED IN DESTINATION
 		// Should do nothing: destination is newer than sync, skip update
 		// ============================================================
-		entry = jo.get("vorsichtig");
+		entry = jo.get( "vorsichtig" );
 		file = new FileAttributes(
-				Paths.get(entry.asJsonObject().getString("relativeFilePath")),
-				entry.asJsonObject().getString("createTimeString"),
-				FileTime.fromMillis(1641346622384L),
-				fileTimeToString(FileTime.fromMillis(1641346622384L)), // NEWER timestamp
-				FileTime.fromMillis(1641346622384L),
-				Long.parseLong(entry.asJsonObject().get("size").toString()),
-				entry.asJsonObject().getString("fileHash"));
-		syncMap.put(Paths.get(entry.asJsonObject().getString("relativeFilePath")), file);
+				Paths.get( entry.asJsonObject().getString( "relativeFilePath" ) ),
+				entry.asJsonObject().getString( "createTimeString" ),
+				FileTime.fromMillis( 1641346622384L ),
+				fileTimeToString( FileTime.fromMillis( 1641346622384L ) ), // NEWER timestamp
+				FileTime.fromMillis( 1641346622384L ),
+				Long.parseLong( entry.asJsonObject().get( "size" ).toString() ),
+				entry.asJsonObject().getString( "fileHash" ) );
+		syncMap.put( Paths.get( entry.asJsonObject().getString( "relativeFilePath" ) ), file );
 
 		// ============================================================
 		// Scenario 3: eiskalt.txt - DELETED FROM DESTINATION
 		// Should delete: file in sync and source but missing from dest
 		// ============================================================
-		entry = jo.get("eiskalt");
-		file = createFileAttributesFromJson(entry);
-		sourceMap.put(sourcePath.resolve(entry.asJsonObject().getString("relativeFilePath")), file);
-		syncMap.put(Paths.get(entry.asJsonObject().getString("relativeFilePath")), file);
-		expectedFileLists.get(2).put(sourcePath.resolve(entry.asJsonObject().getString("relativeFilePath")), file);
+		entry = jo.get( "eiskalt" );
+		file = createFileAttributesFromJson( entry );
+		sourceMap.put( sourcePath.resolve( entry.asJsonObject().getString( "relativeFilePath" ) ), file );
+		syncMap.put( Paths.get( entry.asJsonObject().getString( "relativeFilePath" ) ), file );
+		expectedFileLists.get( 2 ).put( sourcePath.resolve( entry.asJsonObject().getString( "relativeFilePath" ) ), file );
 
 		// ============================================================
 		// Scenario 4: vernünftig.txt - DELETED FROM SOURCE
 		// Should delete: file in sync and dest but missing from source
 		// ============================================================
-		entry = jo.get("vernünftig");
-		file = createFileAttributesFromJson(entry);
-		destMap.put(destPath.resolve(entry.asJsonObject().getString("relativeFilePath")), file);
-		syncMap.put(Paths.get(entry.asJsonObject().getString("relativeFilePath")), file);
-		expectedFileLists.get(2).put(destPath.resolve(entry.asJsonObject().getString("relativeFilePath")), file);
+		entry = jo.get( "vernünftig" );
+		file = createFileAttributesFromJson( entry );
+		destMap.put( destPath.resolve( entry.asJsonObject().getString( "relativeFilePath" ) ), file );
+		syncMap.put( Paths.get( entry.asJsonObject().getString( "relativeFilePath" ) ), file );
+		expectedFileLists.get( 2 ).put( destPath.resolve( entry.asJsonObject().getString( "relativeFilePath" ) ), file );
 
 		// ============================================================
 		// Scenario 5: elastisch.txt - NEW FILE IN SOURCE
 		// Should copy to dest: only in source, not in sync
 		// ============================================================
-		entry = jo.get("elastisch");
-		file = createFileAttributesFromJson(entry);
-		sourceMap.put(sourcePath.resolve(entry.asJsonObject().getString("relativeFilePath")), file);
-		expectedFileLists.get(0).put(sourcePath.resolve(entry.asJsonObject().getString("relativeFilePath")), file);
+		entry = jo.get( "elastisch" );
+		file = createFileAttributesFromJson( entry );
+		sourceMap.put( sourcePath.resolve( entry.asJsonObject().getString( "relativeFilePath" ) ), file );
+		expectedFileLists.get( 0 ).put( sourcePath.resolve( entry.asJsonObject().getString( "relativeFilePath" ) ), file );
 
 		// ============================================================
 		// Scenario 6: zierlich.txt - NEW FILE IN DESTINATION
 		// Should copy to source: only in dest, not in sync
 		// ============================================================
-		entry = jo.get("zierlich");
-		file = createFileAttributesFromJson(entry);
-		destMap.put(destPath.resolve(entry.asJsonObject().getString("relativeFilePath")), file);
-		expectedFileLists.get(1).put(destPath.resolve(entry.asJsonObject().getString("relativeFilePath")), file);
+		entry = jo.get( "zierlich" );
+		file = createFileAttributesFromJson( entry );
+		destMap.put( destPath.resolve( entry.asJsonObject().getString( "relativeFilePath" ) ), file );
+		expectedFileLists.get( 1 ).put( destPath.resolve( entry.asJsonObject().getString( "relativeFilePath" ) ), file );
 
 		// ============================================================
 		// Scenario 7: fleißig.txt - NEWER VERSION IN SOURCE
 		// Should copy to dest: source timestamp is NEWER than sync
 		// ============================================================
-		entry = jo.get("fleißig");
+		entry = jo.get( "fleißig" );
 		// Source version - NEWER (1641336622384L > 1641335622384L)
 		file = new FileAttributes(
-				Paths.get(entry.asJsonObject().getString("relativeFilePath")),
-				entry.asJsonObject().getString("createTimeString"),
-				FileTime.fromMillis(1641336622384L),
-				fileTimeToString(FileTime.fromMillis(1641336622384L)), // NEWER
-				FileTime.fromMillis(1641336622384L),
-				Long.parseLong(entry.asJsonObject().get("size").toString()),
-				entry.asJsonObject().getString("fileHash"));
-		sourceMap.put(sourcePath.resolve(entry.asJsonObject().getString("relativeFilePath")), file);
-		expectedFileLists.get(0).put(sourcePath.resolve(entry.asJsonObject().getString("relativeFilePath")), file);
+				Paths.get( entry.asJsonObject().getString( "relativeFilePath" ) ),
+				entry.asJsonObject().getString( "createTimeString" ),
+				FileTime.fromMillis( 1641336622384L ),
+				fileTimeToString( FileTime.fromMillis( 1641336622384L ) ), // NEWER
+				FileTime.fromMillis( 1641336622384L ),
+				Long.parseLong( entry.asJsonObject().get( "size" ).toString() ),
+				entry.asJsonObject().getString( "fileHash" ) );
+		sourceMap.put( sourcePath.resolve( entry.asJsonObject().getString( "relativeFilePath" ) ), file );
+		expectedFileLists.get( 0 ).put( sourcePath.resolve( entry.asJsonObject().getString( "relativeFilePath" ) ), file );
 
 		// Destination version - OLDER (1641335622384L < 1641336622384L)
 		file = new FileAttributes(
-				Paths.get(entry.asJsonObject().getString("relativeFilePath")),
-				entry.asJsonObject().getString("createTimeString"),
-				FileTime.fromMillis(1641335622384L),
-				fileTimeToString(FileTime.fromMillis(1641335622384L)), // OLDER
-				FileTime.fromMillis(1641335622384L),
-				Long.parseLong(entry.asJsonObject().get("size").toString()),
-				entry.asJsonObject().getString("fileHash"));
-		destMap.put(destPath.resolve(entry.asJsonObject().getString("relativeFilePath")), file);
-		syncMap.put(Paths.get(entry.asJsonObject().getString("relativeFilePath")), file);
+				Paths.get( entry.asJsonObject().getString( "relativeFilePath" ) ),
+				entry.asJsonObject().getString( "createTimeString" ),
+				FileTime.fromMillis( 1641335622384L ),
+				fileTimeToString( FileTime.fromMillis( 1641335622384L ) ), // OLDER
+				FileTime.fromMillis( 1641335622384L ),
+				Long.parseLong( entry.asJsonObject().get( "size" ).toString() ),
+				entry.asJsonObject().getString( "fileHash" ) );
+		destMap.put( destPath.resolve( entry.asJsonObject().getString( "relativeFilePath" ) ), file );
+		syncMap.put( Paths.get( entry.asJsonObject().getString( "relativeFilePath" ) ), file );
 
 		// ============================================================
 		// Scenario 8: wissend.txt - NEWER VERSION IN DESTINATION (testDir)
 		// Should copy to source: dest timestamp is NEWER than sync
 		// ============================================================
-		entry = jo.get("wissend");
+		entry = jo.get( "wissend" );
 		// Source version - OLDER (1641335622384L < 1641336622384L)
 		file = new FileAttributes(
-				Paths.get("testDir", entry.asJsonObject().getString("relativeFilePath")),
-				entry.asJsonObject().getString("createTimeString"),
-				FileTime.fromMillis(1641335622384L),
-				fileTimeToString(FileTime.fromMillis(1641335622384L)), // OLDER
-				FileTime.fromMillis(1641335622384L),
-				Long.parseLong(entry.asJsonObject().get("size").toString()),
-				entry.asJsonObject().getString("fileHash"));
-		sourceMap.put(sourcePath.resolve("testDir").resolve(entry.asJsonObject().getString("relativeFilePath")), file);
-		syncMap.put(Paths.get("testDir", entry.asJsonObject().getString("relativeFilePath")), file);
+				Paths.get( "testDir", entry.asJsonObject().getString( "relativeFilePath" ) ),
+				entry.asJsonObject().getString( "createTimeString" ),
+				FileTime.fromMillis( 1641335622384L ),
+				fileTimeToString( FileTime.fromMillis( 1641335622384L ) ), // OLDER
+				FileTime.fromMillis( 1641335622384L ),
+				Long.parseLong( entry.asJsonObject().get( "size" ).toString() ),
+				entry.asJsonObject().getString( "fileHash" ) );
+		sourceMap.put( sourcePath.resolve( "testDir" ).resolve( entry.asJsonObject().getString( "relativeFilePath" ) ), file );
+		syncMap.put( Paths.get( "testDir", entry.asJsonObject().getString( "relativeFilePath" ) ), file );
 
 		// Destination version - NEWER (1641336622384L > 1641335622384L)
 		file = new FileAttributes(
-				Paths.get("testDir", entry.asJsonObject().getString("relativeFilePath")),
-				entry.asJsonObject().getString("createTimeString"),
-				FileTime.fromMillis(1641336622384L),
-				fileTimeToString(FileTime.fromMillis(1641336622384L)), // NEWER
-				FileTime.fromMillis(1641336622384L),
-				Long.parseLong(entry.asJsonObject().get("size").toString()),
-				entry.asJsonObject().getString("fileHash"));
-		destMap.put(destPath.resolve("testDir").resolve(entry.asJsonObject().getString("relativeFilePath")), file);
-		expectedFileLists.get(1).put(destPath.resolve("testDir").resolve(entry.asJsonObject().getString("relativeFilePath")), file);
+				Paths.get( "testDir", entry.asJsonObject().getString( "relativeFilePath" ) ),
+				entry.asJsonObject().getString( "createTimeString" ),
+				FileTime.fromMillis( 1641336622384L ),
+				fileTimeToString( FileTime.fromMillis( 1641336622384L ) ), // NEWER
+				FileTime.fromMillis( 1641336622384L ),
+				Long.parseLong( entry.asJsonObject().get( "size" ).toString() ),
+				entry.asJsonObject().getString( "fileHash" ) );
+		destMap.put( destPath.resolve( "testDir" ).resolve( entry.asJsonObject().getString( "relativeFilePath" ) ), file );
+		expectedFileLists.get( 1 ).put( destPath.resolve( "testDir" ).resolve( entry.asJsonObject().getString( "relativeFilePath" ) ), file );
 
 		// ============================================================
 		// Scenario 9: robust.txt - EXTREME CASE: MUCH NEWER IN SOURCE
 		// Should copy to dest: source is significantly newer (1641346622384L)
 		// ============================================================
-		entry = jo.get("robust");
+		entry = jo.get( "robust" );
 		// Source version - MUCH NEWER (1641346622384L >> 1641336622384L)
 		file = new FileAttributes(
-				Paths.get(entry.asJsonObject().getString("relativeFilePath")),
-				entry.asJsonObject().getString("createTimeString"),
-				FileTime.fromMillis(1641346622384L),
-				fileTimeToString(FileTime.fromMillis(1641346622384L)), // MUCH NEWER
-				FileTime.fromMillis(1641346622384L),
-				Long.parseLong(entry.asJsonObject().get("size").toString()),
-				entry.asJsonObject().getString("fileHash"));
-		sourceMap.put(sourcePath.resolve(entry.asJsonObject().getString("relativeFilePath")), file);
-		syncMap.put(Paths.get(entry.asJsonObject().getString("relativeFilePath")), file);
-		expectedFileLists.get(0).put(sourcePath.resolve(entry.asJsonObject().getString("relativeFilePath")), file);
+				Paths.get( entry.asJsonObject().getString( "relativeFilePath" ) ),
+				entry.asJsonObject().getString( "createTimeString" ),
+				FileTime.fromMillis( 1641346622384L ),
+				fileTimeToString( FileTime.fromMillis( 1641346622384L ) ), // MUCH NEWER
+				FileTime.fromMillis( 1641346622384L ),
+				Long.parseLong( entry.asJsonObject().get( "size" ).toString() ),
+				entry.asJsonObject().getString( "fileHash" ) );
+		sourceMap.put( sourcePath.resolve( entry.asJsonObject().getString( "relativeFilePath" ) ), file );
+		syncMap.put( Paths.get( entry.asJsonObject().getString( "relativeFilePath" ) ), file );
+		expectedFileLists.get( 0 ).put( sourcePath.resolve( entry.asJsonObject().getString( "relativeFilePath" ) ), file );
 
 		// Destination version - OLDER (1641336622384L < 1641346622384L)
 		file = new FileAttributes(
-				Paths.get(entry.asJsonObject().getString("relativeFilePath")),
-				entry.asJsonObject().getString("createTimeString"),
-				FileTime.fromMillis(1641336622384L),
-				fileTimeToString(FileTime.fromMillis(1641336622384L)), // OLDER
-				FileTime.fromMillis(1641336622384L),
-				Long.parseLong(entry.asJsonObject().get("size").toString()),
-				entry.asJsonObject().getString("fileHash"));
-		destMap.put(destPath.resolve(entry.asJsonObject().getString("relativeFilePath")), file);
+				Paths.get( entry.asJsonObject().getString( "relativeFilePath" ) ),
+				entry.asJsonObject().getString( "createTimeString" ),
+				FileTime.fromMillis( 1641336622384L ),
+				fileTimeToString( FileTime.fromMillis( 1641336622384L ) ), // OLDER
+				FileTime.fromMillis( 1641336622384L ),
+				Long.parseLong( entry.asJsonObject().get( "size" ).toString() ),
+				entry.asJsonObject().getString( "fileHash" ) );
+		destMap.put( destPath.resolve( entry.asJsonObject().getString( "relativeFilePath" ) ), file );
 
 		// ============================================================
 		// Scenario 10: uralt.txt - EXTREME CASE: MUCH NEWER IN DESTINATION
 		// Should copy to source: dest is significantly newer (1641346622384L)
 		// ============================================================
-		entry = jo.get("uralt");
+		entry = jo.get( "uralt" );
 		// Source version - OLDER (1641336622384L < 1641346622384L)
 		file = new FileAttributes(
-				Paths.get(entry.asJsonObject().getString("relativeFilePath")),
-				entry.asJsonObject().getString("createTimeString"),
-				FileTime.fromMillis(1641336622384L),
-				fileTimeToString(FileTime.fromMillis(1641336622384L)), // OLDER
-				FileTime.fromMillis(1641336622384L),
-				Long.parseLong(entry.asJsonObject().get("size").toString()),
-				entry.asJsonObject().getString("fileHash"));
-		sourceMap.put(sourcePath.resolve(entry.asJsonObject().getString("relativeFilePath")), file);
+				Paths.get( entry.asJsonObject().getString( "relativeFilePath" ) ),
+				entry.asJsonObject().getString( "createTimeString" ),
+				FileTime.fromMillis( 1641336622384L ),
+				fileTimeToString( FileTime.fromMillis( 1641336622384L ) ), // OLDER
+				FileTime.fromMillis( 1641336622384L ),
+				Long.parseLong( entry.asJsonObject().get( "size" ).toString() ),
+				entry.asJsonObject().getString( "fileHash" ) );
+		sourceMap.put( sourcePath.resolve( entry.asJsonObject().getString( "relativeFilePath" ) ), file );
 
 		// Destination version - MUCH NEWER (1641346622384L >> 1641336622384L)
 		file = new FileAttributes(
-				Paths.get(entry.asJsonObject().getString("relativeFilePath")),
-				entry.asJsonObject().getString("createTimeString"),
-				FileTime.fromMillis(1641346622384L),
-				fileTimeToString(FileTime.fromMillis(1641346622384L)), // MUCH NEWER
-				FileTime.fromMillis(1641346622384L),
-				Long.parseLong(entry.asJsonObject().get("size").toString()),
-				entry.asJsonObject().getString("fileHash"));
-		destMap.put(destPath.resolve(entry.asJsonObject().getString("relativeFilePath")), file);
-		syncMap.put(Paths.get(entry.asJsonObject().getString("relativeFilePath")), file);
-		expectedFileLists.get(1).put(destPath.resolve(entry.asJsonObject().getString("relativeFilePath")), file);
+				Paths.get( entry.asJsonObject().getString( "relativeFilePath" ) ),
+				entry.asJsonObject().getString( "createTimeString" ),
+				FileTime.fromMillis( 1641346622384L ),
+				fileTimeToString( FileTime.fromMillis( 1641346622384L ) ), // MUCH NEWER
+				FileTime.fromMillis( 1641346622384L ),
+				Long.parseLong( entry.asJsonObject().get( "size" ).toString() ),
+				entry.asJsonObject().getString( "fileHash" ) );
+		destMap.put( destPath.resolve( entry.asJsonObject().getString( "relativeFilePath" ) ), file );
+		syncMap.put( Paths.get( entry.asJsonObject().getString( "relativeFilePath" ) ), file );
+		expectedFileLists.get( 1 ).put( destPath.resolve( entry.asJsonObject().getString( "relativeFilePath" ) ), file );
 
 		return expectedFileLists;
 	}
@@ -327,15 +326,15 @@ class SyncFiles {
 	 * @param entry The JSON value containing file metadata
 	 * @return FileAttributes object with extracted data
 	 */
-	private FileAttributes createFileAttributesFromJson(JsonValue entry) {
+	private FileAttributes createFileAttributesFromJson( JsonValue entry ) {
 		return new FileAttributes(
-				Paths.get(entry.asJsonObject().getString("relativeFilePath")),
-				entry.asJsonObject().getString("createTimeString"),
-				FileTime.fromMillis(Long.parseLong(entry.asJsonObject().get("createTime").toString())),
-				entry.asJsonObject().getString("modTimeString"),
-				FileTime.fromMillis(Long.parseLong(entry.asJsonObject().get("modTime").toString())),
-				Long.parseLong(entry.asJsonObject().get("size").toString()),
-				entry.asJsonObject().getString("fileHash"));
+				Paths.get( entry.asJsonObject().getString( "relativeFilePath" ) ),
+				entry.asJsonObject().getString( "createTimeString" ),
+				FileTime.fromMillis( Long.parseLong( entry.asJsonObject().get( "createTime" ).toString() ) ),
+				entry.asJsonObject().getString( "modTimeString" ),
+				FileTime.fromMillis( Long.parseLong( entry.asJsonObject().get( "modTime" ).toString() ) ),
+				Long.parseLong( entry.asJsonObject().get( "size" ).toString() ),
+				entry.asJsonObject().getString( "fileHash" ) );
 	}
 
 	/**
@@ -345,10 +344,10 @@ class SyncFiles {
 	 * @param fileTime The FileTime to convert
 	 * @return Formatted time string (e.g., "04.01.2022 20:33:38")
 	 */
-	private String fileTimeToString(FileTime fileTime) {
+	private String fileTimeToString( FileTime fileTime ) {
 		return fileTime.toInstant()
-				.atZone(ZoneId.systemDefault())
+				.atZone( ZoneId.systemDefault() )
 				.toLocalDateTime()
-				.format(DateTimeFormatter.ofPattern("dd.MM.yyyy  HH:mm:ss"));
+				.format( DateTimeFormatter.ofPattern( "dd.MM.yyyy  HH:mm:ss" ) );
 	}
 }

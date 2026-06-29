@@ -26,8 +26,8 @@ import javafx.scene.Scene;
  */
 public class NordicLightTheme implements AppTheme {
 	@Override
-	public void apply(Scene scene) {
-		scene.getRoot().setStyle("-fx-font-size: 14; -fx-font-family: 'Comic Sans MS', 'Segoe UI'; -fx-background-color: #f4f6f9;");
+	public void apply( Scene scene ) {
+		scene.getRoot().setStyle( "-fx-font-size: 14; -fx-font-family: 'Comic Sans MS', 'Segoe UI'; -fx-background-color: #f4f6f9;" );
 		final String css = """
 				.list-view { -fx-background-color: #e5e9f0; }
 				.list-cell { -fx-background-color: #e5e9f0; -fx-text-fill: #4c566a; -fx-padding: 12px; -fx-border-color: #d8dee9; -fx-border-width: 0 0 1px 0; }
@@ -66,7 +66,7 @@ public class NordicLightTheme implements AppTheme {
 				.check-box:selected .mark { -fx-background-color: #81a1c1; }
 				""";
 		scene.getStylesheets().clear();
-		scene.getStylesheets().add("data:text/css," + css.replace("\n", "").replace(" ", "%20"));
+		scene.getStylesheets().add( "data:text/css," + css.replace( "\n", "" ).replace( " ", "%20" ) );
 	}
 
 	@Override

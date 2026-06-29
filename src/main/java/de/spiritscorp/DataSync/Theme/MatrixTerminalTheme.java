@@ -27,8 +27,8 @@ import javafx.scene.Scene;
  */
 public class MatrixTerminalTheme implements AppTheme {
 	@Override
-	public void apply(Scene scene) {
-		scene.getRoot().setStyle("-fx-font-size: 14; -fx-font-family: 'Consolas', 'Courier New', monospace; -fx-background-color: #050505; -fx-text-fill: #00ff00;");
+	public void apply( Scene scene ) {
+		scene.getRoot().setStyle( "-fx-font-size: 14; -fx-font-family: 'Consolas', 'Courier New', monospace; -fx-background-color: #050505; -fx-text-fill: #00ff00;" );
 		final String css = """
 				.list-view { -fx-background-color: #050505; }
 				.list-cell { -fx-background-color: #050505; -fx-text-fill: #00ff00; -fx-padding: 10px; -fx-border-color: #003300; -fx-border-width: 0 0 1px 0; }
@@ -144,7 +144,7 @@ public class MatrixTerminalTheme implements AppTheme {
 				}
 					""";
 		scene.getStylesheets().clear();
-		scene.getStylesheets().add("data:text/css," + css.replace("\n", "").replace(" ", "%20"));
+		scene.getStylesheets().add( "data:text/css," + css.replace( "\n", "" ).replace( " ", "%20" ) );
 	}
 
 	@Override

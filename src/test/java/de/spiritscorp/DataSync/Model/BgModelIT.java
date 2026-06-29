@@ -39,6 +39,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.platform.suite.api.SelectPackages;
 import org.mockito.MockedStatic;
 
 import de.spiritscorp.DataSync.BgTime;
@@ -55,7 +56,8 @@ import de.spiritscorp.DataSync.IO.Preference;
  * Environmental diagnostics are safely intercepted to prevent downstream log pollution.
  * </p>
  */
-@DisplayName("Background Model Integration Tests")
+@SelectPackages( value = { "de.spiritscorp.DataSync.Model" } )
+//@DisplayName( "Background Model Integration Tests" )
 class BgModelIT {
 
 	private Map<Path, FileAttributes> sourceMap, destMap, sourceMapRef, destMapRef, syncMap;
@@ -78,28 +80,28 @@ class BgModelIT {
 		destMapRef = Model.createMap();
 		syncMap = Model.createMap();
 
-		prefMock = mock(Preference.class);
-		bgModel = new BgModel(prefMock, mock(Logger.class), sourceMap, destMap);
-		helper = new TestHelper(ModelTest.TEST_PATH);
-		mockedDebug = mockStatic(Debug.class);
+		prefMock = mock( Preference.class );
+		bgModel = new BgModel( prefMock, mock( Logger.class ), sourceMap, destMap );
+		helper = new TestHelper( ModelTest.TEST_PATH );
+		mockedDebug = mockStatic( Debug.class );
 
 		final ArrayList<Path> sourcePath = new ArrayList<>();
-		sourcePath.add(ModelTest.TEST_PATH.resolve("source"));
+		sourcePath.add( ModelTest.TEST_PATH.resolve( "source" ) );
 		final ArrayList<Path> destPath = new ArrayList<>();
-		destPath.add(ModelTest.TEST_PATH.resolve("dest"));
+		destPath.add( ModelTest.TEST_PATH.resolve( "dest" ) );
 
-		when(prefMock.getSourcePath()).thenReturn(sourcePath);
-		when(prefMock.getDestPath()).thenReturn(destPath);
-		when(prefMock.isLogOn()).thenReturn(false);
-		when(prefMock.getStartSourcePath()).thenReturn(ModelTest.TEST_PATH.resolve("source"));
-		when(prefMock.getStartDestPath()).thenReturn(ModelTest.TEST_PATH.resolve("dest"));
-		when(prefMock.getTrashbinPath()).thenReturn(null);
-		when(prefMock.isTrashbin()).thenReturn(false);
-		when(prefMock.isAutoBgDel()).thenReturn(true);
-		when(prefMock.getLastScanTime()).thenReturn(0L);
-		when(prefMock.isSubDir()).thenReturn(false);
-		when(prefMock.getBgTime()).thenReturn(BgTime.MIN_30);
-		when(prefMock.getSyncMap()).thenReturn(syncMap);
+		when( prefMock.getSourcePath() ).thenReturn( sourcePath );
+		when( prefMock.getDestPath() ).thenReturn( destPath );
+		when( prefMock.isLogOn() ).thenReturn( false );
+		when( prefMock.getStartSourcePath() ).thenReturn( ModelTest.TEST_PATH.resolve( "source" ) );
+		when( prefMock.getStartDestPath() ).thenReturn( ModelTest.TEST_PATH.resolve( "dest" ) );
+		when( prefMock.getTrashbinPath() ).thenReturn( null );
+		when( prefMock.isTrashbin() ).thenReturn( false );
+		when( prefMock.isAutoBgDel() ).thenReturn( true );
+		when( prefMock.getLastScanTime() ).thenReturn( 0L );
+		when( prefMock.isSubDir() ).thenReturn( false );
+		when( prefMock.getBgTime() ).thenReturn( BgTime.MIN_30 );
+		when( prefMock.getSyncMap() ).thenReturn( syncMap );
 	}
 
 	/**
@@ -109,17 +111,17 @@ class BgModelIT {
 	 */
 	@AfterEach
 	void tearDown() throws Exception {
-		if (Files.exists(ModelTest.TEST_PATH)) {
-			final List<Path> paths = Files.walk(ModelTest.TEST_PATH).filter((a) -> !Files.isDirectory(a)).collect(Collectors.toList());
-			for (final Path path : paths) {
-				Files.delete(path);
+		if( Files.exists( ModelTest.TEST_PATH ) ) {
+			final List<Path> paths = Files.walk( ModelTest.TEST_PATH ).filter( ( a ) -> !Files.isDirectory( a ) ).collect( Collectors.toList() );
+			for( final Path path : paths ) {
+				Files.delete( path );
 			}
-			final List<Path> dirs = Files.walk(ModelTest.TEST_PATH).filter((a) -> Files.isDirectory(a)).collect(Collectors.toList());
-			for (int i = dirs.size() - 1; i >= 0; i--) {
-				Files.delete(dirs.get(i));
+			final List<Path> dirs = Files.walk( ModelTest.TEST_PATH ).filter( ( a ) -> Files.isDirectory( a ) ).collect( Collectors.toList() );
+			for( int i = dirs.size() - 1; i >= 0; i-- ) {
+				Files.delete( dirs.get( i ) );
 			}
 		}
-		if (mockedDebug != null) {
+		if( mockedDebug != null ) {
 			mockedDebug.close();
 		}
 	}
@@ -130,31 +132,31 @@ class BgModelIT {
 	 * @throws IOException If state verification passes encounter dead file streams.
 	 */
 	@Test
-	@DisplayName("1. Synchronize Mode: Processing with pre-allocated SyncMap blueprints")
-	final void testRunBgJob_syncronize_with_SyncMap() throws IOException {
-		when(prefMock.getScanMode()).thenReturn(ScanType.SYNCHRONIZE);
-		helper.createSyncMap(sourceMapRef, destMapRef, syncMap);
-		for (final Entry<Path, FileAttributes> entry : sourceMapRef.entrySet()) {
-			Files.createDirectories(entry.getKey().getParent());
-			Files.createFile(entry.getKey());
+	@DisplayName( "1. Synchronize Mode: Processing with pre-allocated SyncMap blueprints" )
+	final void testRunBgJobSyncronizeWithSyncMap() throws IOException {
+		when( prefMock.getScanMode() ).thenReturn( ScanType.SYNCHRONIZE );
+		helper.createSyncMap( sourceMapRef, destMapRef, syncMap );
+		for( final Entry<Path, FileAttributes> entry : sourceMapRef.entrySet() ) {
+			Files.createDirectories( entry.getKey().getParent() );
+			Files.createFile( entry.getKey() );
 		}
-		for (final Entry<Path, FileAttributes> entry : destMapRef.entrySet()) {
-			Files.createDirectories(entry.getKey().getParent());
-			Files.createFile(entry.getKey());
+		for( final Entry<Path, FileAttributes> entry : destMapRef.entrySet() ) {
+			Files.createDirectories( entry.getKey().getParent() );
+			Files.createFile( entry.getKey() );
 		}
-		assertTrue(bgModel.runBgJob(), "Die Listen sind nicht leer");
-		final List<Path> destList = ModelTest.getFileNamesInDirectory(ModelTest.TEST_PATH.resolve("dest"));
-		final List<Path> sourceList = ModelTest.getFileNamesInDirectory(ModelTest.TEST_PATH.resolve("source"));
-		assertEquals(destList, sourceList, "Quelle und Ziel passen nicht überein");
+		assertTrue( bgModel.runBgJob(), "Die Listen sind nicht leer" );
+		final List<Path> destList = ModelTest.getFileNamesInDirectory( ModelTest.TEST_PATH.resolve( "dest" ) );
+		final List<Path> sourceList = ModelTest.getFileNamesInDirectory( ModelTest.TEST_PATH.resolve( "source" ) );
+		assertEquals( destList, sourceList, "Quelle und Ziel passen nicht überein" );
 		final String[] resultList = { "elastisch.txt", "fleißig.txt", "robust.txt", "schnurrend.txt", "wissend.txt", "uralt.txt", "zierlich.txt" };
-		for (int i = 0; i < resultList.length; i++) {
-			assertTrue(sourceList.contains(Paths.get(resultList[i])), "Datei passt nicht -> " + resultList[i]);
-			sourceList.remove(Paths.get(resultList[i]));
-			assertTrue(destList.contains(Paths.get(resultList[i])), "Datei passt nicht -> " + resultList[i]);
-			destList.remove(Paths.get(resultList[i]));
+		for( int i = 0; i < resultList.length; i++ ) {
+			assertTrue( sourceList.contains( Paths.get( resultList[i] ) ), "Datei passt nicht -> " + resultList[i] );
+			sourceList.remove( Paths.get( resultList[i] ) );
+			assertTrue( destList.contains( Paths.get( resultList[i] ) ), "Datei passt nicht -> " + resultList[i] );
+			destList.remove( Paths.get( resultList[i] ) );
 		}
-		assertEquals(0, sourceList.size(), "Liste ist nicht leer");
-		assertEquals(0, destList.size(), "Liste ist nicht leer");
+		assertEquals( 0, sourceList.size(), "Liste ist nicht leer" );
+		assertEquals( 0, destList.size(), "Liste ist nicht leer" );
 	}
 
 	/**
@@ -163,33 +165,33 @@ class BgModelIT {
 	 * @throws IOException If state verification passes encounter dead file streams.
 	 */
 	@Test
-	@DisplayName("2. Synchronize Mode: Processing across cleared/empty SyncMap historical contexts")
-	final void testRunBgJob_syncronize_withOut_SyncMap() throws IOException {
-		when(prefMock.getScanMode()).thenReturn(ScanType.SYNCHRONIZE);
+	@DisplayName( "2. Synchronize Mode: Processing across cleared/empty SyncMap historical contexts" )
+	final void testRunBgJobSyncronizeWithOutSyncMap() throws IOException {
+		when( prefMock.getScanMode() ).thenReturn( ScanType.SYNCHRONIZE );
 
-		helper.createSyncMap(sourceMapRef, destMapRef, syncMap);
-		for (final Entry<Path, FileAttributes> entry : sourceMapRef.entrySet()) {
-			Files.createDirectories(entry.getKey().getParent());
-			Files.createFile(entry.getKey());
+		helper.createSyncMap( sourceMapRef, destMapRef, syncMap );
+		for( final Entry<Path, FileAttributes> entry : sourceMapRef.entrySet() ) {
+			Files.createDirectories( entry.getKey().getParent() );
+			Files.createFile( entry.getKey() );
 		}
-		for (final Entry<Path, FileAttributes> entry : destMapRef.entrySet()) {
-			Files.createDirectories(entry.getKey().getParent());
-			Files.createFile(entry.getKey());
+		for( final Entry<Path, FileAttributes> entry : destMapRef.entrySet() ) {
+			Files.createDirectories( entry.getKey().getParent() );
+			Files.createFile( entry.getKey() );
 		}
 		syncMap.clear();
-		assertTrue(bgModel.runBgJob(), "Die Listen sind nicht leer");
-		final List<Path> destList = Files.walk(ModelTest.TEST_PATH.resolve("dest")).filter((a) -> !Files.isDirectory(a)).map((a) -> a.getFileName()).collect(Collectors.toList());
-		final List<Path> sourceList = Files.walk(ModelTest.TEST_PATH.resolve("source")).filter((a) -> !Files.isDirectory(a)).map((a) -> a.getFileName()).collect(Collectors.toList());
-		assertEquals(destList, sourceList, "Quelle und Ziel passen nicht überein");
+		assertTrue( bgModel.runBgJob(), "Die Listen sind nicht leer" );
+		final List<Path> destList = Files.walk( ModelTest.TEST_PATH.resolve( "dest" ) ).filter( ( a ) -> !Files.isDirectory( a ) ).map( ( a ) -> a.getFileName() ).collect( Collectors.toList() );
+		final List<Path> sourceList = Files.walk( ModelTest.TEST_PATH.resolve( "source" ) ).filter( ( a ) -> !Files.isDirectory( a ) ).map( ( a ) -> a.getFileName() ).collect( Collectors.toList() );
+		assertEquals( destList, sourceList, "Quelle und Ziel passen nicht überein" );
 		final String[] resultList = { "eiskalt.txt", "elastisch.txt", "fleißig.txt", "robust.txt", "schnurrend.txt", "wissend.txt", "uralt.txt", "vernünftig.txt", "zierlich.txt" };
-		for (int i = 0; i < resultList.length; i++) {
-			assertTrue(sourceList.contains(Paths.get(resultList[i])), "Datei passt nicht -> " + resultList[i]);
-			sourceList.remove(Paths.get(resultList[i]));
-			assertTrue(destList.contains(Paths.get(resultList[i])), "Datei passt nicht -> " + resultList[i]);
-			destList.remove(Paths.get(resultList[i]));
+		for( int i = 0; i < resultList.length; i++ ) {
+			assertTrue( sourceList.contains( Paths.get( resultList[i] ) ), "Datei passt nicht -> " + resultList[i] );
+			sourceList.remove( Paths.get( resultList[i] ) );
+			assertTrue( destList.contains( Paths.get( resultList[i] ) ), "Datei passt nicht -> " + resultList[i] );
+			destList.remove( Paths.get( resultList[i] ) );
 		}
-		assertEquals(0, sourceList.size(), "Liste ist nicht leer");
-		assertEquals(0, destList.size(), "Liste ist nicht leer");
+		assertEquals( 0, sourceList.size(), "Liste ist nicht leer" );
+		assertEquals( 0, destList.size(), "Liste ist nicht leer" );
 	}
 
 	/**
@@ -198,32 +200,32 @@ class BgModelIT {
 	 * @throws IOException If state verification passes encounter dead file streams.
 	 */
 	@Test
-	@DisplayName("3. Flat Scan Mode: Unidirectional flat repository archive distribution check")
-	final void testRunBgJob_backup() throws IOException {
-		when(prefMock.getScanMode()).thenReturn(ScanType.FLAT_SCAN);
+	@DisplayName( "3. Flat Scan Mode: Unidirectional flat repository archive distribution check" )
+	final void testRunBgJobBackup() throws IOException {
+		when( prefMock.getScanMode() ).thenReturn( ScanType.FLAT_SCAN );
 
-		helper.createBackupFiles(sourceMapRef, destMapRef);
-		for (final Entry<Path, FileAttributes> entry : sourceMapRef.entrySet()) {
-			Files.createDirectories(entry.getKey().getParent());
-			Files.createFile(entry.getKey());
+		helper.createBackupFiles( sourceMapRef, destMapRef );
+		for( final Entry<Path, FileAttributes> entry : sourceMapRef.entrySet() ) {
+			Files.createDirectories( entry.getKey().getParent() );
+			Files.createFile( entry.getKey() );
 		}
-		for (final Entry<Path, FileAttributes> entry : destMapRef.entrySet()) {
-			Files.createDirectories(entry.getKey().getParent());
-			Files.createFile(entry.getKey());
+		for( final Entry<Path, FileAttributes> entry : destMapRef.entrySet() ) {
+			Files.createDirectories( entry.getKey().getParent() );
+			Files.createFile( entry.getKey() );
 		}
 
-		assertTrue(bgModel.runBgJob(), "Die Listen sind nicht leer");
-		final List<Path> destList = ModelTest.getFileNamesInDirectory(ModelTest.TEST_PATH.resolve("dest"));
-		final List<Path> sourceList = ModelTest.getFileNamesInDirectory(ModelTest.TEST_PATH.resolve("source"));
-		assertEquals(destList, sourceList, "Quelle und Ziel passen nicht überein");
+		assertTrue( bgModel.runBgJob(), "Die Listen sind nicht leer" );
+		final List<Path> destList = ModelTest.getFileNamesInDirectory( ModelTest.TEST_PATH.resolve( "dest" ) );
+		final List<Path> sourceList = ModelTest.getFileNamesInDirectory( ModelTest.TEST_PATH.resolve( "source" ) );
+		assertEquals( destList, sourceList, "Quelle und Ziel passen nicht überein" );
 		final String[] resultList = { "testFile1.txt", "testFile3.txt" };
-		for (int i = 0; i < resultList.length; i++) {
-			assertTrue(sourceList.contains(Paths.get(resultList[i])), "Datei passt nicht -> " + resultList[i]);
-			sourceList.remove(Paths.get(resultList[i]));
-			assertTrue(destList.contains(Paths.get(resultList[i])), "Datei passt nicht -> " + resultList[i]);
-			destList.remove(Paths.get(resultList[i]));
+		for( int i = 0; i < resultList.length; i++ ) {
+			assertTrue( sourceList.contains( Paths.get( resultList[i] ) ), "Datei passt nicht -> " + resultList[i] );
+			sourceList.remove( Paths.get( resultList[i] ) );
+			assertTrue( destList.contains( Paths.get( resultList[i] ) ), "Datei passt nicht -> " + resultList[i] );
+			destList.remove( Paths.get( resultList[i] ) );
 		}
-		assertEquals(0, sourceList.size(), "Liste ist nicht leer");
-		assertEquals(0, destList.size(), "Liste ist nicht leer");
+		assertEquals( 0, sourceList.size(), "Liste ist nicht leer" );
+		assertEquals( 0, destList.size(), "Liste ist nicht leer" );
 	}
 }

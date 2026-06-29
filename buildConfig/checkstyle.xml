@@ -11,6 +11,15 @@
 <module name="Checker">
   <property name="severity" value="warning"/>
   <property name="fileExtensions" value="java, properties, xml"/>
+  
+  <module name="BeforeExecutionExclusionFileFilter">
+    <property name="fileNamePattern" value="module\-info\.java$"/>
+  </module>
+  <module name="LineLength">
+    <property name="fileExtensions" value="java"/>
+    <property name="max" value="250"/>
+  </module>
+  
   <module name="TreeWalker">
     <module name="ConstantName"/>
     <module name="LocalFinalVariableName"/>
@@ -21,10 +30,12 @@
     <module name="ParameterName"/>
     <module name="StaticVariableName"/>
     <module name="TypeName"/>
+    
     <module name="AvoidStarImport"/>
     <module name="IllegalImport"/>
     <module name="RedundantImport"/>
     <module name="UnusedImports"/>
+    
     <module name="MethodLength"/>
     <module name="ParameterNumber"/>
     <module name="UpperEll"/>
@@ -37,14 +48,25 @@
     <module name="RedundantModifier"/>
     <module name="EmptyStatement"/>
     <module name="ArrayTypeStyle"/>
+    
+    <module name="RightCurly"/>
+    <module name="AvoidNestedBlocks"/>
+    
+    <module name="CovariantEquals"/>
+    <module name="EmptyBlock"/>
+    <module name="InnerAssignment"/> <module name="OneStatementPerLine"/>
+    <module name="StringLiteralEquality"/> <module name="NestedIfDepth">
+      <property name="max" value="3"/>
+    </module>
+    <module name="NestedTryDepth">
+      <property name="max" value="2"/>
+    </module>
+    
+    <module name="GenericWhitespace"/>
+    <module name="MethodParamPad"/>
+    <module name="NoWhitespaceAfter"/>
+    <module name="NoWhitespaceBefore"/>
+    
     <module name="SuppressionCommentFilter"/>
-  </module>
-  <module name="TreeWalker"/>
-  <module name="BeforeExecutionExclusionFileFilter">
-    <property name="fileNamePattern" value="module\-info\.java$"/>
-  </module>
-  <module name="LineLength">
-    <property name="fileExtensions" value="java"/>
-    <property name="max" value="250"/>
   </module>
 </module>

@@ -23,9 +23,7 @@ jobs:
             url: ${{ steps.deployment.outputs.page_url }}
         runs-on: ubuntu-latest
 
-		# Conditional filter: Execute only if triggered via the UI button
-		# OR if the push title contains the specific flag.
-		# OR if the pull request title contains the specific flag.
+
         if: |
             github.event_name == 'workflow_dispatch' || 
             (github.event_name == 'push' && contains(github.event.head_commit.message, '[deploy site]'))  ||

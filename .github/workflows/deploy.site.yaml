@@ -43,7 +43,7 @@ jobs:
                   cache: "maven"
 
             - name: Build Site
-              run: mvn clean compile jlink:jlink verify site
+              run: xvfb-run --auto-servernum mvn -B clean compile jlink:jlink package --file pom.xml
 
             - name: Upload Artifact
               uses: actions/upload-pages-artifact@v5

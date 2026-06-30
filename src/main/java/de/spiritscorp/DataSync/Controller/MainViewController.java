@@ -237,6 +237,10 @@ public class MainViewController implements ViewController {
 		activeBgController.startBgJob( firstStart );
 	}
 
+	public void deleteSelectedDuplicates( SyncJobContext jobContext ) {
+		helper.deleteSelectedDuplicates( jobContext );
+	}
+
 	/**
 	 * Orchestrates the application teardown sequence by gracefully processing or aborting
 	 * active tasks based on the execution context boundaries.

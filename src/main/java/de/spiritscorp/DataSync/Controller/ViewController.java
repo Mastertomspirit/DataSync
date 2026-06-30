@@ -103,4 +103,6 @@ public interface ViewController {
 
 	void runInBackground( boolean firstStart );
 
+	void deleteSelectedDuplicates( SyncJobContext jobContext );
+
 }

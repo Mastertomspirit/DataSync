@@ -264,6 +264,7 @@ public final class WorkspaceView extends VBox {
 
 		cancelButton.setOnAction( e -> controller.handleStopTask( job ) );
 		actionButton.setOnAction( e -> controller.handleExecuteTask( job ) );
+		deleteButton.setOnAction( e -> controller.deleteSelectedDuplicates( job ) );
 	}
 
 	/**

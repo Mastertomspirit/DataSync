@@ -30,12 +30,12 @@
         <pl_gpg>3.2.8</pl_gpg>
 
         <!-- Dependency versions -->
-        <dep_jakarta.json.api.version>2.1.0</dep_jakarta.json.api.version>
+        <dep_jakarta.json.api.version>2.1.3</dep_jakarta.json.api.version>
         <dep_glassfish.jakarta.json.version>2.0.1</dep_glassfish.jakarta.json.version>
-        <dep_junit-jupiter>6.1.0-M1</dep_junit-jupiter>
-		<dep_junit-platform>6.1.0</dep_junit-platform>
-		<dep_mockito>5.21.0</dep_mockito>
-		<dep_bytebuddy>1.18.8</dep_bytebuddy>
+        <dep_junit-jupiter>6.1.1</dep_junit-jupiter>
+		<dep_junit-platform>6.1.1</dep_junit-platform>
+		<dep_mockito>5.23.0</dep_mockito>
+		<dep_bytebuddy>1.18.10</dep_bytebuddy>
 	</properties>
 
 	<build>

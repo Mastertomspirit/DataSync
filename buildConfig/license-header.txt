@@ -1,7 +1,11 @@
-/*
- 		DataSync Application
-
-		@author Tom Spirit
+		${project.name} 
+		*	${project.description}
+		
+		@date ${year} 
+		@author ${owner}
+		@email ${email}
+		
+		Copyright © 
 
 		This program is free software; you can redistribute it and/or modify
 		it under the terms of the GNU General Public License as published by
@@ -14,23 +18,4 @@
 		GNU General Public License for more details.
 
 		You should have received a copy of the GNU General Public License
-		along with this program; if not, write to the Free Software Foundation,
-		Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-*/
-package de.spiritscorp.DataSync.IO;
-
-final class ConfigException extends Exception {
-
-	private static final long serialVersionUID = -1857563011203287809L;
-
-	ConfigException( final String failture, Object... args ) {
-		super(
-				String.format( failture, args ) );
-	}
-
-	ConfigException( final String failture, Throwable e ) {
-		super(
-				failture,
-				e );
-	}
-}
+		along with this program. If not, see <http://www.gnu.org/licenses/>.

@@ -31,28 +31,37 @@ package de.spiritscorp.DataSync;
 public enum BgTime {
 
 	/** Execution interval of 1 minute. */
-	MIN_1(60000L, "1 Minute", 5000L),
+	MIN_1( 60_000L, "1 Minute", 5_000L),
 
 	/** Execution interval of 5 minutes. */
-	MIN_5(300000L, "5 Minuten", 10000L),
+	MIN_5( 300_000L, "5 Minuten", 10_000L),
 
 	/** Execution interval of 30 minutes. */
-	MIN_30(1800000L, "30 Minuten", 60000L),
+	MIN_30( 1_800_000L, "30 Minuten", 60_000L),
 
 	/** Execution interval set to occur hourly. */
-	HOURLY(3600000L, "Stündlich", 300000L),
+	HOURLY( 3_600_000L, "Stündlich", 300_000L),
 
 	/** Execution interval set to occur daily. */
-	DAYLY(86400000L, "Täglich", 1800000L),
+	DAYLY( 86_400_000L, "Täglich", 1_800_000L),
 
 	/** Execution interval set to occur weekly. */
-	WEEKLY(604800000L, "Wöchentlich", 1800000L),
+	WEEKLY( 604_800_000L, "Wöchentlich", 1_800_000L),
 
 	/** Execution interval set to occur monthly. */
-	MONTHLY(2592000000L, "Monatlich", 1800000L);
+	MONTHLY( 2_592_000_000L, "Monatlich", 1_800_000L);
 
+	/**
+	 * The intervall for execute a Job
+	 */
 	private final long time;
+	/**
+	 * The name for an intervall
+	 */
 	private final String name;
+	/**
+	 * The check Time for an intervall
+	 */
 	private final long checkTime;
 
 	/**
@@ -62,7 +71,7 @@ public enum BgTime {
 	 * @param name      the localized, human-readable display name of the interval
 	 * @param checkTime the thread sleep or verification check cycle duration in milliseconds
 	 */
-	private BgTime(long time, String name, long checkTime) {
+	BgTime( final long time, final String name, final long checkTime ) {
 		this.time = time;
 		this.name = name;
 		this.checkTime = checkTime;
@@ -76,11 +85,11 @@ public enum BgTime {
 	 * @return a String array containing the human-readable names in the exact order of definition
 	 */
 	public static String[] getNames() {
-		final String[] str = new String[BgTime.values().length];
-		int i = 0;
-		for (final BgTime bg : BgTime.values()) {
-			str[i] = bg.getName();
-			i++;
+		final String[] str = new String[values().length];
+		int index = 0;
+		for( final BgTime bg : values() ) {
+			str[index] = bg.getName();
+			index++;
 		}
 		return str;
 	}
@@ -88,12 +97,12 @@ public enum BgTime {
 	/**
 	 * Resolves a matching background time configuration based on its localized display name.
 	 *
-	 * @param str the display name string to look up (e.g., "5 Minuten")
+	 * @param str the display name string to look up (e.g., "5 Minuten", "Stündlich")
 	 * @return the matching BgTime constant, or null if no matching name is found
 	 */
-	public static BgTime get(String str) {
-		for (final BgTime st : BgTime.values()) {
-			if (str.equals(st.getName())) return st;
+	public static BgTime get( final String str ) {
+		for( final BgTime st : values() ) {
+			if( str.equals( st.getName() ) ) return st;
 		}
 		return null;
 	}

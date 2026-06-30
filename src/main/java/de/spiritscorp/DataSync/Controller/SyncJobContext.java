@@ -22,8 +22,11 @@ package de.spiritscorp.DataSync.Controller;
 import java.nio.file.Path;
 
 import de.spiritscorp.DataSync.ScanType;
+import de.spiritscorp.DataSync.IO.Debug;
 import de.spiritscorp.DataSync.IO.Preference;
+import de.spiritscorp.DataSync.IO.PreferenceManager;
 import de.spiritscorp.DataSync.Model.FileAttributes;
+import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -38,11 +41,11 @@ import javafx.collections.ObservableList;
  */
 public class SyncJobContext {
 
-	private StringProperty jobName = new SimpleStringProperty();
-	private final BooleanProperty running = new SimpleBooleanProperty(false);
-	private final StringProperty statusMessage = new SimpleStringProperty("Bereit");
-	private final StringProperty logOutput = new SimpleStringProperty("");
-	private final StringProperty selectedMode = new SimpleStringProperty(ScanType.SYNCHRONIZE.getDescription());
+	private final StringProperty jobName = new SimpleStringProperty();
+	private final BooleanProperty running = new SimpleBooleanProperty( false );
+	private final StringProperty statusMessage = new SimpleStringProperty( "Bereit" );
+	private final StringProperty logOutput = new SimpleStringProperty( "" );
+	private final StringProperty selectedMode = new SimpleStringProperty( ScanType.SYNCHRONIZE.getDescription() );
 
 	private final Preference taskPreference;
 	private Thread activeWorkerThread;
@@ -53,10 +56,10 @@ public class SyncJobContext {
 	 * Creates a new isolated synchronization job environment with its own preference clone.
 	 * * @param name The identification name for the user interface sidebar
 	 *
-	 * @param basePreference The template preference instance to derive task-specific settings from
+	 * @param taskPreference The template preference instance to derive task-specific settings from
 	 */
-	public SyncJobContext(String name, Preference taskPreference) {
-		this.jobName.set(name);
+	public SyncJobContext( String name, Preference taskPreference ) {
+		this.jobName.set( name );
 		this.taskPreference = taskPreference;
 	}
 
@@ -64,29 +67,75 @@ public class SyncJobContext {
 	 * Assigns the thread processing file modifications to allow secure termination handles.
 	 * * @param thread The execution context running background tasks
 	 */
-	public synchronized void setActiveWorkerThread(Thread thread) { this.activeWorkerThread = thread; }
+	synchronized void setActiveWorkerThread( Thread thread ) { this.activeWorkerThread = thread; }
 
 	/**
-	 * Interrupts the active worker loop safely using standard thread interruption signals.
+	 * Signals the underlying worker thread to terminate via standard interruption flags.
+	 * If a timeout greater than zero is specified, this method blocks the invoking context
+	 * to await a graceful structural thread finalization.
+	 *
+	 * @param timeoutMs Maximum duration in milliseconds to await thread join; 0 executes asynchronously.
 	 */
-	public synchronized void cancelRunningTask() {
-		if (activeWorkerThread != null && activeWorkerThread.isAlive()) {
+	public synchronized void cancelRunningTask( long timeoutMs ) {
+		if( activeWorkerThread != null && activeWorkerThread.isAlive() ) {
+			Debug.printDebug( "[Info] Sending interruption signal to worker thread for job: %s", getJobName() );
 			activeWorkerThread.interrupt();
-			setRunning(false);
-			setStatusMessage("Aktion vom Benutzer abgebrochen.");
-			appendLog("-> Vorgang abgebrochen.");
-		} else {
-			setStatusMessage("Keine aktive Aktion.");
-			appendLog("-> Nichts zu beenden gefunden.");
+
+			if( timeoutMs > 0 ) {
+				try {
+					// Gracefully await the thread to flush buffers and exit its iteration loops
+					activeWorkerThread.join( timeoutMs );
+					if( activeWorkerThread.isAlive() ) {
+						Debug.printDebug( "[Warn] Warning: Worker thread for job '%s' breached timeout matrix.", getJobName() );
+					}
+				}catch( final InterruptedException e ) {
+					Debug.printDebug( "[Info] Thread joining sequence was interrupted for job: %s", getJobName() );
+					Thread.currentThread().interrupt();
+				}
+			}
+
+			// If it was cleared or joined successfully, adjust states safely
+			if( !activeWorkerThread.isAlive() ) {
+				setRunning( false );
+				setStatusMessage( "Aktion erfolgreich beendet." );
+				appendLog( "-> Vorgang sauber beendet." );
+			}else {
+				setRunning( false );
+				setStatusMessage( "Aktion vom Benutzer abgebrochen (Forced)." );
+				appendLog( "-> Vorgang erzwungen abgebrochen." );
+			}
+		}else {
+			updateUIAndLog( "Keine aktive Aktion.", "-> Nichts zu beenden gefunden." );
 		}
 	}
 
-	public void appendLog(String line) {
-		this.logOutput.set(this.logOutput.get() + line + System.lineSeparator());
+	/**
+	 * Helper method to safely update UI properties and internal log feeds across thread boundaries.
+	 */
+	private void updateUIAndLog( String status, String logEntry ) {
+		if( Platform.isFxApplicationThread() ) {
+			setStatusMessage( status );
+			appendLog( logEntry );
+		}else {
+			try {
+				Platform.runLater( () -> {
+					setStatusMessage( status );
+					appendLog( logEntry );
+				} );
+			}catch( final IllegalStateException e ) {
+				// Caught if the JavaFX toolkit is already dead during a hard native OS shutdown.
+				// We log the text purely to the background core debug stream.
+				Debug.printDebug( "[Info] GUI framework offline. Suppressed state update: %s (%s)", status, logEntry );
+			}
+		}
 	}
 
-	public void clearLog() {
-		this.logOutput.set("");
+	public void appendLog( String line ) {
+		this.logOutput.set( this.logOutput.get() + line + System.lineSeparator() );
+	}
+
+	void clearLog() {
+		this.logOutput.set( "" );
 	}
 
 	public String getJobName() { return jobName.get(); }
@@ -101,8 +150,8 @@ public class SyncJobContext {
 		return running;
 	}
 
-	public void setRunning(boolean value) {
-		this.running.set(value);
+	void setRunning( boolean value ) {
+		this.running.set( value );
 	}
 
 	public String getStatusMessage() { return statusMessage.get(); }
@@ -111,8 +160,8 @@ public class SyncJobContext {
 		return statusMessage;
 	}
 
-	public void setStatusMessage(String message) {
-		this.statusMessage.set(message);
+	public void setStatusMessage( String message ) {
+		this.statusMessage.set( message );
 	}
 
 	public String getLogOutput() { return logOutput.get(); }
@@ -121,14 +170,14 @@ public class SyncJobContext {
 		return logOutput;
 	}
 
-	public ScanType getSelectedMode() { return ScanType.get(selectedMode.get()); }
+	public ScanType getSelectedMode() { return ScanType.get( selectedMode.get() ); }
 
 	public StringProperty selectedModeProperty() {
 		return selectedMode;
 	}
 
-	public void setSelectedMode(String mode) {
-		this.selectedMode.set(mode);
+	public void setSelectedMode( String mode ) {
+		this.selectedMode.set( mode );
 	}
 
 	public Preference getPreference() { return taskPreference; }
@@ -139,19 +188,19 @@ public class SyncJobContext {
 	 * Wraps file characteristics inside property types suited for dynamic UI grids.
 	 */
 	public static class FileRow {
-		private final BooleanProperty selected = new SimpleBooleanProperty(false);
+		private final BooleanProperty selected = new SimpleBooleanProperty( false );
 		private final StringProperty fileName = new SimpleStringProperty();
 		private final StringProperty size = new SimpleStringProperty();
 		private final StringProperty hash = new SimpleStringProperty();
 		private final StringProperty path = new SimpleStringProperty();
 		private final Path fileSystemPath;
 
-		public FileRow(Path path, FileAttributes attr, String readableSize) {
+		public FileRow( Path path, FileAttributes attr, String readableSize ) {
 			this.fileSystemPath = path;
-			this.fileName.set(attr.getFileName());
-			this.size.set(readableSize);
-			this.hash.set(attr.getFileHash());
-			this.path.set(path.toString());
+			this.fileName.set( attr.getFileName() );
+			this.size.set( readableSize );
+			this.hash.set( attr.getFileHash() );
+			this.path.set( path.toString() );
 		}
 
 		public BooleanProperty selectedProperty() {
@@ -160,8 +209,8 @@ public class SyncJobContext {
 
 		public boolean isSelected() { return selected.get(); }
 
-		public void setSelected(boolean val) {
-			this.selected.set(val);
+		public void setSelected( boolean val ) {
+			this.selected.set( val );
 		}
 
 		public StringProperty fileNameProperty() {
@@ -183,5 +232,8 @@ public class SyncJobContext {
 		public Path getFileSystemPath() { return fileSystemPath; }
 	}
 
-	public void setJobName(String newTaskName) { this.jobName = new SimpleStringProperty(newTaskName); }
+	void setJobName( String newTaskName ) {
+		PreferenceManager.getInstance().renameProfile( jobName.get(), newTaskName, this.getPreference() );
+		this.jobName.set( newTaskName );
+	}
 }

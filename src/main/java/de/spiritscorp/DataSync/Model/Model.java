@@ -26,9 +26,9 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import de.spiritscorp.DataSync.ScanType;
+import de.spiritscorp.DataSync.Controller.SyncJobContext;
 import de.spiritscorp.DataSync.IO.Debug;
 import de.spiritscorp.DataSync.IO.Logger;
-import de.spiritscorp.DataSync.IO.Preference;
 
 /**
  * Core controller class responsible for managing high-performance file synchronization,
@@ -47,7 +47,7 @@ import de.spiritscorp.DataSync.IO.Preference;
  */
 public class Model {
 
-	private Map<Path, FileAttributes> sourceMap;
+	private final Map<Path, FileAttributes> sourceMap;
 	private final Map<Path, FileAttributes> destMap;
 	private final FileHandler handler;
 
@@ -61,10 +61,10 @@ public class Model {
 	 * @param sourceMap the tracking map used to store and evaluate source file attributes
 	 * @param destMap   the tracking map used to store and evaluate destination file attributes
 	 */
-	public Model(Logger logger, Map<Path, FileAttributes> sourceMap, Map<Path, FileAttributes> destMap) {
+	public Model( Logger logger, Map<Path, FileAttributes> sourceMap, Map<Path, FileAttributes> destMap ) {
 		this.sourceMap = sourceMap;
 		this.destMap = destMap;
-		handler = new FileHandler(logger);
+		handler = new FileHandler( logger );
 	}
 
 	/**
@@ -78,7 +78,7 @@ public class Model {
 	 * @return a synchronized, thread-safe view of a newly instantiated TreeMap
 	 */
 	public static final <K, V> Map<K, V> createMap() {
-		return Collections.synchronizedSortedMap(new TreeMap<>());
+		return Collections.synchronizedSortedMap( new TreeMap<>() );
 	}
 
 	/**
@@ -102,24 +102,24 @@ public class Model {
 	 * @param trashbin     true to enable trashbin retention logic, false to bypass it
 	 * @return a Map containing all paths where failures, permission issues, or structural conflicts occurred
 	 */
-	public Map<Path, FileAttributes> scanSyncFiles(ArrayList<Path> sourcePathes, ArrayList<Path> destPathes, Long[] stats, ScanType deepScan, boolean subDir, boolean trashbin) {
-		Debug.printDebug("list start");
-		final Thread t1 = new Thread(() -> handler.listFiles(sourcePathes, sourceMap, deepScan, subDir));
-		final Thread t2 = new Thread(() -> handler.listFiles(destPathes, destMap, deepScan, subDir));
+	public Map<Path, FileAttributes> scanSyncFiles( ArrayList<Path> sourcePathes, ArrayList<Path> destPathes, Long[] stats, ScanType deepScan, boolean subDir, boolean trashbin ) {
+		Debug.printDebug( "[Model] list start" );
+		final Thread t1 = new Thread( () -> handler.listFiles( sourcePathes, sourceMap, deepScan, subDir ) );
+		final Thread t2 = new Thread( () -> handler.listFiles( destPathes, destMap, deepScan, subDir ) );
 		t1.start();
 		t2.start();
 		try {
 			t1.join();
 			t2.join();
-		} catch (final InterruptedException e) {
-			Debug.printException(this.getClass(), e);
+		}catch( final InterruptedException e ) {
+			Debug.printException( this.getClass(), e );
 		}
 		stats[0] = (long) sourceMap.size();
 		stats[1] = (long) destMap.size();
-		stats[2] = getBytes(sourceMap);
-		stats[3] = getBytes(destMap);
-		Debug.printDebug("list ready");
-		return getFailtures(sourceMap, destMap);
+		stats[2] = getBytes( sourceMap );
+		stats[3] = getBytes( destMap );
+		Debug.printDebug( "[Model] list ready" );
+		return getFailtures( sourceMap, destMap );
 	}
 
 	/**
@@ -130,9 +130,9 @@ public class Model {
 	 * synchronization actions like copy, update, or delete.
 	 */
 	public void getEqualsFiles() {
-		Debug.printDebug("getEqualsFiles start");
-		handler.equalsFiles(sourceMap, destMap);
-		Debug.printDebug("getEqualsFiles ready");
+		Debug.printDebug( "[Model] getEqualsFiles start" );
+		handler.equalsFiles( sourceMap, destMap );
+		Debug.printDebug( "[Model] getEqualsFiles ready" );
 	}
 
 	/**
@@ -149,10 +149,10 @@ public class Model {
 	 *         index 1 (copyDestHitList): Files to be copied back from destination to source,
 	 *         index 2 (delHitList): Files marked for deletion from the target directory
 	 */
-	public ArrayList<Map<Path, FileAttributes>> getSyncFiles(Map<Path, FileAttributes> syncMap, Path sourcePath, Path destPath) {
-		Debug.printDebug("getSyncFiles start");
-		final ArrayList<Map<Path, FileAttributes>> result = handler.getSyncFiles(sourceMap, destMap, sourcePath, destPath, syncMap);
-		Debug.printDebug("getSyncFiles ready");
+	public ArrayList<Map<Path, FileAttributes>> getSyncFiles( Map<Path, FileAttributes> syncMap, Path sourcePath, Path destPath ) {
+		Debug.printDebug( "[Model] getSyncFiles start" );
+		final ArrayList<Map<Path, FileAttributes>> result = handler.getSyncFiles( sourceMap, destMap, sourcePath, destPath, syncMap );
+		Debug.printDebug( "[Model] getSyncFiles ready" );
 		return result;
 	}
 
@@ -171,10 +171,10 @@ public class Model {
 	 * @return true if all file entries inside the tracking maps were successfully processed and cleared,
 	 *         false if unprocessed files remain due to operational faults or file system errors
 	 */
-	public boolean backupFiles(int del, boolean logOn, Path destPath, boolean trashbin, Path trashbinPath) {
-		if (del == 0 && !destMap.isEmpty()) handler.deleteFiles(destMap, logOn, trashbin, trashbinPath);
-		if (!sourceMap.isEmpty()) handler.copyFiles(sourceMap, logOn, destPath);
-		return (sourceMap.isEmpty() && destMap.isEmpty());
+	public boolean backupFiles( int del, boolean logOn, Path destPath, boolean trashbin, Path trashbinPath ) {
+		if( del == 0 && !destMap.isEmpty() ) handler.deleteFiles( destMap, logOn, trashbin, trashbinPath );
+		if( !sourceMap.isEmpty() ) handler.copyFiles( sourceMap, logOn, destPath );
+		return sourceMap.isEmpty() && destMap.isEmpty();
 	}
 
 	/**
@@ -191,23 +191,23 @@ public class Model {
 	 * @return true if the entire synchronization pipeline completed without unexpected exceptions,
 	 *         false if errors occurred during file interaction
 	 */
-	public boolean syncFiles(ArrayList<Map<Path, FileAttributes>> result, Map<Path, FileAttributes> syncMap, Path sourcePath, Path destPath, boolean testOn) {
-		if (!result.get(0).isEmpty()) handler.copyFiles(result.get(0), false, destPath);
-		if (!result.get(1).isEmpty()) handler.copyFiles(result.get(1), false, sourcePath);
-		if (!result.get(2).isEmpty()) handler.deleteFiles(result.get(2), false, false, null);
+	public boolean syncFiles( SyncJobContext ctx, ArrayList<Map<Path, FileAttributes>> result, Map<Path, FileAttributes> syncMap, Path sourcePath, Path destPath, boolean testOn ) {
+		if( !result.get( 0 ).isEmpty() ) handler.copyFiles( result.get( 0 ), false, destPath );
+		if( !result.get( 1 ).isEmpty() ) handler.copyFiles( result.get( 1 ), false, sourcePath );
+		if( !result.get( 2 ).isEmpty() ) handler.deleteFiles( result.get( 2 ), false, false, null );
 
 		sourceMap.clear();
 		destMap.clear();
 		syncMap.clear();
-		if (!testOn) {
+		if( !testOn ) {
 			final Map<Path, FileAttributes> tempMap = createMap();
-			handler.listFiles(Preference.getInstance().getSourcePath(), tempMap, ScanType.SYNCHRONIZE, false);
-			for (final Map.Entry<Path, FileAttributes> entry : tempMap.entrySet()) {
-				syncMap.put(entry.getValue().getRelativeFilePath(), entry.getValue());
+			handler.listFiles( ctx.getPreference().getSourcePath(), tempMap, ScanType.SYNCHRONIZE, false );
+			for( final Map.Entry<Path, FileAttributes> entry : tempMap.entrySet() ) {
+				syncMap.put( entry.getValue().getRelativeFilePath(), entry.getValue() );
 			}
-			Preference.getInstance().writeSyncMap();
+			ctx.getPreference().writeSyncMap();
 		}
-		return result.get(0).isEmpty() && result.get(1).isEmpty() && result.get(2).isEmpty();
+		return result.get( 0 ).isEmpty() && result.get( 1 ).isEmpty() && result.get( 2 ).isEmpty();
 	}
 
 	/**
@@ -220,10 +220,14 @@ public class Model {
 	 * @param paths an ArrayList containing the directory paths that should be inspected for file duplicates
 	 * @return a Map containing the duplicate paths mapped to their attributes, combined with failure reports
 	 */
-	public Map<Path, FileAttributes> scanDublicates(ArrayList<Path> paths) {
-		handler.listFiles(paths, sourceMap, ScanType.DUBLICATE_SCAN, false);
-		sourceMap = handler.findDuplicates(sourceMap);
-		return getFailtures(sourceMap, destMap);
+	public Map<Path, FileAttributes> scanDublicates( final ArrayList<Path> paths, final Long... stats ) {
+		handler.listFiles( paths, sourceMap, ScanType.DUBLICATE_SCAN, false );
+		final Map<Path, FileAttributes> duplicateMap = handler.findDuplicates( sourceMap );
+		stats[0] = (long) sourceMap.size();
+		stats[1] = (long) getFailtures( sourceMap, destMap ).size();
+		stats[2] = 0L;
+		stats[3] = 0L;
+		return duplicateMap;
 	}
 
 	/**
@@ -236,19 +240,19 @@ public class Model {
 	 * @param destMap   the tracking map containing the current destination file information
 	 * @return a filtered Map detailing all elements that failed to process correctly
 	 */
-	private Map<Path, FileAttributes> getFailtures(Map<Path, FileAttributes> sourceMap, Map<Path, FileAttributes> destMap) {
-		final Map<Path, FileAttributes> failMap = Model.createMap();
-		if (sourceMap != null) {
-			for (final Map.Entry<Path, FileAttributes> entry : sourceMap.entrySet()) {
-				if (entry.getValue().getFileHash().equals("Failed")) {
-					failMap.put(entry.getKey(), entry.getValue());
+	private Map<Path, FileAttributes> getFailtures( Map<Path, FileAttributes> sourceMap, Map<Path, FileAttributes> destMap ) {
+		final Map<Path, FileAttributes> failMap = createMap();
+		if( sourceMap != null ) {
+			for( final Map.Entry<Path, FileAttributes> entry : sourceMap.entrySet() ) {
+				if( entry.getValue().getFileHash().equals( "Failed" ) ) {
+					failMap.put( entry.getKey(), entry.getValue() );
 				}
 			}
 		}
-		if (destMap != null) {
-			for (final Map.Entry<Path, FileAttributes> entry : destMap.entrySet()) {
-				if (entry.getValue().getFileHash().equals("Failed")) {
-					failMap.put(entry.getKey(), entry.getValue());
+		if( destMap != null ) {
+			for( final Map.Entry<Path, FileAttributes> entry : destMap.entrySet() ) {
+				if( entry.getValue().getFileHash().equals( "Failed" ) ) {
+					failMap.put( entry.getKey(), entry.getValue() );
 				}
 			}
 		}
@@ -264,10 +268,10 @@ public class Model {
 	 * @param map the tracking map containing the file paths and their associated attributes
 	 * @return the total size of all files combined, represented in bytes
 	 */
-	private Long getBytes(Map<Path, FileAttributes> map) {
+	private Long getBytes( Map<Path, FileAttributes> map ) {
 		long allBytes = 0;
-		for (final Path p : map.keySet()) {
-			allBytes += map.get(p).getSize();
+		for( final FileAttributes p : map.values() ) {
+			allBytes += p.getSize();
 		}
 		return allBytes;
 	}

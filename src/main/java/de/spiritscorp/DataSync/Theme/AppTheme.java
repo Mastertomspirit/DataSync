@@ -32,7 +32,7 @@ public interface AppTheme {
 	 *
 	 * @param scene The active window scene graph context.
 	 */
-	void apply(Scene scene);
+	void apply( Scene scene );
 
 	/**
 	 * @return Display name of the theme for UI selection components.

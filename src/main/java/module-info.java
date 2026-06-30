@@ -18,28 +18,18 @@
 		Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 module de.spiritscorp.DataSync {
+	requires transitive jakarta.json;
+
 	requires javafx.controls;
 	requires transitive javafx.graphics;
+	requires javafx.base;
 
 	requires transitive org.kordamp.ikonli.core;
 	requires transitive org.kordamp.ikonli.javafx;
 	requires org.kordamp.ikonli.materialdesign2;
 
-	exports de.spiritscorp.DataSync.Gui to javafx.graphics;
-
-	exports de.spiritscorp.DataSync.Controller to de.spiritscorp.DataSync.Gui;
-	exports de.spiritscorp.DataSync.Model to de.spiritscorp.DataSync.Gui;
-	exports de.spiritscorp.DataSync.IO to de.spiritscorp.DataSync.Gui;
-	exports de.spiritscorp.DataSync.Theme to de.spiritscorp.DataSync.Gui;
-	exports de.spiritscorp.DataSync to de.spiritscorp.DataSync.Controller;
-
-//	opens de.spiritscorp.DataSync.Gui;
-
-	// Falls deine Main-Klasse direkt im Root-Paket liegt:
-//	exports de.spiritscorp.DataSync to javafx.graphics;
-
-//	opens de.spiritscorp.DataSync.Model;
-
-	requires jakarta.json;
 	requires transitive java.desktop;
+
+	opens de.spiritscorp.DataSync.Gui to javafx.graphics;
+
 }

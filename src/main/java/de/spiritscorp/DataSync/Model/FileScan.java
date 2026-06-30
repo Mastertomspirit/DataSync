@@ -37,7 +37,8 @@ import de.spiritscorp.DataSync.IO.Debug;
 
 class FileScan implements Runnable {
 
-	private final Path path, startPath;
+	private final Path path;
+	private final Path startPath;
 	private final Map<Path, FileAttributes> map;
 	private final ScanType scanType;
 	private final BasicFileAttributes bfa;
@@ -50,7 +51,7 @@ class FileScan implements Runnable {
 	 * @param map
 	 * @param scanType
 	 */
-	FileScan(Path path, Path startPath, Map<Path, FileAttributes> map, ScanType scanType, BasicFileAttributes bfa) {
+	FileScan( Path path, Path startPath, Map<Path, FileAttributes> map, ScanType scanType, BasicFileAttributes bfa ) {
 		this.path = path;
 		this.startPath = startPath;
 		this.map = map;
@@ -60,50 +61,50 @@ class FileScan implements Runnable {
 
 	@Override
 	public void run() {
-		final FileAttributes fa = new FileAttributes(
+		final FileAttributes fileAttributes = new FileAttributes(
 				relativePath(),
-				fileTimeToString(bfa.creationTime()),
+				fileTimeToString( bfa.creationTime() ),
 				bfa.creationTime(),
-				fileTimeToString(bfa.lastModifiedTime()),
+				fileTimeToString( bfa.lastModifiedTime() ),
 				bfa.lastModifiedTime(),
 				bfa.size(),
-				deepScan());
-		map.put(path, fa);
+				deepScan() );
+		map.put( path, fileAttributes );
 	}
 
 	private String getSha256() {
-		final StringBuffer sb = new StringBuffer();
-		try (BufferedInputStream bis = new BufferedInputStream(Files.newInputStream(path, StandardOpenOption.READ))) {
-			final MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
+		final StringBuilder builder = new StringBuilder();
+		try( BufferedInputStream bis = new BufferedInputStream( Files.newInputStream( path, StandardOpenOption.READ ) ) ) {
+			final MessageDigest messageDigest = MessageDigest.getInstance( "SHA-256" );
 			byte[] input;
-			while (bis.available() != 0) {
-				input = bis.readNBytes(8192);
-				messageDigest.update(input);
+			while( bis.available() != 0 ) {
+				input = bis.readNBytes( 8192 );
+				messageDigest.update( input );
 			}
 			final byte[] digestByte = messageDigest.digest();
-			for (final byte b : digestByte) {
-				sb.append(Integer.toString((b & 0xff) + 0x100, 16).substring(1));
+			for( final byte b : digestByte ) {
+				builder.append( Integer.toString( ( b & 0xff ) + 0x100, 16 ).substring( 1 ) );
 			}
-		} catch (IOException | NoSuchAlgorithmException e) {
-			sb.delete(0, sb.length());
-			sb.append("Failed");
-			Debug.printDebug("Failed: %s Message: %s", path, e.getMessage());
-			Debug.printException(this.getClass(), e);
+		}catch( IOException | NoSuchAlgorithmException e ) {
+			builder.delete( 0, builder.length() );
+			builder.append( "Failed" );
+			Debug.printDebug( "[FileScan] Failed: %s Message: %s", path, e.getMessage() );
+			Debug.printException( this.getClass(), e );
 		}
-		return new String(sb);
+		return builder.toString();
 	}
 
-	private String fileTimeToString(FileTime fileTime) {
-		return fileTime.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime().format(DateTimeFormatter.ofPattern("dd.MM.yyyy  HH:mm:ss"));
+	private String fileTimeToString( final FileTime fileTime ) {
+		return fileTime.toInstant().atZone( ZoneId.systemDefault() ).toLocalDateTime().format( DateTimeFormatter.ofPattern( "dd.MM.yyyy  HH:mm:ss" ) );
 	}
 
 	private Path relativePath() {
-		return startPath.relativize(path);
+		return startPath.relativize( path );
 	}
 
 	private String deepScan() {
-		return switch (scanType) {
-		case DEEP_SCAN -> getSha256();
+		return switch( scanType ) {
+		case DEEP_SCAN, DUBLICATE_SCAN -> getSha256();
 		case FLAT_SCAN, SYNCHRONIZE -> "null";
 		default -> "null";
 		};

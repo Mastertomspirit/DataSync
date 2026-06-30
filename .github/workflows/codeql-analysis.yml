@@ -33,7 +33,6 @@ jobs:
       fail-fast: false
       matrix:
         language: [ 'java' ]
-        # CodeQL supports [ 'cpp', 'csharp', 'go', 'java', 'javascript', 'python', 'ruby' ]
 
     steps: 
     - name: Checkout repository
@@ -60,7 +59,7 @@ jobs:
         # queries: security-extended,security-and-quality
 
     - name: Build-with-maven
-      run: mvn -B clean compile jlink:jlink package --file pom.xml
+      run: xvfb-run --auto-servernum mvn -B clean compile jlink:jlink package --file pom.xml
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v4

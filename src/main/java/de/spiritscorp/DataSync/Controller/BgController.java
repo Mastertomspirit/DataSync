@@ -19,8 +19,15 @@
 */
 package de.spiritscorp.DataSync.Controller;
 
+import java.awt.AWTException;
 import java.awt.SystemTray;
+import java.awt.TrayIcon;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
+import de.spiritscorp.DataSync.Main;
 import de.spiritscorp.DataSync.Gui.BgView;
 import de.spiritscorp.DataSync.Gui.Gui;
 import de.spiritscorp.DataSync.IO.Debug;
@@ -29,9 +36,25 @@ import de.spiritscorp.DataSync.Model.BgModel;
 import de.spiritscorp.DataSync.Model.Model;
 import javafx.collections.ObservableList;
 
+/**
+ * Central orchestration engine handling asynchronous background file synchronization routines.
+ * <p>
+ * The {@code BgController} manages the application's daemon lifecycle. It leverages a dedicated
+ * two-tier concurrent executor architecture to decouple continuous time-threshold monitoring from
+ * high-overhead disk I/O operations. This design prevents resource starvation and avoids system
+ * UI freezes by offloading execution workloads to isolated worker threads.
+ * <p>
+ * System state integration is maintained via an operating system {@link SystemTray} proxy interface,
+ * allowing the core UI application framework to seamlessly minimize into background execution lanes.
+ * <p>
+ *
+ * @author Tom Spirit
+ */
 public class BgController {
 
-	private Thread thread;
+	static final long INITIAL_DELAY = 1000;
+	static final long BOOT_START_DELAY = 30000;
+
 	private final SystemTray sysTray;
 	private final ObservableList<SyncJobContext> jobList;
 	private final Logger logger;
@@ -39,119 +62,257 @@ public class BgController {
 	private BgView bgView;
 	private final Gui gui;
 
-	// Test-Schnittstelle: Ermöglicht das Beschleunigen von Timeouts im JUnit-Test
+	// Modern thread-pool architecture for accurate execution timing and disk I/O optimization
+	private ScheduledExecutorService scheduler;
+	private ExecutorService workerQueue;
+
+	// Test interface: Allows accelerating intervals inside JUnit execution tasks
 	private double timeMultiplier = 1.0;
-	private volatile boolean bgRun = true;
 
 	/**
-	 * Background Controller
+	 * Constructs a fully operational background engine attached to the primary interface layers.
+	 * <p>
+	 * The initialization phase maps structural JavaFX core properties, bindings, and multi-job tracking
+	 * contexts. It automatically registers native {@link SystemTray} hardware capacity parameters to bind
+	 * the decoupled visual notification framework shell.
+	 * <p>
 	 *
-	 * @param bgView  The background view
-	 * @param jobList The settings for all jobs to be used
-	 * @param logger
+	 * @param gui        The visual primary graphical user interface facade wrapper
+	 * @param controller The central master view controller orchestrating active window transitions
+	 * @param jobList    The reactive data backing list containing operational task metrics and execution state tokens
+	 * @param logger     The standardized system logging framework interface
 	 */
-	BgController(final Gui gui, ViewController controller, final ObservableList<SyncJobContext> jobList, final Logger logger) {
+	BgController( final Gui gui, ViewController controller, final ObservableList<SyncJobContext> jobList, final Logger logger ) {
 		this.gui = gui;
 		this.controller = controller;
 		this.jobList = jobList;
 		this.logger = logger;
 		this.sysTray = SystemTray.isSupported() ? SystemTray.getSystemTray() : null;
+		setEnvironment( timeMultiplier, new BgView( this ), Executors.newSingleThreadScheduledExecutor(), Executors.newSingleThreadExecutor() );
 	}
 
-	void setBgView(BgView bgView) { this.bgView = bgView; }
-
 	/**
-	 * Setzt den Zeitmultiplikator für Unit-Tests (z.B. 0.001 um Minuten in Millisekunden zu wandeln).
-	 */
-	void setTimeMultiplierForTesting(double multiplier) { this.timeMultiplier = multiplier; }
-
-	/**
+	 * Initiates a global application termination sequence triggered from the background context.
+	 * <p>
+	 * This method acts as the bridge for the {@code BgView} (SystemTray) to command a full system exit.
+	 * It systematically deallocates and dismantles internal concurrent tracking structures using a
+	 * standardized background grace period before delegating downstream lifecycle teardown protocols
+	 * to the central application controller.
+	 * <p>
 	 *
-	 * Run the Background Job
-	 *
-	 * @param view       The view
-	 * @param helper
-	 * @param firstStart If true, the thread wait 5 minutes
+	 * @see #shutdownExecutors(long)
 	 */
-	void startBgJob(final boolean firstStart) {
-		gui.getWindowStage().hide();
-		if (sysTray != null && bgView.getTrayIcon() != null) {
-			try {
-				sysTray.add(bgView.getTrayIcon());
-			} catch (final Exception e) {
-				Debug.printDebug("[DataSync Daemon] TrayIcon konnte nicht registriert werden.");
-			}
-		}
-
-		thread = new Thread(() -> {
-			Debug.printDebug("DataSync Multi-Job Background-Daemon started.");
-
-			// Initialer Start-Delay (Für Tests beschleunigt)
-			try {
-				final long initialSleep = (long) ((firstStart ? 30000 : 1000) * timeMultiplier);
-				if (initialSleep > 0) Thread.sleep(initialSleep);
-			} catch (final InterruptedException e) {
-				bgRun = false;
-			}
-
-			while (bgRun) {
-				// Iteriere über alle vorhandenen Jobs in der reaktiven Liste
-				for (final SyncJobContext job : jobList) {
-					if (!bgRun) break;
-
-					final var pref = job.getPreference();
-
-					// Nur ausführen, wenn für diesen spezifischen Job die Hintergrund-Synchronisation aktiv ist
-					if (pref != null && pref.isBgSync()) {
-						Debug.printDebug("Executing background routine for task: " + job.getJobName());
-
-						// Erstelle das Arbeitsmodell passend für die Kriterien des jeweiligen Jobs
-						final Thread th = new Thread(() -> {
-							final BgModel bgModel = new BgModel(pref, logger, Model.createMap(), Model.createMap());
-							job.setRunning(true);
-// TODO TEST							bgModel.runBgJob();
-							job.setRunning(false);
-							Debug.PRINT_DEBUG("Finished executing background routine for task: " + job.getJobName());
-						});
-						job.setActiveWorkerThread(th);
-						th.start();
-					}
-				}
-
-//	TODO global oder per thread			 Pausiere den Thread basierend auf dem globalen/kleinsten Intervall
-				try {
-					// Standard-Fallback: 30 Min, falls keine Jobs da sind oder kein Intervall greift
-					long checkTime = 1800000;
-					if (!jobList.isEmpty() && jobList.get(0).getPreference().getBgTime() != null) {
-						checkTime = jobList.get(0).getPreference().getBgTime().getCheckTime();
-					}
-
-					Thread.sleep((long) (checkTime * timeMultiplier));
-				} catch (final InterruptedException e) {
-					bgRun = false; // Flag bremst den Loop sauber aus
-				}
-			}
-
-			// Cleanup beim Beenden des Threads
-			if (sysTray != null && bgView.getTrayIcon() != null) {
-				sysTray.remove(bgView.getTrayIcon());
-			}
-			Debug.printDebug("DataSync Background-Daemon terminated cleanly.");
-		});
-
-		thread.start();
-	}
-
-	public void handleApplicationShutdown() {
+	public void requestApplicationShutdown() {
+		// Disassemble concurrent tracking frameworks before global window exit procedures trigger
+		shutdownExecutors( Main.BACKGROUND_THREAD_TIMEOUT );
 		controller.handleApplicationShutdown();
 	}
 
-	public void interruptBgJob() {
-		this.bgRun = false;
+	/**
+	 * Interrupts the active background execution cycle and restores the primary user interface.
+	 * <p>
+	 * This dual-purpose lifecycle hook is invoked by both the primary workspace ({@code MainView})
+	 * and the system notification shell ({@code BgView}). It enforces an immediate visibility state
+	 * transition on the main window stage and guarantees a deterministic, timed collapse of all
+	 * active thread pool frames.
+	 * <p>
+	 *
+	 * @param timeoutPerThreadMs The maximum allocation window in milliseconds granted to active
+	 *                           worker threads to complete processing cycles before a hard
+	 *                           interruption signal is enforced.
+	 * @see #shutdownExecutors(long)
+	 */
+	public void interruptBgJob( long timeoutPerThreadMs ) {
 		gui.getWindowStage().show();
-		if (this.thread != null) {
-			this.thread.interrupt();
-			Debug.printException("Background routine interrupted");
+		shutdownExecutors( timeoutPerThreadMs );
+		Debug.printDebug( "[DataSync Daemon] Background routine interrupted" );
+	}
+
+	/**
+	 * Initiates the continuous background daemon monitoring pipeline and minimizes the user interface.
+	 * <p>
+	 * Activating this boot phase suppresses the primary desktop window frame and binds the visual notifications
+	 * infrastructure into the native operating system taskbar environment. It dynamically analyzes user scheduling
+	 * rules to compute an optimal, non-blocking check frequency tick rate.
+	 * <p>
+	 * Once configurations are parsed, an initial delay configuration is selected—differentiating between fresh
+	 * application boots ({@code BOOT_START_DELAY}) and quick UI toggle states ({@code INITIAL_DELAY}). The continuous
+	 * tracking routine is then permanently registered inside the internal {@link ScheduledExecutorService} core thread framework.
+	 * <p>
+	 *
+	 * @param bootDelay Enforces an extended cold-boot initialization timeout buffer if set to {@code true};
+	 *                  allocates a standard near-instant scheduling offset if set to {@code false}.
+	 */
+	void startBgJob( final boolean bootDelay ) {
+		gui.getWindowStage().hide();
+		if( sysTray != null && bgView.getTrayIcon() != null ) {
+			try {
+				sysTray.add( bgView.getTrayIcon() );
+			}catch( final AWTException e ) {
+				Debug.printError( "[DataSync Daemon] Failed to register TrayIcon context." );
+				Debug.printException( getClass(), e );
+				gui.getWindowStage().show();
+				return;
+			}
 		}
+
+		Debug.printDebug( "[DataSync Daemon] Multi-Job Background-Daemon initialization started." );
+
+		// Dynamically determine the optimal check interval based on active jobs
+		final long calculatedTick = determineOptimalCheckTime();
+		final long tickInterval = (long) ( calculatedTick * timeMultiplier );
+		final long initialDelay = (long) ( ( bootDelay ? BOOT_START_DELAY : INITIAL_DELAY ) * timeMultiplier );
+		Debug.printDebug( "[DataSync Daemon] Heartbeat configured to tick every %d ms based on job preferences.", calculatedTick );
+		jobList.stream()
+				.filter( ( job ) -> job.getPreference()
+						.isBgSync() )
+				.forEach( ( job ) -> Debug.printDebug( "[DataSync Daemon] Executing background routine is activated for task: %s", job.getJobName() ) );
+		// Begin tracking task list rules loops
+		this.scheduler.scheduleAtFixedRate( this::checkAndQueueJobs, initialDelay, tickInterval, TimeUnit.MILLISECONDS );
+	}
+
+	/**
+	 * Determines the smallest defined checkTime among all active background jobs.
+	 * Falls back to a default interval (10 sec) if no matching jobs are active.
+	 */
+	private long determineOptimalCheckTime() {
+		long minCheckTime = 10000; // Default fallback: 10 seconds
+		boolean foundActiveJob = false;
+
+		for( final SyncJobContext job : jobList ) {
+			final var pref = job.getPreference();
+			if( pref != null && pref.isBgSync() && pref.getBgTime() != null ) {
+				final long currentCheck = pref.getBgTime().getCheckTime();
+				if( !foundActiveJob || currentCheck < minCheckTime ) {
+					minCheckTime = currentCheck;
+					foundActiveJob = true;
+				}
+			}
+		}
+		return minCheckTime;
+	}
+
+	/**
+	 * Evaluates temporal boundaries across registered task configurations to schedule overdue synchronization pipelines.
+	 * <p>
+	 * This core evaluation loop acts as the engine's processing heartbeat. It scans all configured
+	 * synchronization definitions, applies an accelerated time scaling calculation using the {@code timeMultiplier},
+	 * and determines if an individual task context has surpassed its requested execution interval threshold.
+	 * <p>
+	 * Overdue jobs are safely flag-locked to guarantee execution idempotency. The payload runnable is subsequently
+	 * dispatched into a dedicated single-threaded sequential worker pool ({@code workerQueue}). This strict serialization
+	 * strategy isolates concurrent I/O access and actively prevents multiple background tasks from triggering destructive
+	 * physical disk drive thrashing.
+	 * <p>
+	 * To ensure resilient remote cancellation capabilities, the executing worker thread frame is explicitly mapped
+	 * directly back to the target {@link SyncJobContext} token inside the processing boundary.
+	 * <p>
+	 */
+	private void checkAndQueueJobs() {
+		for( final SyncJobContext job : jobList ) {
+			// Skip tasks if they are actively running or already waiting inside the execution queue lane
+			if( job.isRunning() ) continue;
+
+			final var pref = job.getPreference();
+			// Only process if background execution is explicitly requested for this task context
+			if( pref != null && pref.isBgSync() ) {
+				final long timeDelta = System.currentTimeMillis() - pref.getLastScanTime();
+				final long targetInterval = (long) ( pref.getBgTime().getTime() * timeMultiplier );
+				Debug.printDebug( "[DataSync BgController] time since last check: %d", System.currentTimeMillis() - pref.getLastScanTime() );
+
+				if( timeDelta > targetInterval ) {
+					Debug.printDebug( "[DataSync Daemon] Polling threshold triggered for task: %s. Queueing worker task.", job.getJobName() );
+					job.setRunning( true );
+					// Dispatch into the dedicated loop queue lane (prevents hardware disk I/O thrashing)
+					workerQueue.execute( () -> {
+						try {
+							final BgModel bgModel = new BgModel( pref, logger, Model.createMap(), Model.createMap() );
+
+							// Map active thread to the context token to let external shutdown requests throw interrupts
+							job.setActiveWorkerThread( Thread.currentThread() );
+							Debug.printDebug( "[DataSync Daemon] Executing background routine for task: %s", job.getJobName() );
+							bgModel.runBgJob();
+						}catch( final Exception e ) {
+							Debug.printDebug( "[Error DataSync Daemon] Critical fault captured inside background thread execution pipeline for: %s", job.getJobName() );
+							Debug.printException( this.getClass(), e );
+						}finally {
+							job.setRunning( false );
+							job.setActiveWorkerThread( null );
+							Debug.printDebug( "[DataSync Daemon] Finished executing background routine for task: %s", job.getJobName() );
+						}
+					} );
+				}
+			}
+		}
+	}
+
+	/**
+	 * Deallocates the dual-tier concurrent execution infrastructure and dissolves operational states.
+	 * <p>
+	 * This structural shutdown hook safely liquidates asynchronous runtimes by issuing immediate
+	 * cancellation signals via {@link ExecutorService#shutdownNow()} to both the high-frequency tick scheduler
+	 * and the sequential data transfer queue. Active backup threads executing file system operations
+	 * are granted a strict temporal grace window to cooperatively wind down file handles.
+	 * <p>
+	 * Upon pool expiration, all underlying job context data models are purged of volatile execution parameters
+	 * and the associated hardware {@link TrayIcon} is stripped from the operating system shell to ensure
+	 * zero resource leaks.
+	 * <p>
+	 *
+	 * @param timeoutPerThreadMs The maximum synchronization epoch in milliseconds granted to active
+	 *                           I/O operations to complete task evaluation loops before
+	 *                           the lifecycle boundary is forcibly closed.
+	 */
+	private void shutdownExecutors( long timeoutPerThreadMs ) {
+		Debug.printDebug( "[DataSync Daemon] Dissolving executor pools and cleaning up task contexts." );
+
+		if( scheduler != null ) {
+			scheduler.shutdownNow();
+		}
+
+		if( workerQueue != null ) {
+			// Drops instant interrupt signals down to the thread executing the active copy sequence
+			workerQueue.shutdownNow();
+			try {
+				if( !workerQueue.awaitTermination( timeoutPerThreadMs, TimeUnit.MILLISECONDS ) ) {
+					Debug.printDebug( "[DataSync Daemon] Worker queue termination delayed. Enforcing lifecycle exit." );
+				}
+			}catch( final InterruptedException e ) {
+				Thread.currentThread().interrupt();
+			}
+		}
+
+		// Clean up framework tracking tokens across the execution stack
+		for( final SyncJobContext job : jobList ) {
+			job.setRunning( false );
+			job.setActiveWorkerThread( null );
+		}
+
+		// Remove indicator shell icons
+		if( sysTray != null && bgView != null && bgView.getTrayIcon() != null ) {
+			sysTray.remove( bgView.getTrayIcon() );
+		}
+
+		Debug.printDebug( "[DataSync Daemon] Background-Daemon terminated cleanly." );
+	}
+
+	/**
+	 * Configures the internal asynchronous execution environment for isolation testing.
+	 * <p>
+	 * This configuration interface swaps out production thread pools with deterministic
+	 * mock implementations and scales execution time windows. It guarantees atomic evaluation
+	 * boundaries without leaking OS threads during unit test runs.
+	 * </p>
+	 *
+	 * @param multiplier  The scaling factor applied to time calculations (e.g., fractional values)
+	 * @param bgView      The background view for ui interactions.
+	 * @param scheduler   The scheduled executor tracking the heartbeat loops
+	 * @param workerQueue The sequential worker queue processing pending sync transfers
+	 */
+	private void setEnvironment( double multiplier, BgView bgView, ScheduledExecutorService scheduler, ExecutorService workerQueue ) {
+		if( multiplier > 0.0 ) this.timeMultiplier = multiplier;
+		if( bgView != null ) this.bgView = bgView;
+		if( scheduler != null ) this.scheduler = scheduler;
+		if( workerQueue != null ) this.workerQueue = workerQueue;
 	}
 }

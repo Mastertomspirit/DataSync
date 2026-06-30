@@ -19,10 +19,8 @@
 */
 package de.spiritscorp.DataSync.IO;
 
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -30,7 +28,6 @@ import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileTime;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import de.spiritscorp.DataSync.Model.FileAttributes;
 import jakarta.json.Json;
@@ -42,83 +39,87 @@ import jakarta.json.JsonWriter;
 import jakarta.json.JsonWriterFactory;
 import jakarta.json.stream.JsonGenerator;
 
+/**
+ * Isolated binary mapping engine handling structural cache entries matching runtime properties.
+ * * @author Tom Spirit
+ */
 class IOSyncMap {
 
+	private final Path jobSyncMapPath;
+
 	/**
-	 * read the json syncMap
-	 *
-	 * @param syncMap
-	 * @return <b>boolean</b> </br>
-	 *         true if the map is loaded
+	 * Binds tracking matrices to unique physical layout footprints.
 	 */
-	boolean loadSyncMap(Map<Path, FileAttributes> syncMap) {
-		if (syncMap.isEmpty()) {
-			if (Files.exists(Preference.getSyncMapPath())) {
-				try (FileReader reader = new FileReader(Preference.getSyncMapPath().toFile(), Charset.forName("UTF-8"))) {
-					final JsonReader jr = Json.createReader(reader);
-					final JsonObject jo = jr.readObject();
-					jr.close();
-					for (final Entry<String, JsonValue> entry : jo.entrySet()) {
-						final FileAttributes file = new FileAttributes(Paths.get(entry.getValue().asJsonObject().getString("relativeFilePath")),
-								entry.getValue().asJsonObject().getString("createTimeString"),
-								FileTime.fromMillis(Long.parseLong(entry.getValue().asJsonObject().get("createTime").toString())),
-								entry.getValue().asJsonObject().getString("modTimeString"),
-								FileTime.fromMillis(Long.parseLong(entry.getValue().asJsonObject().get("modTime").toString())),
-								Long.parseLong(entry.getValue().asJsonObject().get("size").toString()),
-								entry.getValue().asJsonObject().getString("fileHash"));
-						syncMap.put(Paths.get(entry.getValue().asJsonObject().getString("relativeFilePath")), file);
-					}
-				} catch (final IOException e) {
-					Debug.printDebug("%nFehler beim laden der SyncMap: %s", e.getMessage());
-					Debug.printException(this.getClass(), e);
-					return false;
-				}
-			} else {
-				return false;
+	IOSyncMap( String jobName ) {
+		this.jobSyncMapPath = PreferenceManager.getInstance().getConfigPath().getParent().resolve( "syncMap_" + jobName + ".json" );
+	}
+
+	boolean loadSyncMap( Map<Path, FileAttributes> syncMap ) {
+		if( !syncMap.isEmpty() || !Files.exists( jobSyncMapPath ) ) { return false; }
+		try( JsonReader jsonReader = Json.createReader( Files.newInputStream( jobSyncMapPath, StandardOpenOption.READ ) ) ) {
+			final JsonObject jsonObject = jsonReader.readObject();
+
+			for( final Map.Entry<String, JsonValue> entry : jsonObject.entrySet() ) {
+				final JsonObject objectEntry = entry.getValue().asJsonObject();
+				final FileAttributes fileAttributes = new FileAttributes(
+						Paths.get( objectEntry.getString( "relativeFilePath" ) ),
+						objectEntry.getString( "createTimeString" ),
+						FileTime.fromMillis( Long.parseLong( objectEntry.get( "createTime" ).toString() ) ),
+						objectEntry.getString( "modTimeString" ),
+						FileTime.fromMillis( Long.parseLong( objectEntry.get( "modTime" ).toString() ) ),
+						Long.parseLong( objectEntry.get( "size" ).toString() ),
+						objectEntry.getString( "fileHash" ) );
+				syncMap.put( Paths.get( objectEntry.getString( "relativeFilePath" ) ), fileAttributes );
 			}
+			return true;
+		}catch( final IllegalArgumentException | UnsupportedOperationException | SecurityException | IOException e ) {
+			// Block 1: IO & File System Operations (Options, Permissions, Missing Files)
+			Debug.printDebug( "[Error] File system or configuration failure while opening stream: %s", e.getMessage() );
+			Debug.printException( this.getClass(), e );
+			return false;
+
+		}catch( final jakarta.json.JsonException e ) {
+			// Block 2: JSON Processing (Deals with both syntax/parsing and structural creation errors)
+			Debug.printDebug( "[Error] JSON processing or syntax error: %s", e.getMessage() );
+			Debug.printException( this.getClass(), e );
+			return false;
+
+		}catch( final IllegalStateException e ) {
+			// Block 3: Reader State Management (Reader already closed or multi-call violation)
+			Debug.printDebug( "[Error] Parser state conflict: %s", e.getMessage() );
+			Debug.printException( this.getClass(), e );
+			return false;
 		}
-		return true;
 	}
 
-	/**
-	 * write the sync map as json
-	 *
-	 * @param syncMap
-	 */
-	void writeSyncMap(Map<Path, FileAttributes> syncMap) {
-		try (OutputStream os = Files.newOutputStream(Preference.getSyncMapPath(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
+	void writeSyncMap( Map<Path, FileAttributes> syncMap ) {
+		try( OutputStream os = Files.newOutputStream( jobSyncMapPath, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING ) ) {
 			final HashMap<String, Boolean> config = new HashMap<>();
-			JsonObject job;
-			config.put(JsonGenerator.PRETTY_PRINTING, true);
-			final JsonWriterFactory jwf = Json.createWriterFactory(config);
-			job = Json.createObjectBuilder(createSyncMap(syncMap)).build();
-			final JsonWriter jw = jwf.createWriter(os);
-			jw.write(job);
+			config.put( JsonGenerator.PRETTY_PRINTING, true );
+			final JsonWriterFactory jwf = Json.createWriterFactory( config );
+
+			final JsonObject jobObj = createSyncMap( syncMap );
+			final JsonWriter jw = jwf.createWriter( os );
+			jw.write( jobObj );
 			jw.close();
-		} catch (final IOException e) {
-			Debug.printException(this.getClass(), e);
-			Debug.printDebug("%nFehler beim schreiben der SyncMap: %s", e.getMessage());
+		}catch( final IOException e ) {
+			Debug.printException( this.getClass(), e );
 		}
 	}
 
-	/**
-	 * Build a jsonObject from the sync map
-	 *
-	 * @param syncMap
-	 * @return <b>JsonObject</b> </br>
-	 */
-	private JsonObject createSyncMap(Map<Path, FileAttributes> syncMap) {
+	private JsonObject createSyncMap( Map<Path, FileAttributes> syncMap ) {
 		final JsonObjectBuilder jo = Json.createObjectBuilder();
-		for (final Map.Entry<Path, FileAttributes> entry : syncMap.entrySet()) {
-			final JsonObject jo2 = Json.createObjectBuilder().add("relativeFilePath", entry.getValue().getRelativeFilePath().toString())
-					.add("fileHash", entry.getValue().getFileHash())
-					.add("modTimeString", entry.getValue().getModTimeString())
-					.add("createTime", entry.getValue().getCreateTime().toMillis())
-					.add("modTime", entry.getValue().getModTime().toMillis())
-					.add("size", entry.getValue().getSize())
-					.add("createTimeString", entry.getValue().getCreateTimeString())
+		for( final Map.Entry<Path, FileAttributes> entry : syncMap.entrySet() ) {
+			final JsonObject jo2 = Json.createObjectBuilder()
+					.add( "relativeFilePath", entry.getValue().getRelativeFilePath().toString() )
+					.add( "fileHash", entry.getValue().getFileHash() )
+					.add( "modTimeString", entry.getValue().getModTimeString() )
+					.add( "createTime", entry.getValue().getCreateTime().toMillis() )
+					.add( "modTime", entry.getValue().getModTime().toMillis() )
+					.add( "size", entry.getValue().getSize() )
+					.add( "createTimeString", entry.getValue().getCreateTimeString() )
 					.build();
-			jo.add(entry.getValue().getRelativeFilePath().toString(), jo2);
+			jo.add( entry.getValue().getRelativeFilePath().toString(), jo2 );
 		}
 		return jo.build();
 	}

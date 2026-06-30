@@ -331,4 +331,5 @@ public final class Preference {
 	public void setTrashbin( boolean trashbin ) { this.trashbin = trashbin; }
 
 	public Path getTrashbinPath() { return trashbinPath; }
+
 }

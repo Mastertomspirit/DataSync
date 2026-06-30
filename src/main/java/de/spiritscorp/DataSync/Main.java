@@ -70,21 +70,21 @@ public final class Main { // NOPMD ShortClassName
 	public static final int INFO_DELAY = 4;
 
 	/** Config folder flag long */
-	private static final String CONFIG_DIR_LONG = "--config-dir";
+	public static final String CONFIG_DIR_LONG = "--config-dir";
 	/** Config folder flag short */
-	private static final String CONFIG_DIR_SHORT = "-c";
+	public static final String CONFIG_DIR_SHORT = "-c";
 	/** Boot delay flag long */
-	private static final String BOOT_DELAY_LONG = "--boot-delay";
+	public static final String BOOT_DELAY_LONG = "--boot-delay";
 	/** Boot Delay flag short */
-	private static final String BOOT_DELAY_SHORT = "-b";
+	public static final String BOOT_DELAY_SHORT = "-b";
 	/** Debug flag long */
-	private static final String DEBUG_LONG = "--debug";
+	public static final String DEBUG_LONG = "--debug";
 	/** Debug flag short */
-	private static final String DEBUG_SHORT = "-d";
+	public static final String DEBUG_SHORT = "-d";
 	/** Debug to file flag long */
-	private static final String DEBUG_TO_FILE_LONG = "--debug-to-file";
+	public static final String DEBUG_TO_FILE_LONG = "--debug-to-file";
 	/** Debug to file flag short */
-	private static final String DEBUG_TO_FILE_SHORT = "-f";
+	public static final String DEBUG_TO_FILE_SHORT = "-f";
 
 	/** Debug mode */
 	private static boolean debug;
@@ -130,6 +130,14 @@ public final class Main { // NOPMD ShortClassName
 	 *         {@code false} otherwise.
 	 */
 	public static boolean isDebug() { return debug; }
+
+	/**
+	 * Checks whether the debug mode is active for extended verbose and additional runtime diagnostic outputs.
+	 *
+	 * @return {@code true} if advanced diagnostic information should be emitted;
+	 *         {@code false} otherwise.
+	 */
+	public static boolean isDebugToFile() { return toFile; }
 
 	/**
 	 * Evaluates and processes runtime command-line arguments in a single pass to configure

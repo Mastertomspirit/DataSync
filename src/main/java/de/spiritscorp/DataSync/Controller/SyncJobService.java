@@ -31,10 +31,12 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import de.spiritscorp.DataSync.Main;
 import de.spiritscorp.DataSync.Gui.DialogService;
 import de.spiritscorp.DataSync.IO.Debug;
 import de.spiritscorp.DataSync.IO.Logger;
 import de.spiritscorp.DataSync.IO.Preference;
+import de.spiritscorp.DataSync.IO.PreferenceManager;
 import de.spiritscorp.DataSync.Model.FileAttributes;
 import de.spiritscorp.DataSync.Model.Model;
 import javafx.application.Platform;
@@ -360,6 +362,7 @@ public class SyncJobService {
 		final String possibleOS = System.getProperty( "os.name" );
 		String os = "";
 		if( possibleOS != null ) os = possibleOS.toLowerCase( Locale.ROOT );
+		final String flags = computeBootFlags();
 
 		if( os.contains( "win" ) ) {
 			final String regCmd = "HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run";
@@ -367,8 +370,8 @@ public class SyncJobService {
 				if( set ) {
 					// No literal interior quote escapes required; ProcessBuilder insulates whitespaces
 					final String dataPayload = ( exePath == null )
-							? javaPath + "\\javaw.exe -Xmx200m -jar " + datei + " --boot-delay"
-							: exePath + " --boot-delay";
+							? String.format( "%s\\javaw.exe -Xmx200m -jar %s %s %s", javaPath, datei, Main.BOOT_DELAY_LONG, flags )
+							: String.format( "%s %s %s", exePath, Main.BOOT_DELAY_LONG, flags );
 
 					final ProcessBuilder pb = new ProcessBuilder( "reg", "add", regCmd, "/v", "DataSync", "/t", "REG_SZ", "/d", dataPayload, "/f" );
 					pb.start();
@@ -382,14 +385,15 @@ public class SyncJobService {
 				return false;
 			}
 		}else if( os.contains( "nix" ) || os.contains( "aix" ) || os.contains( "nux" ) ) {
+			final String crontab = "crontab";
 			try {
 				if( set ) {
 					final String cronPayload = ( exePath == null )
-							? String.format( "@reboot %s/java -jar \"%s\" --boot-delay", javaPath, fullPath )
-							: String.format( "@reboot %s --boot-delay", exePath );
+							? String.format( "@reboot %s/java -jar %s %s %s", javaPath, fullPath, Main.BOOT_DELAY_LONG, flags )
+							: String.format( "@reboot %s %s %s", exePath, Main.BOOT_DELAY_LONG, flags );
 
 					// Feed crontab structural inputs directly via process input stream pipelining
-					final ProcessBuilder pb = new ProcessBuilder( "crontab", "-" );
+					final ProcessBuilder pb = new ProcessBuilder( crontab, "-" );
 					final Process process = pb.start();
 
 					try( BufferedWriter writer = new BufferedWriter(
@@ -399,7 +403,7 @@ public class SyncJobService {
 					}
 					process.waitFor();
 				}else {
-					final ProcessBuilder pb = new ProcessBuilder( "crontab", "-r" );
+					final ProcessBuilder pb = new ProcessBuilder( crontab, "-r" );
 					pb.start().waitFor();
 				}
 			}catch( final IOException | InterruptedException e ) {
@@ -412,6 +416,19 @@ public class SyncJobService {
 			}
 		}
 		return true;
+	}
+
+	private String computeBootFlags() {
+		final StringBuilder stringBuilder = new StringBuilder();
+		final PreferenceManager manager = PreferenceManager.getInstance();
+		if( Main.isDebugToFile() ) {
+			stringBuilder.append( " " + Main.DEBUG_TO_FILE_LONG );
+		}
+		if( manager.isCustomConfigDir() ) {
+			stringBuilder.append( " " + Main.CONFIG_DIR_LONG );
+			stringBuilder.append( " " + manager.getConfigPath().getParent().toString() );
+		}
+		return stringBuilder.toString();
 	}
 
 	private void updateUIStatus( SyncJobContext context, boolean running, String message ) {

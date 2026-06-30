@@ -2,10 +2,10 @@ name: Deploy Maven Site to GitHub Pages
 
 on:
     workflow_dispatch: # Allows manual triggering via the GitHub UI
-    push:
-        branches:  [ "dev" ] 
-    pull_request:
-        branches:  [ "main" ]  # Triggers on pull requests targeting the dev branch
+#    push:
+#        branches:  [ "dev" ] 
+#    pull_request:
+#        branches:  [ "main" ]  # Triggers on pull requests targeting the dev branch
 			  
 permissions:
     contents: read

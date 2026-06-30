@@ -1,5 +1,6 @@
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](#)
-[![Java Version](https://img.shields.io/badge/Java-23-orange.svg)](#)
+[![Java Version](https://img.shields.io/badge/Java-25-orange.svg)](#)
+[![Java Version](https://img.shields.io/badge/JavaFX-26-ff4500.svg)](#)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux-blue.svg)](#)
 [![Environment](https://img.shields.io/badge/Environment-GUI%20only-blue.svg)](#)
 
@@ -99,7 +100,7 @@ Fine-tune the application startup behavior using the following CLI arguments:
 ## 🛠️ Build & Requirements
 
 ### Requirements
-* **Java Development Kit (JDK) 23** or higher.
+* **Java Development Kit (JDK) 25** or higher.
 * **Apache Maven** (for building from source).
 
 ### Building a Platform-Specific Runtime (jlink)
@@ -109,7 +110,7 @@ mvn clean compile jlink:jlink verify
 ```
 
 ### Building a Standard JAR
-If you prefer a standalone executable JAR (requires Java 23 pre-installed on the target system):
+If you prefer a standalone executable JAR (requires Java 25 pre-installed on the target system):
 ```bash
 mvn clean package
 ```

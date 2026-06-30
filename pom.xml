@@ -51,7 +51,7 @@
 	<properties>
 		<stable_version_for_jpackage>1.1.0.0</stable_version_for_jpackage>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<javaVersion>23</javaVersion>
+		<javaVersion>25</javaVersion>
 		<maven.build.timestamp.format>dd.MM.yyy - HH:mm</maven.build.timestamp.format>
 		<maven.compiler.source>${javaVersion}</maven.compiler.source>
 		<maven.compiler.target>${javaVersion}</maven.compiler.target>

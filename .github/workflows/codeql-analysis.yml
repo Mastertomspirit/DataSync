@@ -41,7 +41,7 @@ jobs:
     - name: Setup Java JDK
       uses: actions/setup-java@v4
       with:
-        java-version: '25'
+        java-version: '23'
     # Java distribution. See the list of supported distributions in README file
         distribution: 'temurin'
         cache: 'maven'

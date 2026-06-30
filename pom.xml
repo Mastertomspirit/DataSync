@@ -95,7 +95,7 @@
 
 		<!-- Dependency versions -->
 		<dep_surefire_tree>1.5.1</dep_surefire_tree>
-		<dep_javafx_controls.version>25</dep_javafx_controls.version>
+		<dep_javafx_controls.version>26.0.1</dep_javafx_controls.version>
 		<dep_ikonli_javafx.version>12.4.0</dep_ikonli_javafx.version>
 		<dep_ikonli_materialdesign2..version>12.4.0</dep_ikonli_materialdesign2..version>
 		<dep_jakarta.json.api.version>2.1.3</dep_jakarta.json.api.version>

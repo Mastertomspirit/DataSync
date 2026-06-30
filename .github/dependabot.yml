@@ -1,13 +1,92 @@
-# To get started with Dependabot version updates, you'll need to specify which
-# package ecosystems to update and where the package manifests are located.
-# Please see the documentation for all configuration options:
-# https://docs.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
-
 version: 2
 updates:
-  - package-ecosystem: "maven" # See documentation for possible values
-    directory: "/" # Location of package manifests
+  # ==========================================================================
+  # 1. MAVEN CONFIGURATION - MAIN BRANCH
+  # ==========================================================================
+  - package-ecosystem: "maven"
+    directory: "/"
+    target-branch: "main"
     schedule:
       interval: "daily"
-    target-branch: "main"
+      time: "08:00"
+      timezone: "Europe/Berlin"
     
+    # Specifies the GitHub usernames of individuals requested to review the created PRs
+    reviewers:
+      - "mastertomspirit"
+      
+    # Restricts the maximum number of concurrent open Pull Requests to prevent repository clutter
+    open-pull-requests-limit: 5
+
+    # Assigns specific organizational tags to the PRs for easier filtering and automated workflows
+    labels:
+      - "dependencies"
+      - "main-branch"
+
+    # Defines rules to consolidate multiple dependency updates into single, manageable Pull Requests
+    groups:
+      # Combines all non-breaking updates (Minor and Patch) into a single daily PR to reduce noise
+      minor-and-patch-updates:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+      # Combines critical version bumps (Major) into a dedicated PR, highlighting potential breaking changes
+      major-updates:
+        patterns:
+          - "*"
+        update-types:
+          - "major"
+
+  # ==========================================================================
+  # 2. MAVEN CONFIGURATION - DEV BRANCH
+  # ==========================================================================
+  - package-ecosystem: "maven"
+    directory: "/"
+    target-branch: "dev"
+    schedule:
+      interval: "daily"
+      time: "08:30"
+      timezone: "Europe/Berlin"
+    
+    # Specifies the GitHub usernames of individuals requested to review the created PRs
+    reviewers:
+      - "mastertomspirit"
+      
+    # Higher limit allowed on dev branch to catch up with fast-paced dependency changes during development
+    open-pull-requests-limit: 10
+
+    # Assigns specific organizational tags to the PRs for easier filtering and automated workflows
+    labels:
+      - "dependencies"
+      - "dev-branch"
+
+    # Defines rules to consolidate multiple dependency updates into single, manageable Pull Requests
+    groups:
+      # Combines all non-breaking updates (Minor and Patch) into a single daily PR to reduce noise
+      minor-and-patch-updates:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+      # Combines critical version bumps (Major) into a dedicated PR, highlighting potential breaking changes
+      major-updates:
+        patterns:
+          - "*"
+        update-types:
+          - "major"
+
+  # ==========================================================================
+  # 3. GITHUB ACTIONS CONFIGURATION
+  # ==========================================================================
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    reviewers:
+      - "mastertomspirit"
+    labels:
+      - "dependencies"
+      - "github-actions"

@@ -24,6 +24,13 @@
 			    <role>${app.developer.role.arch}</role>
 			</roles>
 		</developer>
+		<developer>
+			<id>Gemini</id>
+			<name>Gemini Free</name>
+			<roles>
+				<role>${app.developer.role.ui}</role>
+			</roles>
+		</developer>
 	</developers>
 	<issueManagement>
 		<system>GitHub Issues</system>
@@ -160,7 +167,7 @@
 				<configuration>
 					<configLocation>buildConfig/checkstyle.xml</configLocation>
 					<consoleOutput>true</consoleOutput>
-					<failsOnError>false</failsOnError>
+					<failsOnError>true</failsOnError>
 					<linkXRef>true</linkXRef>
 					<cacheFile>${project.basedir}/.cache/checkstyle.cache</cacheFile>
 					<propertyExpansion>checkstyle.enableExternalDtdLoad=true</propertyExpansion>

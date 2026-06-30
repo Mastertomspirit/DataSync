@@ -5,6 +5,8 @@ release-nodes*
 .classpath
 .project
 .checkstyle
+.pmd
+.ruleset
 .settings/
 .cache/
 

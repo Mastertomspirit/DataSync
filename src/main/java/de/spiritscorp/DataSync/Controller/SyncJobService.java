@@ -27,10 +27,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import de.spiritscorp.DataSync.ScanType;
+import de.spiritscorp.DataSync.Gui.DialogService;
 import de.spiritscorp.DataSync.IO.Debug;
 import de.spiritscorp.DataSync.IO.Logger;
 import de.spiritscorp.DataSync.IO.Preference;
@@ -44,7 +45,28 @@ import javafx.application.Platform;
  *
  * @author Tom Spirit
  */
-public class ContHelper {
+public class SyncJobService {
+
+	/**
+	 * Service used to display modal dialogs and confirmation prompts to the user.
+	 */
+	private final DialogService dialogService;
+
+	/**
+	 * Formatter utility responsible for converting raw sync metrics into human-readable UI logs.
+	 */
+	private final UiLogFormatter uiLog;
+
+	/**
+	 * Constructs a new {@code SyncJobService} with the required UI and logging dependencies.
+	 *
+	 * @param dialogService the service provider for user interaction dialogs
+	 * @param uiLog         the formatter instance used to compile text summaries for the UI
+	 */
+	public SyncJobService( DialogService dialogService, UiLogFormatter uiLog ) {
+		this.dialogService = dialogService;
+		this.uiLog = uiLog;
+	}
 
 	/**
 	 * Executes bidirectional folder synchronization using task-bound preferences.
@@ -85,39 +107,39 @@ public class ContHelper {
 				if( Thread.currentThread().isInterrupted() ) throw new InterruptedException();
 
 				final ArrayList<Map<Path, FileAttributes>> result = model.getSyncFiles( pref.getSyncMap(), startSourcePath, startDestPath );
-				final String scanTimeFormatted = getEndTimeFormatted( System.nanoTime() - startTime ) + " für das Scannen";
+				final String scanTimeFormatted = uiLog.getEndTimeFormatted( System.nanoTime() - startTime ) + " für das Scannen";
 
 				if( Thread.currentThread().isInterrupted() ) throw new InterruptedException();
 
-				appendLogData( context, formatMaps( pref.getScanMode(), sourceMap, destMap, failMap ) );
+				appendLogData( context, uiLog.formatMaps( pref.getScanMode(), sourceMap, destMap, failMap ) );
 				appendLogData( context, String.format( "Quelldateien: %d Stück und Zieldateien: %d Stück", stats[0], stats[1] ) );
-				appendLogData( context, String.format( "Größe aller Quelldateien: %s | Größe aller Zieldateien: %s", getReadableBytes( stats[2] ), getReadableBytes( stats[3] ) ) );
+				appendLogData( context, String.format( "Größe aller Quelldateien: %s | Größe aller Zieldateien: %s", uiLog.getReadableBytes( stats[2] ), uiLog.getReadableBytes( stats[3] ) ) );
 				appendLogData( context, String.format( "Fehlerhafter Zugriff: %d", failMap.size() ) );
 
 				startTime = System.nanoTime();
 				final boolean success = model.syncFiles( context, result, pref.getSyncMap(), startSourcePath, startDestPath, false );
-				final String syncTimeFormatted = getEndTimeFormatted( System.nanoTime() - startTime ) + " für das Synchronisieren";
+				final String syncTimeFormatted = uiLog.getEndTimeFormatted( System.nanoTime() - startTime ) + " für das Synchronisieren";
 
 				if( success ) {
 					pref.saveLastScanTime();
 					appendLogData( context, scanTimeFormatted );
 					appendLogData( context, syncTimeFormatted );
 					updateUIStatus( context, false, "Synchronisation erfolgreich!" );
-					Debug.printDebug( "[Info] Synchronization completed successfully for profile: %s", context.getJobName() );
+					Debug.printDebug( "[Controller Helper]  Synchronization completed successfully for profile: %s", context.getJobName() );
 				}else {
 					updateUIStatus( context, false, "Synchronisation fehlgeschlagen!" );
-					Debug.printDebug( "[Error] Synchronization routine failed for: %s", context.getJobName() );
+					Debug.printDebug( "[Controller Helper Error] Synchronization routine failed for: %s", context.getJobName() );
 				}
-				Debug.printDebug( scanTimeFormatted );
-				Debug.printDebug( syncTimeFormatted );
+				Debug.printDebug( "[Controller Helper] Scan Time -> " + scanTimeFormatted );
+				Debug.printDebug( "[Controller Helper]  Sync Time -> " + syncTimeFormatted );
 
 			}catch( final InterruptedException e ) {
 				updateUIStatus( context, false, "Synchronisation abgebrochen." );
-				Debug.printDebug( "[Error] Synchronization routine aborted due to interruption: %s", e.getMessage() );
+				Debug.printDebug( "[Controller Helper Error] Synchronization routine aborted due to interruption: %s", e.getMessage() );
 				Debug.printException( this.getClass(), e );
 			}catch( final Exception e ) {
 				updateUIStatus( context, false, "Fehler: " + e.getMessage() );
-				Debug.printDebug( "[Error] Synchronization routine failed: %s", e.getMessage() );
+				Debug.printDebug( "[Controller Helper Error] Synchronization routine failed: %s", e.getMessage() );
 				Debug.printException( this.getClass(), e );
 			}
 			context.setRunning( false );
@@ -158,42 +180,45 @@ public class ContHelper {
 
 				failMap.putAll( model.scanSyncFiles( pref.getSourcePath(), pref.getDestPath(), stats, pref.getScanMode(), pref.isSubDir(), pref.isTrashbin() ) );
 				model.getEqualsFiles();
-				final String scanTimeFormatted = getEndTimeFormatted( System.nanoTime() - startTime ) + " für das Scannen";
-				Debug.printDebug( "[Info] sourceMap size = %d, destMap size = %d, failtures = %d", stats[0], stats[1], failMap.size() );
+				final String scanTimeFormatted = uiLog.getEndTimeFormatted( System.nanoTime() - startTime ) + " für das Scannen";
+				Debug.printDebug( "[Controller Helper]  sourceMap size = %d, destMap size = %d, failtures = %d", stats[0], stats[1], failMap.size() );
 
 				if( Thread.currentThread().isInterrupted() ) throw new InterruptedException();
 
-				appendLogData( context, formatMaps( pref.getScanMode(), sourceMap, destMap, failMap ) );
+				appendLogData( context, uiLog.formatMaps( pref.getScanMode(), sourceMap, destMap, failMap ) );
 				appendLogData( context, String.format( "Quelldateien: %d Stück und Zieldateien: %d Stück", stats[0], stats[1] ) );
-				appendLogData( context, String.format( "Größe aller Quelldateien: %s | Größe aller Zieldateien: %s", getReadableBytes( stats[2] ), getReadableBytes( stats[3] ) ) );
+				appendLogData( context, String.format( "Größe aller Quelldateien: %s | Größe aller Zieldateien: %s", uiLog.getReadableBytes( stats[2] ), uiLog.getReadableBytes( stats[3] ) ) );
 				appendLogData( context, String.format( "Fehlerhafter Zugriff: %d", failMap.size() ) );
 
-//	TODO Abfrage
-				final int del = pref.isAutoDel() ? 0 : 1;
+				boolean success = false;
+				String backupTimeFormatted = "";
 
-				startTime = System.nanoTime();
-				final boolean success = model.backupFiles( del, pref.isLogOn(), startDestPath, pref.isTrashbin(), pref.getTrashbinPath() );
-				final String backupTimeFormatted = getEndTimeFormatted( System.nanoTime() - startTime ) + " für das Synchronisieren";
-
+				final int del = ( pref.isAutoDel() || dialogService.askUser( "Dateien löschen", "Löschen bestätigen?", "Alle gelöschten Dateien auch im Zielverzeichnis löschen?" ) ) ? 0 : 1;
+				if( pref.isAutoSync() || dialogService.askUser( "Dateien sichern", "Kopieren bestätigen?", "Alle neuen Dateien in  das Zielverzeichnis kopieren?" ) ) {
+					startTime = System.nanoTime();
+					success = model.backupFiles( del, pref.isLogOn(), startDestPath, pref.isTrashbin(), pref.getTrashbinPath() );
+					backupTimeFormatted = uiLog.getEndTimeFormatted( System.nanoTime() - startTime ) + " für das Synchronisieren";
+				}
+//				TODO output at manual abort
 				if( success ) {
 					pref.saveLastScanTime();
 					appendLogData( context, scanTimeFormatted );
 					appendLogData( context, backupTimeFormatted );
 					updateUIStatus( context, false, "Backup erfolgreich abgeschlossen!" );
-					Debug.printDebug( "[Info] Backup completed successfully for profile: %s", context.getJobName() );
+					Debug.printDebug( "[Controller Helper]  Backup completed successfully for profile: %s", context.getJobName() );
 				}else {
 					updateUIStatus( context, false, "Backup fehlgeschlagen!" );
-					Debug.printDebug( "[Error] Backup routine failed in: %s", context.getJobName() );
+					Debug.printDebug( "[Controller Helper Error] Backup routine failed in: %s", context.getJobName() );
 				}
-				Debug.printDebug( scanTimeFormatted );
-				Debug.printDebug( backupTimeFormatted );
+				Debug.printDebug( "[Controller Helper] Scan Time -> " + scanTimeFormatted );
+				Debug.printDebug( "[Controller Helper]  Backup Time -> " + backupTimeFormatted );
 			}catch( final InterruptedException e ) {
 				updateUIStatus( context, false, "Backup-Vorgang abgebrochen." );
-				Debug.printDebug( "[Error] Backup routine aborted due to interruption: %s", e.getMessage() );
+				Debug.printDebug( "[Controller Helper Error] Backup routine aborted due to interruption: %s", e.getMessage() );
 				Debug.printException( this.getClass(), e );
 			}catch( final Exception e ) {
 				updateUIStatus( context, false, "Fehler während des Backups: " + e.getMessage() );
-				Debug.printDebug( "[Error] Backup routine failed: %s", e.getMessage() );
+				Debug.printDebug( "[Controller Helper Error] Backup routine failed: %s", e.getMessage() );
 				Debug.printException( this.getClass(), e );
 			}
 			context.setRunning( false );
@@ -207,56 +232,61 @@ public class ContHelper {
 	/**
 	 * Scans source paths asynchronously to list file checksum collisions.
 	 *
-	 * @param context Target environment details providing task variables
+	 * @param job Target environment details providing task variables
 	 */
-	public void startDuplicateScan( SyncJobContext context ) {
-		if( context.isRunning() ) return;
+	public void startDuplicateScan( final SyncJobContext job ) {
+		if( job.isRunning() ) return;
 
-		context.setRunning( true );
-		context.setStatusMessage( "Scanne nach Duplikaten..." );
-		context.clearLog();
+		job.setRunning( true );
+		job.setStatusMessage( "Scanne nach Duplikaten..." );
+		job.clearLog();
 
-		final Preference pref = context.getPreference();
-		final Model model = new Model( new Logger(), Model.createMap(), Model.createMap() );
+		final Map<Path, FileAttributes> sourceMap = Model.createMap();
+		final Map<Path, FileAttributes> destMap = Model.createMap();
+		final Long[] stats = new Long[4];
+
+		final Preference pref = job.getPreference();
+		final Model model = new Model( new Logger(), sourceMap, destMap );
 
 		final Thread worker = new Thread( () -> {
 			final long startTime = System.nanoTime();
 			try {
-				final Map<Path, FileAttributes> scanResult = model.scanDublicates( pref.getSourcePath() );
-				final String scanTimeFormatted = getEndTimeFormatted( System.nanoTime() - startTime );
+				final Map<Path, FileAttributes> duplicateMap = model.scanDublicates( pref.getSourcePath(), stats );
+				final String scanTimeFormatted = uiLog.getEndTimeFormatted( System.nanoTime() - startTime );
 
-				if( Thread.currentThread().isInterrupted() ) throw new InterruptedException();
+				if( Thread.currentThread().isInterrupted() ) throw new InterruptedException( "Manual abort ..." );
+
+				final List<SyncJobContext.FileRow> preparedRows = new ArrayList<>();
+				if( duplicateMap != null && !duplicateMap.isEmpty() ) {
+					for( final Map.Entry<Path, FileAttributes> entry : duplicateMap.entrySet() ) {
+						preparedRows.add( new SyncJobContext.FileRow(
+								entry.getKey(),
+								entry.getValue(),
+								uiLog.getReadableBytes( entry.getValue().getSize() ) ) );
+					}
+				}
 
 				Platform.runLater( () -> {
-					context.getDuplicateFiles().clear();
-					if( scanResult != null ) {
-						for( final Map.Entry<Path, FileAttributes> entry : scanResult.entrySet() ) {
-							context.getDuplicateFiles().add( new SyncJobContext.FileRow(
-									entry.getKey(),
-									entry.getValue(),
-									getReadableBytes( entry.getValue().getSize() ) ) );
-						}
-					}
-					context.setRunning( false );
-					context.setStatusMessage( "Scan abgeschlossen. Duplikate gefunden: " + ( context.getDuplicateFiles().size() / 2 ) + " (" + scanTimeFormatted + "s)" );
-					Debug.printDebug( scanTimeFormatted + "First runlater" );
+					job.getDuplicateFiles().clear();
+					job.getDuplicateFiles().addAll( preparedRows );
+					job.setRunning( false );
+					job.setStatusMessage( "Scan abgeschlossen. Duplikate insgesamt gefunden: " + job.getDuplicateFiles().size() + " (" + scanTimeFormatted + "s)" );
+					Debug.printDebug( "[Controller Helper] duplicateMap size = %d, sourceMap size = %d, failtures = %d", duplicateMap.size(), stats[0], stats[1] );
+					Debug.printDebug( "[Controller Helper] Scan Time -> " + scanTimeFormatted );
 				} );
-//	TODO	testen
-				Debug.printDebug( scanTimeFormatted + "Second runlater" );
 			}catch( final InterruptedException e ) {
-				updateUIStatus( context, false, "Scan abgebrochen." );
-				Debug.printDebug( "[Error] Duplicate scan aborted due to interruption: %s", e.getMessage() );
-				Debug.printException( this.getClass(), e );
+				updateUIStatus( job, false, "Scan abgebrochen." );
+				Debug.printDebug( "[Controller Helper Error] Duplicate scan aborted due to interruption: %s", e.getMessage() );
 			}catch( final Exception e ) {
-				updateUIStatus( context, false, "Fehler beim Duplikat Scan: " + e.getMessage() );
-				Debug.printDebug( "[Error] Duplicat scan abord: %s", e.getMessage() );
+				updateUIStatus( job, false, "Fehler beim Duplikat Scan: " + e.getMessage() );
+				Debug.printDebug( "[Controller Helper Error] Duplicat scan abord: %s", e.getMessage() );
 				Debug.printException( this.getClass(), e );
 			}
-			context.setRunning( false );
+			job.setRunning( false );
 		} );
 
 		worker.setDaemon( true );
-		context.setActiveWorkerThread( worker );
+		job.setActiveWorkerThread( worker );
 		worker.start();
 	}
 
@@ -277,6 +307,7 @@ public class ContHelper {
 			context.setStatusMessage( "Keine Dateien zum Löschen ausgewählt." );
 			return;
 		}
+		if( !dialogService.askUser( "Duplikate entfernen", "Löschen bestätigen?", "Alle ausgewählten Dateien wirklich löschen?" ) ) return;
 
 		context.setRunning( true );
 		context.setStatusMessage( "Lösche ausgewählte Duplikate..." );
@@ -295,15 +326,15 @@ public class ContHelper {
 					context.getDuplicateFiles().removeIf( SyncJobContext.FileRow::isSelected );
 					context.setRunning( false );
 					context.setStatusMessage( finalSuccess + " Duplikate erfolgreich gelöscht." );
-					Debug.printDebug( "[Info] Duplicates successfully deleted: %d items.", finalSuccess );
+					Debug.printDebug( "[Controller Helper] Duplicates successfully deleted: %d items.", finalSuccess );
 				} );
 			}catch( final InterruptedException e ) {
 				updateUIStatus( context, false, "Löschvorgang unterbrochen." );
-				Debug.printDebug( "[Error] Duplicate deletion aborted: %s", e.getMessage() );
+				Debug.printDebug( "[Controller Helper Error] Duplicate deletion aborted: %s", e.getMessage() );
 				Debug.printException( this.getClass(), e );
 			}catch( final Exception e ) {
 				updateUIStatus( context, false, "Fehler beim Löschen: " + e.getMessage() );
-				Debug.printDebug( "[Error] Duplicate deletion failed: %s", e.getMessage() );
+				Debug.printDebug( "[Controller Helper Error] Duplicate deletion failed: %s", e.getMessage() );
 				Debug.printException( this.getClass(), e );
 			}
 		} );
@@ -336,8 +367,8 @@ public class ContHelper {
 				if( set ) {
 					// No literal interior quote escapes required; ProcessBuilder insulates whitespaces
 					final String dataPayload = ( exePath == null )
-							? javaPath + "\\javaw.exe -Xmx200m -jar " + datei + " firstStart"
-							: exePath + " firstStart";
+							? javaPath + "\\javaw.exe -Xmx200m -jar " + datei + " --boot-delay"
+							: exePath + " --boot-delay";
 
 					final ProcessBuilder pb = new ProcessBuilder( "reg", "add", regCmd, "/v", "DataSync", "/t", "REG_SZ", "/d", dataPayload, "/f" );
 					pb.start();
@@ -346,7 +377,7 @@ public class ContHelper {
 					pb.start();
 				}
 			}catch( final IOException e ) {
-				Debug.printError( "[Error] Set Windows registry autostart tracking hive failed: %s", e.getMessage() );
+				Debug.printError( "[Controller Helper Error] Set Windows registry autostart tracking hive failed: %s", e.getMessage() );
 				Debug.printException( getClass(), e );
 				return false;
 			}
@@ -354,8 +385,8 @@ public class ContHelper {
 			try {
 				if( set ) {
 					final String cronPayload = ( exePath == null )
-							? String.format( "@reboot %s/java -jar \"%s\" firstStart", javaPath, fullPath )
-							: String.format( "@reboot %s firstStart", exePath );
+							? String.format( "@reboot %s/java -jar \"%s\" --boot-delay", javaPath, fullPath )
+							: String.format( "@reboot %s --boot-delay", exePath );
 
 					// Feed crontab structural inputs directly via process input stream pipelining
 					final ProcessBuilder pb = new ProcessBuilder( "crontab", "-" );
@@ -372,7 +403,7 @@ public class ContHelper {
 					pb.start().waitFor();
 				}
 			}catch( final IOException | InterruptedException e ) {
-				Debug.printError( "[Error] Set Unix crontab daemon automated launch failed: %s", e.getMessage() );
+				Debug.printError( "[Controller Helper Error] Set Unix crontab daemon automated launch failed: %s", e.getMessage() );
 				Debug.printException( getClass(), e );
 				if( e instanceof InterruptedException ) {
 					Thread.currentThread().interrupt();
@@ -392,102 +423,5 @@ public class ContHelper {
 
 	private void appendLogData( SyncJobContext context, String line ) {
 		Platform.runLater( () -> context.appendLog( line ) );
-	}
-
-	/**
-	 * Give back a formatted string for visualizing at the textArea
-	 *
-	 * @param deepScan Witch ScanType
-	 * @return <b>String</b> The formatted string
-	 */
-	private String formatMaps( ScanType deepScan, Map<Path, FileAttributes> sourceMap, Map<Path, FileAttributes> destMap, Map<Path, FileAttributes> failMap ) {
-		final String line = System.lineSeparator();
-		final StringBuilder sb = new StringBuilder();
-		final int displayLimit = 10000;
-		if( deepScan == ScanType.SYNCHRONIZE ) {
-			sb.append( "Scan abgeschlossen!" + line );
-			sb.append( "----------------------" + line );
-		}else {
-			sb.append( "Scan abgeschlossen!" + line );
-			sb.append( "Zu kopierende Dateien:" + line );
-			sb.append( "----------------------" + line );
-			int limit = 0;
-			if( sourceMap != null ) {
-				for( final Map.Entry<Path, FileAttributes> entry : sourceMap.entrySet() ) {
-					final FileAttributes value = entry.getValue();
-					sb.append( value.getFileName() + " , " +
-							getReadableBytes( value.getSize() ) + " , " +
-							value.getModTimeString() + " , " +
-							value.getCreateTimeString() + " , " +
-							value.getFileHash() + "  " +
-							"   " + entry.getKey().toString() +
-							line );
-					limit++;
-					if( limit > ( displayLimit / 2 ) ) break;
-				}
-			}
-			limit = 0;
-			sb.append( line );
-			sb.append( "Zu löschende Dateien:" + line );
-			sb.append( "---------------------" + line );
-			if( destMap != null ) {
-				for( final Map.Entry<Path, FileAttributes> entry : destMap.entrySet() ) {
-					final FileAttributes value = entry.getValue();
-					sb.append( value.getFileName() + " , " +
-							getReadableBytes( value.getSize() ) + " , " +
-							value.getModTimeString() + " , " +
-							value.getCreateTimeString() + " , " +
-							value.getFileHash() + "  " +
-							"   " + entry.getKey().toString() +
-							line );
-					limit++;
-					if( limit > ( displayLimit / 2 ) ) break;
-				}
-			}
-			if( failMap != null && !failMap.isEmpty() ) {
-				limit = 0;
-				sb.append( line );
-				sb.append( "Fehlerhafter Zugriff:" + line );
-				sb.append( "---------------------" + line );
-				for( final Map.Entry<Path, FileAttributes> entry : failMap.entrySet() ) {
-					final FileAttributes value = entry.getValue();
-					sb.append( value.getFileName() + " , " +
-							getReadableBytes( value.getSize() ) + " , " +
-							value.getModTimeString() + " , " +
-							value.getCreateTimeString() + " , " +
-							value.getFileHash() + "  " +
-							"   " + entry.getKey().toString() +
-							line );
-					limit++;
-					if( limit > ( displayLimit / 2 ) ) break;
-				}
-			}
-		}
-		return sb.toString();
-	}
-
-	private String getEndTimeFormatted( long endTimeNano ) {
-		final double endTimeSec = ( (double) endTimeNano ) / 1000000000;
-		if( endTimeSec >= 7200 )
-			return String.format( "%d Stunden %d Minuten %.3f Sekunden Laufzeit", ( (int) endTimeSec ) / 3600, ( (int) endTimeSec ) % 60, endTimeSec % 60 );
-		else if( endTimeSec >= 3600 )
-			return String.format( "%d Stunde %d Minuten %.3f Sekunden Laufzeit", ( (int) endTimeSec ) / 3600, ( (int) endTimeSec ) % 60, endTimeSec % 60 );
-		else if( endTimeSec >= 60 )
-			return String.format( "%d Minuten %.3f Sekunden Laufzeit", ( (int) endTimeSec ) / 60, endTimeSec % 60 );
-		else
-			return String.format( "%.3f Sekunden Laufzeit", endTimeSec );
-	}
-
-	private String getReadableBytes( long bytes ) {
-		if( bytes > 1073741824 )
-			return String.format( "%.3f GiB", bytes / 1048576.0 / 1024.0 );
-		else if( bytes > 1048576 )
-			return ( bytes / 1048576 ) + " MiB";
-		else if( bytes > 1024 )
-			return ( bytes / 1024 ) + " KiB";
-		else if( bytes > 1 )
-			return bytes + " bytes";
-		else
-			return bytes + " byte";
 	}
 }

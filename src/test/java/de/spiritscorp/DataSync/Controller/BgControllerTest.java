@@ -74,7 +74,7 @@ import javafx.stage.Stage;
  * @version 1.2.0
  * @see BgController
  */
-@DisplayName( "Background Controller Engine Test Suite" )
+//@DisplayName( "Background Controller Engine Test Suite" )
 class BgControllerTest {
 
 	private Gui mockGui;
@@ -88,6 +88,7 @@ class BgControllerTest {
 	private ScheduledExecutorService mockScheduler;
 	private ExecutorService mockWorkerQueue;
 
+	/** Insulates the static {@link Debug} diagnostics subsystem during test execution. */
 	private MockedStatic<Debug> mockedDebug;
 	private MockedStatic<SystemTray> mockedSystemTray;
 	private SystemTray spySystemTray;

@@ -47,7 +47,7 @@ import de.spiritscorp.DataSync.IO.Logger;
  */
 public class Model {
 
-	private Map<Path, FileAttributes> sourceMap;
+	private final Map<Path, FileAttributes> sourceMap;
 	private final Map<Path, FileAttributes> destMap;
 	private final FileHandler handler;
 
@@ -103,7 +103,7 @@ public class Model {
 	 * @return a Map containing all paths where failures, permission issues, or structural conflicts occurred
 	 */
 	public Map<Path, FileAttributes> scanSyncFiles( ArrayList<Path> sourcePathes, ArrayList<Path> destPathes, Long[] stats, ScanType deepScan, boolean subDir, boolean trashbin ) {
-		Debug.printDebug( "list start" );
+		Debug.printDebug( "[Model] list start" );
 		final Thread t1 = new Thread( () -> handler.listFiles( sourcePathes, sourceMap, deepScan, subDir ) );
 		final Thread t2 = new Thread( () -> handler.listFiles( destPathes, destMap, deepScan, subDir ) );
 		t1.start();
@@ -118,7 +118,7 @@ public class Model {
 		stats[1] = (long) destMap.size();
 		stats[2] = getBytes( sourceMap );
 		stats[3] = getBytes( destMap );
-		Debug.printDebug( "list ready" );
+		Debug.printDebug( "[Model] list ready" );
 		return getFailtures( sourceMap, destMap );
 	}
 
@@ -130,9 +130,9 @@ public class Model {
 	 * synchronization actions like copy, update, or delete.
 	 */
 	public void getEqualsFiles() {
-		Debug.printDebug( "getEqualsFiles start" );
+		Debug.printDebug( "[Model] getEqualsFiles start" );
 		handler.equalsFiles( sourceMap, destMap );
-		Debug.printDebug( "getEqualsFiles ready" );
+		Debug.printDebug( "[Model] getEqualsFiles ready" );
 	}
 
 	/**
@@ -150,9 +150,9 @@ public class Model {
 	 *         index 2 (delHitList): Files marked for deletion from the target directory
 	 */
 	public ArrayList<Map<Path, FileAttributes>> getSyncFiles( Map<Path, FileAttributes> syncMap, Path sourcePath, Path destPath ) {
-		Debug.printDebug( "getSyncFiles start" );
+		Debug.printDebug( "[Model] getSyncFiles start" );
 		final ArrayList<Map<Path, FileAttributes>> result = handler.getSyncFiles( sourceMap, destMap, sourcePath, destPath, syncMap );
-		Debug.printDebug( "getSyncFiles ready" );
+		Debug.printDebug( "[Model] getSyncFiles ready" );
 		return result;
 	}
 
@@ -174,7 +174,7 @@ public class Model {
 	public boolean backupFiles( int del, boolean logOn, Path destPath, boolean trashbin, Path trashbinPath ) {
 		if( del == 0 && !destMap.isEmpty() ) handler.deleteFiles( destMap, logOn, trashbin, trashbinPath );
 		if( !sourceMap.isEmpty() ) handler.copyFiles( sourceMap, logOn, destPath );
-		return( sourceMap.isEmpty() && destMap.isEmpty() );
+		return sourceMap.isEmpty() && destMap.isEmpty();
 	}
 
 	/**
@@ -220,10 +220,14 @@ public class Model {
 	 * @param paths an ArrayList containing the directory paths that should be inspected for file duplicates
 	 * @return a Map containing the duplicate paths mapped to their attributes, combined with failure reports
 	 */
-	public Map<Path, FileAttributes> scanDublicates( ArrayList<Path> paths ) {
+	public Map<Path, FileAttributes> scanDublicates( final ArrayList<Path> paths, final Long... stats ) {
 		handler.listFiles( paths, sourceMap, ScanType.DUBLICATE_SCAN, false );
-		sourceMap = handler.findDuplicates( sourceMap );
-		return getFailtures( sourceMap, destMap );
+		final Map<Path, FileAttributes> duplicateMap = handler.findDuplicates( sourceMap );
+		stats[0] = (long) sourceMap.size();
+		stats[1] = (long) getFailtures( sourceMap, destMap ).size();
+		stats[2] = 0L;
+		stats[3] = 0L;
+		return duplicateMap;
 	}
 
 	/**
@@ -237,7 +241,7 @@ public class Model {
 	 * @return a filtered Map detailing all elements that failed to process correctly
 	 */
 	private Map<Path, FileAttributes> getFailtures( Map<Path, FileAttributes> sourceMap, Map<Path, FileAttributes> destMap ) {
-		final Map<Path, FileAttributes> failMap = Model.createMap();
+		final Map<Path, FileAttributes> failMap = createMap();
 		if( sourceMap != null ) {
 			for( final Map.Entry<Path, FileAttributes> entry : sourceMap.entrySet() ) {
 				if( entry.getValue().getFileHash().equals( "Failed" ) ) {

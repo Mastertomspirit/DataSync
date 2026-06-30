@@ -71,7 +71,7 @@ import javafx.stage.Stage;
  * @version 1.0.0
  * @see BgController
  */
-@DisplayName( "BgController Integration Test Suite" )
+//@DisplayName( "BgController Integration Test Suite" )
 class BgControllerIT {
 
 	private Gui mockGui;
@@ -82,6 +82,7 @@ class BgControllerIT {
 	private TrayIcon mockTrayIcon;
 	private ObservableList<SyncJobContext> integrationJobList;
 
+	/** Insulates the static {@link Debug} diagnostics subsystem during test execution. */
 	private MockedStatic<Debug> mockedDebug;
 	private MockedStatic<SystemTray> mockedSystemTray;
 	private SystemTray mockSystemTray;

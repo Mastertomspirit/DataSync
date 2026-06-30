@@ -166,7 +166,7 @@ public class BgController {
 		jobList.stream()
 				.filter( ( job ) -> job.getPreference()
 						.isBgSync() )
-				.forEach( ( job ) -> Debug.printDebug( "[DataSync Daemon] Executing background routine is deactivated for task: %s", job.getJobName() ) );
+				.forEach( ( job ) -> Debug.printDebug( "[DataSync Daemon] Executing background routine is activated for task: %s", job.getJobName() ) );
 		// Begin tracking task list rules loops
 		this.scheduler.scheduleAtFixedRate( this::checkAndQueueJobs, initialDelay, tickInterval, TimeUnit.MILLISECONDS );
 	}
@@ -218,6 +218,7 @@ public class BgController {
 			if( pref != null && pref.isBgSync() ) {
 				final long timeDelta = System.currentTimeMillis() - pref.getLastScanTime();
 				final long targetInterval = (long) ( pref.getBgTime().getTime() * timeMultiplier );
+				Debug.printDebug( "[DataSync BgController] time since last check: %d", System.currentTimeMillis() - pref.getLastScanTime() );
 
 				if( timeDelta > targetInterval ) {
 					Debug.printDebug( "[DataSync Daemon] Polling threshold triggered for task: %s. Queueing worker task.", job.getJobName() );

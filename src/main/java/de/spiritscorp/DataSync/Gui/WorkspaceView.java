@@ -166,24 +166,33 @@ public final class WorkspaceView extends VBox {
 	private VBox assembleDuplicateTableView() {
 		duplicateTable = new TableView<>();
 		duplicateTable.setEditable( true );
+		duplicateTable.setFixedCellSize( 24.0 );
 
 		final TableColumn<SyncJobContext.FileRow, Boolean> selCol = new TableColumn<>( "Auswahl" );
 		selCol.setCellValueFactory( d -> d.getValue().selectedProperty() );
 		selCol.setCellFactory( CheckBoxTableCell.forTableColumn( selCol ) );
-		selCol.setPrefWidth( 70 );
+		selCol.setPrefWidth( 50 );
 
 		final TableColumn<SyncJobContext.FileRow, String> nameCol = new TableColumn<>( "Dateiname" );
 		nameCol.setCellValueFactory( d -> d.getValue().fileNameProperty() );
-		nameCol.setPrefWidth( 200 );
+		nameCol.setPrefWidth( 250 );
+
+		final TableColumn<SyncJobContext.FileRow, String> sizeCol = new TableColumn<>( "Größe" );
+		sizeCol.setCellValueFactory( d -> d.getValue().sizeProperty() );
+		sizeCol.setPrefWidth( 250 );
 
 		final TableColumn<SyncJobContext.FileRow, String> pathCol = new TableColumn<>( "Pfad" );
 		pathCol.setCellValueFactory( d -> d.getValue().pathProperty() );
-		pathCol.setPrefWidth( 400 );
+		pathCol.setPrefWidth( 600 );
 
-		duplicateTable.getColumns().addAll( List.of( selCol, nameCol, pathCol ) );
+		final TableColumn<SyncJobContext.FileRow, String> hashCol = new TableColumn<>( "Hash" );
+		hashCol.setCellValueFactory( d -> d.getValue().hashProperty() );
+		hashCol.setPrefWidth( 250 );
+
+		duplicateTable.getColumns().addAll( List.of( selCol, nameCol, sizeCol, hashCol, pathCol ) );
 		deleteButton = new Button( "Duplikate löschen", Gui.createIcon( MaterialDesignD.DELETE ) );
 		deleteButton.setStyle( "-fx-background-color: #e74c3c; -fx-text-fill: white;" );
-		deleteButton.setTooltip( new Tooltip( "Ausgewählte Dateine werden gelöscht" ) );
+		deleteButton.setTooltip( new Tooltip( "Ausgewählte Dateien werden gelöscht" ) );
 
 		final VBox frame = new VBox( 8, duplicateTable, deleteButton );
 		setVgrow( duplicateTable, Priority.ALWAYS );
@@ -276,15 +285,15 @@ public final class WorkspaceView extends VBox {
 		// This acts as a safety net if the active CSS theme completely lacks the targeted class definition.
 		switch( cssNotifyStatus ) {
 		case SUCESS -> {
-			contextInfoLabel.setStyle( "-fx-text-fill: #22aa22; -fx-font-weight: bold;" );
+			contextInfoLabel.setStyle( "-fx-text-fill: #22aa22  !important; -fx-font-weight: bold;" );
 			contextInfoLabel.setText( "✔ " + message );
 		}
 		case ERROR -> {
-			contextInfoLabel.setStyle( "-fx-text-fill: #ff3333; -fx-font-weight: bold;" );
+			contextInfoLabel.setStyle( "-fx-text-fill: #ff3333  !important; -fx-font-weight: bold;" );
 			contextInfoLabel.setText( "❌ " + message );
 		}
 		case WARNING -> {
-			contextInfoLabel.setStyle( "-fx-text-fill: #ffaa00; -fx-font-weight: bold;" );
+			contextInfoLabel.setStyle( "-fx-text-fill: #ffaa00  !important; -fx-font-weight: bold;" );
 			contextInfoLabel.setText( "⚠ " + message );
 		}
 		default -> {
@@ -325,6 +334,7 @@ public final class WorkspaceView extends VBox {
 		final Label modeTitle = new Label( "Ausführungsmodus:" );
 		modeTitle.setStyle( "-fx-font-weight: bold;" );
 		final ComboBox<String> taskModeComboBox = new ComboBox<>();
+		taskModeComboBox.setTooltip( new Tooltip( "Listet die möglichen Betriebsmodis auf" ) );
 		taskModeComboBox.getItems().addAll( ScanType.getAllDescriptions() );
 		job.selectedModeProperty().set( pref.getScanMode() != null ? pref.getScanMode().getDescription() : ScanType.FLAT_SCAN.getDescription() );
 		taskModeComboBox.valueProperty().bindBidirectional( job.selectedModeProperty() );
@@ -377,6 +387,7 @@ public final class WorkspaceView extends VBox {
 
 		final Label bgTimeLabel = new Label( "Hintergrund Scan-Intervall:" );
 		final ComboBox<String> bgTimeComboBox = new ComboBox<>();
+		bgTimeComboBox.setTooltip( new Tooltip( "Listet die möglichen Job Intervalle auf" ) );
 		bgTimeComboBox.getItems().addAll( BgTime.getNames() );
 		bgTimeComboBox.getSelectionModel().select( pref.getBgTime() != null ? pref.getBgTime().getName() : BgTime.MIN_30.getName() );
 		bgTimeComboBox.disableProperty().bind( bgSyncCheck.selectedProperty().not() );
@@ -394,7 +405,7 @@ public final class WorkspaceView extends VBox {
 		// NEW: Theme Changer Layout Elements Configuration
 		final Label themeLabel = new Label( "Visuelles Anwendungs-Theme:" );
 		final ComboBox<AppTheme> themeComboBox = new ComboBox<>( mainGui.getAvailableThemes() );
-
+		themeComboBox.setTooltip( new Tooltip( "Listet alle möglichen Themes auf" ) );
 		// Custom cell rendering to display the specific Strategy names cleanly
 		themeComboBox.setCellFactory( lv -> new ListCell<>() {
 			@Override
@@ -470,12 +481,12 @@ public final class WorkspaceView extends VBox {
 		container.getChildren().add( title );
 
 		if( ScanType.SYNCHRONIZE.equals( type ) || ScanType.DUBLICATE_SCAN.equals( type ) ) {
-			final String initialSrc = ( pref.getSourcePath() != null && !pref.getSourcePath().isEmpty() ) ? pref.getSourcePath().get( 0 ).toString() : "";
-			final TextField srcField = new TextField( initialSrc );
+			final Path initialSrc = ( pref.getSourcePath() != null && !pref.getSourcePath().isEmpty() ) ? pref.getSourcePath().get( 0 ) : null;
+			final TextField srcField = new TextField( initialSrc.toString() );
 			srcField.setPrefWidth( 400 );
 			final Button srcBtn = new Button( "Durchsuchen..." );
 			srcBtn.setOnAction( e -> {
-				final File f = new DirectoryChooser().showDialog( mainGui.getWindowStage() );
+				final File f = chooseDirectory( initialSrc.toFile(), "Quellverzeichnis für " + pref.getScanMode().getDescription() );
 				if( f != null ) {
 					srcField.setText( f.getAbsolutePath() );
 					pathCtx.sources.clear();
@@ -487,12 +498,12 @@ public final class WorkspaceView extends VBox {
 		}
 
 		if( ScanType.SYNCHRONIZE.equals( type ) ) {
-			final String initialDest = ( pref.getDestPath() != null && !pref.getDestPath().isEmpty() ) ? pref.getDestPath().get( 0 ).toString() : "";
-			final TextField destField = new TextField( initialDest );
+			final Path initialDest = ( pref.getDestPath() != null && !pref.getDestPath().isEmpty() ) ? pref.getDestPath().get( 0 ) : null;
+			final TextField destField = new TextField( initialDest.toString() );
 			destField.setPrefWidth( 400 );
 			final Button destBtn = new Button( "Durchsuchen..." );
 			destBtn.setOnAction( e -> {
-				final File f = new DirectoryChooser().showDialog( mainGui.getWindowStage() );
+				final File f = chooseDirectory( initialDest.toFile(), "Zielverzeichnis für " + pref.getScanMode().getDescription() );
 				if( f != null ) {
 					destField.setText( f.getAbsolutePath() );
 					pathCtx.destinations.clear();
@@ -515,9 +526,9 @@ public final class WorkspaceView extends VBox {
 
 			final ListView<String> pathsListView = new ListView<>( backupPaths );
 			pathsListView.setPrefHeight( 100 );
-			final Button add = new Button( "Ordner hinzufügen", Gui.createIcon( MaterialDesignP.PLUS ) );
+			final Button add = new Button( "Verzeichnis hinzufügen", Gui.createIcon( MaterialDesignP.PLUS ) );
 			add.setOnAction( e -> {
-				final File f = new DirectoryChooser().showDialog( mainGui.getWindowStage() );
+				final File f = chooseDirectory( pathCtx.sources.getLast().toFile(), "Quellverzeichnis für " + pref.getScanMode().getDescription() );
 				if( f != null && !backupPaths.contains( f.getAbsolutePath() ) ) {
 					backupPaths.add( f.getAbsolutePath() );
 					pathCtx.sources.add( Paths.get( f.getAbsolutePath() ) );
@@ -542,7 +553,7 @@ public final class WorkspaceView extends VBox {
 			destField.setPrefWidth( 400 );
 			final Button destBtn = new Button( "Durchsuchen..." );
 			destBtn.setOnAction( e -> {
-				final File f = new DirectoryChooser().showDialog( mainGui.getWindowStage() );
+				final File f = chooseDirectory( pathCtx.destinations.getFirst().toFile(), "Ziielverzeichnis für " + pref.getScanMode().getDescription() );
 				if( f != null ) {
 					destField.setText( f.getAbsolutePath() );
 					pathCtx.destinations.clear();
@@ -555,6 +566,13 @@ public final class WorkspaceView extends VBox {
 		}
 
 		container.getChildren().add( pathsGrid );
+	}
+
+	private File chooseDirectory( File initialDir, String title ) {
+		final DirectoryChooser chooser = new DirectoryChooser();
+		if( initialDir != null && initialDir.exists() ) chooser.setInitialDirectory( initialDir );
+		chooser.setTitle( title );
+		return chooser.showDialog( mainGui.getWindowStage() );
 	}
 
 	/**

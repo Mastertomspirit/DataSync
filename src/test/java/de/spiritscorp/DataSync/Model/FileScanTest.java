@@ -19,6 +19,7 @@
 */
 package de.spiritscorp.DataSync.Model;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -45,8 +46,8 @@ class FileScanTest {
 	String fileHash = "1a60b9cd4c7355dc427a8f622961fa971d9401e0626e447352d701f1671423f2";
 	Path path = Paths.get( System.getProperty( "user.home" ), "DataSyncTemp" );
 	Path file = Paths.get( "testFile.txt" );
-	FileTime modTime = FileTime.fromMillis( 1641335619384L );
-	FileTime accessTime = FileTime.fromMillis( 1641335620384L );
+	FileTime modTime = FileTime.fromMillis( 1_641_335_619_384L );
+	FileTime accessTime = FileTime.fromMillis( 1_641_335_620_384L );
 	HashMap<Path, FileAttributes> map = new HashMap<>();
 	TestHelper helper = new TestHelper( path );
 
@@ -82,23 +83,28 @@ class FileScanTest {
 	@Test
 	final void testFileScan() throws IOException {
 		final BasicFileAttributes bfa = Files.readAttributes( path.resolve( file ), BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS );
-
-		new FileScan( path.resolve( file ), path, map, ScanType.FLAT_SCAN, bfa );
-		for( final Map.Entry<Path, FileAttributes> entry : map.entrySet() ) {
-			assertEquals( path.resolve( file ), entry.getKey(), "Map Key / Pfad falsch!!" );
-			assertEquals( size, entry.getValue().getSize(), "File Size passt nicht" );
-			assertEquals( helper.fileTimeToString( modTime ), entry.getValue().getModTimeString(), "ModifiedTime passt nicht" );
-			assertEquals( file, entry.getValue().getRelativeFilePath(), "RelativePath passt nicht" );
-			assertNull( entry.getValue().getFileHash(), "FileHash falscher Wert" );
-		}
-
-		new FileScan( path.resolve( file ), path, map, ScanType.DEEP_SCAN, bfa );
-		for( final Map.Entry<Path, FileAttributes> entry : map.entrySet() ) {
-			assertEquals( path.resolve( file ), entry.getKey(), "Map Key / Pfad falsch!!" );
-			assertEquals( size, entry.getValue().getSize(), "File Size passt nicht" );
-			assertEquals( helper.fileTimeToString( modTime ), entry.getValue().getModTimeString(), "ModifiedTime passt nicht" );
-			assertEquals( file, entry.getValue().getRelativeFilePath(), "RelativePath passt nicht" );
-			assertEquals( fileHash, entry.getValue().getFileHash(), "FileHash falscher Wert" );
-		}
+		assertAll(
+				() -> {
+					new FileScan( path.resolve( file ), path, map, ScanType.FLAT_SCAN, bfa );
+					for( final Map.Entry<Path, FileAttributes> entry : map.entrySet() ) {
+						assertAll( "with flat scan",
+								() -> assertEquals( path.resolve( file ), entry.getKey(), "Map Key / Pfad falsch!!" ),
+								() -> assertEquals( size, entry.getValue().getSize(), "File Size passt nicht" ),
+								() -> assertEquals( helper.fileTimeToString( modTime ), entry.getValue().getModTimeString(), "ModifiedTime passt nicht" ),
+								() -> assertEquals( file, entry.getValue().getRelativeFilePath(), "RelativePath passt nicht" ),
+								() -> assertNull( entry.getValue().getFileHash(), "FileHash falscher Wert" ) );
+					}
+				},
+				() -> {
+					new FileScan( path.resolve( file ), path, map, ScanType.DEEP_SCAN, bfa );
+					for( final Map.Entry<Path, FileAttributes> entry : map.entrySet() ) {
+						assertAll( "with deep scan",
+								() -> assertEquals( path.resolve( file ), entry.getKey(), "Map Key / Pfad falsch!!" ),
+								() -> assertEquals( size, entry.getValue().getSize(), "File Size passt nicht" ),
+								() -> assertEquals( helper.fileTimeToString( modTime ), entry.getValue().getModTimeString(), "ModifiedTime passt nicht" ),
+								() -> assertEquals( file, entry.getValue().getRelativeFilePath(), "RelativePath passt nicht" ),
+								() -> assertEquals( fileHash, entry.getValue().getFileHash(), "FileHash falscher Wert" ) );
+					}
+				} );
 	}
 }

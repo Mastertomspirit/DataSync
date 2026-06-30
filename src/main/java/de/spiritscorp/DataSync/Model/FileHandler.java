@@ -61,7 +61,7 @@ class FileHandler {
 		for( final Path path : paths ) {
 			// Guard: Check interruption context before entering the file tree walker system
 			if( Thread.currentThread().isInterrupted() ) {
-				Debug.printDebug( "[Engine] Interruption detected prior to walking directory path: %s", path.toString() );
+				Debug.printDebug( "[FileHandler] Interruption detected prior to walking directory path: %s", path.toString() );
 				executor.shutdownNow();
 				return;
 			}
@@ -83,10 +83,12 @@ class FileHandler {
 				}
 			}
 		}catch( final InterruptedException e ) {
-			Debug.printDebug( "[Engine] File processing walk subsystem was forcefully interrupted." );
+			Debug.printDebug( "[FileHandler] File processing walk subsystem was forcefully interrupted." );
 			Thread.currentThread().interrupt();
 		}
-		Debug.printDebug( "listFiles() -> ready  %s -> %s", Thread.currentThread().getName(), paths.get( 0 ).toString() );
+		for( final Path path : paths ) {
+			Debug.printDebug( "[FileHandler] ListFiles() -> ready  %s -> %s", Thread.currentThread().getName(), path.toString() );
+		}
 	}
 
 	/**
@@ -127,7 +129,7 @@ class FileHandler {
 				}
 			}
 		}
-		Debug.printDebug( "duplicateList -> ready : size: %d", duplicateMap.size() );
+		Debug.printDebug( "[FileHandler] DuplicateList -> ready : size: %d", duplicateMap.size() );
 		return duplicateMap;
 	}
 
@@ -138,7 +140,7 @@ class FileHandler {
 	 * @param destMap
 	 */
 	void equalsFiles( Map<Path, FileAttributes> sourceMap, Map<Path, FileAttributes> destMap ) {
-		Debug.printDebug( "max mem: %d, free mem: %d, total mem: %d", Runtime.getRuntime().maxMemory(), Runtime.getRuntime().freeMemory(), Runtime.getRuntime().totalMemory() );
+		Debug.printDebug( "[FileHandler] max mem: %d, free mem: %d, total mem: %d", Runtime.getRuntime().maxMemory(), Runtime.getRuntime().freeMemory(), Runtime.getRuntime().totalMemory() );
 		if( sourceMap.size() != 0 && destMap.size() != 0 ) {
 			final Set<Path> sourceHitList = Collections.synchronizedSet( new HashSet<>() );
 			final Set<Path> destHitList = Collections.synchronizedSet( new HashSet<>() );
@@ -188,7 +190,7 @@ class FileHandler {
 			for( final Path p : destHitList ) {
 				destMap.remove( p );
 			}
-			Debug.printDebug( "full source hitList size: %d  && full destination hitList size: %d", sourceMap.size(), destMap.size() );
+			Debug.printDebug( "[FileHandler] Full source hitList size: %d  && Full destination hitList size: %d", sourceMap.size(), destMap.size() );
 		}
 	}
 
@@ -206,7 +208,7 @@ class FileHandler {
 	 */
 	ArrayList<Map<Path, FileAttributes>> getSyncFiles( Map<Path, FileAttributes> sourceMap, Map<Path, FileAttributes> destMap, Path startSourcePath, Path startDestPath,
 			Map<Path, FileAttributes> syncMap ) {
-		Debug.printDebug( "max mem: %d, free mem: %d, total mem: %d", Runtime.getRuntime().maxMemory(), Runtime.getRuntime().freeMemory(), Runtime.getRuntime().totalMemory() );
+		Debug.printDebug( "[FileHandler] max mem: %d, free mem: %d, total mem: %d", Runtime.getRuntime().maxMemory(), Runtime.getRuntime().freeMemory(), Runtime.getRuntime().totalMemory() );
 		final ArrayList<Map<Path, FileAttributes>> resultValue = new ArrayList<>();
 		final ArrayList<Map<Path, FileAttributes>> destValue = new ArrayList<>();
 		final Map<Path, FileAttributes> copySourceHitList = Model.createMap();
@@ -250,7 +252,8 @@ class FileHandler {
 				syncMaps( destMap, sourceMap, destValue, startSourcePath, syncMap );
 			}
 		}
-		Debug.printDebug( "full copySourceHitList size: %d  && full copyDestHitList size: %d  && full delHitList size: %d", copySourceHitList.size(), copyDestHitList.size(), delHitList.size() );
+		Debug.printDebug( "[FileHandler] Full copySourceHitList size: %d  && Full copyDestHitList size: %d  && Full delHitList size: %d", copySourceHitList.size(), copyDestHitList.size(),
+				delHitList.size() );
 		return resultValue;
 	}
 
@@ -275,7 +278,7 @@ class FileHandler {
 		for( final Map.Entry<Path, FileAttributes> entry : map.entrySet() ) {
 			// Guard: Check thread interrupt status before executing file operations
 			if( Thread.currentThread().isInterrupted() ) {
-				Debug.printDebug( "[Engine] Safe loop interruption caught within file deletion loop vector." );
+				Debug.printDebug( "[FileHandler] Safe loop interruption caught within file deletion loop vector." );
 				break;
 			}
 
@@ -292,7 +295,7 @@ class FileHandler {
 				log.setEntry( path.toString(), "gelöscht", fileAttr );
 			}catch( final IOException e ) {
 				log.setEntry( path.toString(), "FEHLER BEIM LÖSCHEN", fileAttr );
-				Debug.printDebug( "delete failed: %s", path.toString() );
+				Debug.printDebug( "[FileHandler Error] Delete failed: %s", path.toString() );
 				Debug.printException( this.getClass(), e );
 			}
 		}
@@ -321,7 +324,7 @@ class FileHandler {
 		for( final Map.Entry<Path, FileAttributes> entry : map.entrySet() ) {
 			// Guard: Check thread interrupt status before starting next copy transaction step
 			if( Thread.currentThread().isInterrupted() ) {
-				Debug.printDebug( "[Engine] Safe loop interruption caught within file replication loop vector." );
+				Debug.printDebug( "[FileHandler] Safe loop interruption caught within file replication loop vector." );
 				break;
 			}
 			final FileAttributes fileAttr = entry.getValue();
@@ -341,7 +344,7 @@ class FileHandler {
 				log.setEntry( path.toString(), "kopiert", fileAttr );
 			}catch( final IOException e ) {
 				log.setEntry( path.toString(), "FEHLER BEIM KOPIEREN", fileAttr );
-				Debug.printDebug( "copy failed: %s", path.toString() );
+				Debug.printDebug( "[FileHandler Error] Copy failed: %s", path.toString() );
 				Debug.printException( this.getClass(), e );
 			}
 		}

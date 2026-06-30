@@ -19,83 +19,206 @@
 */
 package de.spiritscorp.DataSync.IO;
 
+import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
-import java.util.LinkedList;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.locks.ReentrantLock;
 
 import de.spiritscorp.DataSync.Model.FileAttributes;
 import jakarta.json.Json;
 import jakarta.json.JsonArray;
+import jakarta.json.JsonException;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonReader;
-import jakarta.json.JsonValue;
-import jakarta.json.JsonWriter;
-import jakarta.json.JsonWriterFactory;
-import jakarta.json.stream.JsonGenerator;
 
+/**
+ * High-performance background logger using JSON Lines format (NDJSON).
+ * Features an automated, size-based log rotation upon initialization.
+ * Designed with Dependency Injection for optimal testability.
+ */
 public class Logger {
 
-	private final LinkedList<JsonValue> logList = new LinkedList<>();
+	/** Formatter for generating standardized German timestamp strings. */
+	private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern( "dd.MM.yyyy  HH:mm:ss" );
+
+	/** The absolute destination path of the active log file. */
+	private final Path baseLogPath;
+
+	/** The maximum threshold size in bytes before a file rotation is enforced. */
+	private final long maxFileSize;
+
+	/** The capacity limit of historical backup archives to keep on disk. */
+	private final int maxBackupIndex;
+
+	/** Thread-safe internal memory cache containing unwritten log entries. */
+	private final List<JsonArray> logCache = new ArrayList<>();
+
+	/** Concurrency lock ensuring atomic operations across background threads. */
+	private final ReentrantLock threadLock = new ReentrantLock();
 
 	/**
-	 * Set a new log entry
-	 *
-	 * @param filePath     The path where the file is/was located
-	 * @param changeStatus The status, what is happen
-	 * @param fa           The attributes of the file
+	 * Public default constructor utilizing production configurations.
+	 * Fetches the default log path and enforces a 10 MB retention limit with 5 backups.
 	 */
-	public void setEntry( String filePath, String changeStatus, FileAttributes fa ) {
-		final JsonObject jo = Json.createObjectBuilder()
-				.add( "Dateiname", fa.getFileName() )
-				.add( "erstellt", fa.getCreateTimeString() )
-				.add( "zuletzt modifiziert", fa.getModTimeString() )
-				.add( "Größe", fa.getSize() )
-				.add( "Fingerabdruck", ( fa.getFileHash() == null ) ? "null" : fa.getFileHash() )
-				.build();
-		final JsonArray ja = Json.createArrayBuilder()
-				.add( filePath )
-				.add( LocalDateTime.now().format( DateTimeFormatter.ofPattern( "dd.MM.yyyy  HH:mm:ss" ) ) )
-				.add( changeStatus )
-				.add( jo )
-				.build();
-		logList.addFirst( ja );
+	public Logger() {
+		this(
+				PreferenceManager.getInstance().getLogPath(),
+				10_485_760, // 10 MB
+				5 );
 	}
 
-//	TODO	ineffizient
 	/**
-	 * Write the cached entries to the file system, append on the top of the file
+	 * Initializes the logger and executes an immediate size-based log rotation check.
+	 *
+	 * @param baseLogPath    The primary path to the active log file
+	 * @param maxFileSize    The maximum allowed file size in bytes before rotation triggers
+	 * @param maxBackupIndex The maximum number of archived log files to retain
+	 * @throws NullPointerException if baseLogPath is null
+	 */
+	/* package */ Logger( final Path baseLogPath, final long maxFileSize, final int maxBackupIndex ) {
+		this.baseLogPath = Objects.requireNonNull( baseLogPath, "baseLogPath must not be null" );
+		this.maxFileSize = maxFileSize;
+		this.maxBackupIndex = maxBackupIndex;
+
+		executeLogRotationIfNeeded();
+	}
+
+	/**
+	 * Sets a new log entry and queues it inside the volatile internal cache.
+	 *
+	 * @param filePath       The path where the file is/was located
+	 * @param changeStatus   The status representing the change event
+	 * @param fileAttributes The structural attributes of the file
+	 */
+	public void setEntry( final String filePath, final String changeStatus, final FileAttributes fileAttributes ) {
+		threadLock.lock();
+		try {
+			final JsonObject jsonObject = Json.createObjectBuilder()
+					.add( "Dateiname", fileAttributes.getFileName() )
+					.add( "erstellt", fileAttributes.getCreateTimeString() )
+					.add( "zuletzt modifiziert", fileAttributes.getModTimeString() )
+					.add( "Größe", fileAttributes.getSize() )
+					.add( "Fingerabdruck", ( fileAttributes.getFileHash() == null ) ? "null" : fileAttributes.getFileHash() )
+					.build();
+
+			final JsonArray jsonArray = Json.createArrayBuilder()
+					.add( filePath )
+					.add( LocalDateTime.now( ZoneId.systemDefault() ).format( DATE_FORMATTER ) )
+					.add( changeStatus )
+					.add( jsonObject )
+					.build();
+
+			logCache.add( jsonArray );
+		}finally {
+			threadLock.unlock();
+		}
+	}
+
+	/**
+	 * Writes the cached log entries to the file system using an efficient O(1) append strategy.
+	 * Avoids loading existing files into memory, keeping the footprint static.
 	 */
 	public void printStatus() {
-		readLog();
-		final JsonArray jsonArray = Json.createArrayBuilder( logList ).build();
-		final HashMap<String, Boolean> config = new HashMap<>();
-		config.put( JsonGenerator.PRETTY_PRINTING, true );
-		final JsonWriterFactory jwf = Json.createWriterFactory( config );
-		try( JsonWriter jsonWriter = jwf.createWriter( Files.newOutputStream( PreferenceManager.getInstance().getLogPath(), StandardOpenOption.WRITE ) ) ) {
-			jsonWriter.write( jsonArray );
-			logList.clear();
+		threadLock.lock();
+		try {
+			if( logCache.isEmpty() ) { return; }
+
+			try( BufferedWriter writer = Files.newBufferedWriter(
+					baseLogPath,
+					StandardOpenOption.CREATE,
+					StandardOpenOption.APPEND ) ) {
+
+				for( final JsonArray logEntry : logCache ) {
+					writer.write( logEntry.toString() );
+					writer.newLine();
+				}
+
+				logCache.clear();
+			}catch( final IOException e ) {
+				Debug.printDebug( "[Logger] can´t write log file at -> %s", baseLogPath );
+				Debug.printException( this.getClass(), e );
+			}
+		}finally {
+			threadLock.unlock();
+		}
+	}
+
+	/**
+	 * Reads the log file sequentially and parses the JSON lines.
+	 * Returns the entries in reverse order, positioning the newest events at the top for UI representation.
+	 *
+	 * @return A list containing all logged structures ordered from newest to oldest
+	 */
+	public List<JsonArray> readLogForGui() {
+		final List<JsonArray> invertedGuiList = new ArrayList<>();
+
+		if( !Files.exists( baseLogPath ) ) { return invertedGuiList; }
+
+		threadLock.lock();
+		String currentLine = "";
+		try {
+			final List<String> lines = Files.readAllLines( baseLogPath );
+			for( int i = lines.size() - 1; i >= 0; i-- ) {
+				currentLine = lines.get( i ).trim();
+				if( currentLine.isEmpty() ) continue;
+				invertedGuiList.add( Json.createArrayBuilder().add( currentLine ).build() );
+			}
+		}catch( final JsonException e ) {
+			Debug.printDebug( "[Logger] Invalid JSON in log line: %s", currentLine );
+			Debug.printException( this.getClass(), e );
 		}catch( final IOException e ) {
+			Debug.printDebug( "[Logger] can´t read log file at -> %s", baseLogPath );
+			Debug.printException( this.getClass(), e );
+		}finally {
+			threadLock.unlock();
+		}
+		return invertedGuiList;
+	}
+
+	/**
+	 * Evaluates the size of the primary log file on startup and initiates a cascading shift
+	 * of backup history files if the configured size threshold is exceeded.
+	 */
+	private void executeLogRotationIfNeeded() {
+		if( !Files.exists( baseLogPath ) ) { return; }
+
+		try {
+			if( Files.size( baseLogPath ) < maxFileSize ) { return; }
+
+			// Cascade existing backups downwards (e.g., log.4 -> log.5)
+			for( int i = maxBackupIndex - 1; i >= 1; i-- ) {
+				final Path sourceBackup = resolveBackupPath( i );
+				if( Files.exists( sourceBackup ) ) {
+					final Path targetBackup = resolveBackupPath( i + 1 );
+					Files.move( sourceBackup, targetBackup, StandardCopyOption.REPLACE_EXISTING );
+				}
+			}
+
+			// Move the current active log file to index 1 (e.g., log -> log.1)
+			final Path firstBackup = resolveBackupPath( 1 );
+			Files.move( baseLogPath, firstBackup, StandardCopyOption.REPLACE_EXISTING );
+
+		}catch( final IOException e ) {
+			Debug.printDebug( "[Logger] Execution of log rotation failed at -> %s", baseLogPath );
 			Debug.printException( this.getClass(), e );
 		}
 	}
 
 	/**
-	 * Read the logfile as JsonArray
+	 * Resolves the system path for an archived backup file based on its history index.
+	 *
+	 * @param index The history index marker
+	 * @return Path representing the target location of the historical log file
 	 */
-	private void readLog() {
-		final Path logPath = PreferenceManager.getInstance().getLogPath();
-		if( Files.exists( logPath ) ) {
-			try( JsonReader reader = Json.createReader( Files.newInputStream( logPath ) ) ) {
-				reader.readArray()
-						.forEach( logList::add );
-			}catch( final IOException e ) {
-				Debug.printException( this.getClass(), e );
-			}
-		}
+	private Path resolveBackupPath( final int index ) {
+		return baseLogPath.resolveSibling( baseLogPath.getFileName().toString() + "." + index );
 	}
 }

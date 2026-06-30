@@ -40,7 +40,10 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 
+import de.spiritscorp.DataSync.IO.Debug;
 import de.spiritscorp.DataSync.IO.Logger;
 
 /**
@@ -61,7 +64,7 @@ import de.spiritscorp.DataSync.IO.Logger;
  * @version 2.0
  * @see FileHandler
  */
-@DisplayName( "FileHandler Test Suite" )
+//@DisplayName( "FileHandler Test Suite" )
 class FileHandlerTest {
 
 	/** Source file attributes map */
@@ -84,6 +87,9 @@ class FileHandlerTest {
 
 	/** Object under test */
 	private FileHandler fileHandler;
+
+	/** Insulates the static {@link Debug} diagnostics subsystem during test execution. */
+	private MockedStatic<Debug> mockDebug;
 
 	/**
 	 * Sets up test environment before running all tests in this class.
@@ -119,6 +125,7 @@ class FileHandlerTest {
 		testPath = ModelTest.TEST_PATH;
 
 		helper = new TestHelper( testPath );
+		mockDebug = Mockito.mockStatic( Debug.class );
 		fileHandler = new FileHandler( mock( Logger.class ) );
 
 		// Populate test data
@@ -133,6 +140,9 @@ class FileHandlerTest {
 	 */
 	@AfterEach
 	void tearDown() throws Exception {
+		if( mockDebug != null ) {
+			mockDebug.close();
+		}
 	}
 
 	/**

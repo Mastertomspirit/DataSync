@@ -23,6 +23,7 @@ import java.util.Map;
 
 import de.spiritscorp.DataSync.Main;
 import de.spiritscorp.DataSync.ScanType;
+import de.spiritscorp.DataSync.Gui.DialogService;
 import de.spiritscorp.DataSync.Gui.Gui;
 import de.spiritscorp.DataSync.Gui.WorkspaceView.NotifyStatus;
 import de.spiritscorp.DataSync.IO.Debug;
@@ -45,7 +46,7 @@ import javafx.scene.control.TextInputDialog;
 public class MainViewController implements ViewController {
 
 	private final Gui gui;
-	private final ContHelper helper;
+	private final SyncJobService helper;
 	private final PreferenceManager manager;
 	private BgController activeBgController;
 
@@ -57,12 +58,12 @@ public class MainViewController implements ViewController {
 	public MainViewController( Gui gui ) {
 		this(
 				gui,
-				new ContHelper(),
+				new SyncJobService( new DialogService( gui.getWindowStage() ), new UiLogFormatter() ),
 				PreferenceManager.getInstance() );
 		loadInitialJobList();
 	}
 
-	MainViewController( Gui gui, ContHelper helper, PreferenceManager manager ) {
+	MainViewController( Gui gui, SyncJobService helper, PreferenceManager manager ) {
 		this.gui = gui;
 		this.helper = helper;
 		this.manager = manager;
@@ -250,7 +251,7 @@ public class MainViewController implements ViewController {
 		for( final SyncJobContext job : gui.getJobList() ) {
 			job.cancelRunningTask( timeoutPerThreadMs );
 		}
-		if( activeBgController != null ) activeBgController.interruptBgJob( timeoutPerThreadMs );
+		if( !gui.isShowing() && activeBgController != null ) activeBgController.interruptBgJob( timeoutPerThreadMs );
 		Debug.printDebug( "[Exit] Core teardown protocol finalized. Flushing runtime buffers." );
 	}
 }

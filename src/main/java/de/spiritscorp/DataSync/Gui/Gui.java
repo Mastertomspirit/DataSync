@@ -121,7 +121,6 @@ public class Gui extends Application {
 			Debug.printDebug( "[Info] Window hidden. Application processing stays active in background." );
 			controller.runInBackground( false );
 		} );
-
 		sidebarView = new SidebarView( this, controller );
 		workspaceView = new WorkspaceView( this, controller );
 
@@ -233,6 +232,8 @@ public class Gui extends Application {
 	 * @return the currently applied {@link AppTheme}
 	 */
 	public AppTheme getCurrentTheme() { return currentTheme; }
+
+	public boolean isShowing() { return windowStage.isShowing(); }
 
 	/**
 	 * Builds standard software information metrics description panels nodes.

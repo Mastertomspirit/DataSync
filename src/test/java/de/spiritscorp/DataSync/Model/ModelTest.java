@@ -37,13 +37,14 @@ import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 
 import de.spiritscorp.DataSync.Controller.SyncJobContext;
+import de.spiritscorp.DataSync.IO.Debug;
 import de.spiritscorp.DataSync.IO.Logger;
 
 /**
@@ -53,26 +54,15 @@ class ModelTest {
 
 	public static final Path TEST_PATH = Paths.get( System.getProperty( "user.home" ), ".DataSyncTemp" );
 
-	private Map<Path, FileAttributes> sourceMap, destMap, syncMap;
+	private Map<Path, FileAttributes> sourceMap;
+	private Map<Path, FileAttributes> destMap;
+	private Map<Path, FileAttributes> syncMap;
 	private TestHelper helper;
 	private Model model;
 	private SyncJobContext ctx;
 
-	/**
-	 * @throws java.lang.Exception
-	 */
-	@BeforeAll
-	static void setUpBeforeClass() throws Exception {
-
-	}
-
-	/**
-	 * @throws java.lang.Exception
-	 */
-	@AfterAll
-	static void tearDownAfterClass() throws Exception {
-
-	}
+	/** Insulates the static {@link Debug} diagnostics subsystem during test execution. */
+	private MockedStatic<Debug> mockDebug;
 
 	/**
 	 * @throws java.lang.Exception
@@ -83,6 +73,7 @@ class ModelTest {
 		destMap = Model.createMap();
 		syncMap = Model.createMap();
 		helper = new TestHelper( TEST_PATH );
+		mockDebug = Mockito.mockStatic( Debug.class );
 		ctx = mock( SyncJobContext.class, RETURNS_DEEP_STUBS );
 		model = new Model( mock( Logger.class ), sourceMap, destMap );
 
@@ -95,13 +86,14 @@ class ModelTest {
 	@AfterEach
 	void tearDown() throws Exception {
 		if( Files.exists( TEST_PATH ) ) {
-			if( Files.exists( ModelTest.TEST_PATH ) ) {
-				try( Stream<Path> walk = Files.walk( ModelTest.TEST_PATH ) ) {
-					for( final Path path : (Iterable<Path>) walk.sorted( Comparator.reverseOrder() )::iterator ) {
-						Files.delete( path );
-					}
+			try( Stream<Path> walk = Files.walk( TEST_PATH ) ) {
+				for( final Path path : (Iterable<Path>) walk.sorted( Comparator.reverseOrder() )::iterator ) {
+					Files.delete( path );
 				}
 			}
+		}
+		if( mockDebug != null ) {
+			mockDebug.close();
 		}
 	}
 

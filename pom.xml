@@ -513,7 +513,7 @@
 							<copyright>GPL 3.0</copyright>
 							<description>${app.description.short}</description>
 							<vendor>${app.owner}</vendor>
-							<icon>src/main/resources/icons/64x64.ico</icon>
+					<!--		<icon>src/main/resources/icons/64x64.ico</icon> -->
 							<module>de.spiritscorp.DataSync/de.spiritscorp.DataSync.Main</module>
 							<javaoptions>-Dfile.encoding=UTF-8 -Xms32m -Xmx4096m -Dapp.instance.name=${project.artifactId}_v${project.version}</javaoptions>
 							<javaoptions>--enable-native-access=javafx.graphics</javaoptions>

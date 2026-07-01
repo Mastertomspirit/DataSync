@@ -59,11 +59,11 @@ public final class PreferenceManager {
 	/**
 	 * Root directory for application data storage.
 	 */
-	/* package */ final Path homeDirectory = Paths.get( System.getProperty( "user.home" ), "DataSync" );
+	/*package*/ static final Path DATASYNC_HOME = Paths.get( System.getProperty( "user.home" ), "DataSync" );
 	/**
 	 * Root directory for application data storage.
 	 */
-	private Path rootPath = homeDirectory;
+	private Path rootPath = DATASYNC_HOME;
 	/**
 	 * Path to the JSON configuration file containing profiles and global settings.
 	 */
@@ -455,5 +455,5 @@ public final class PreferenceManager {
 	 */
 	public AppTheme getTheme() { return theme; }
 
-	public boolean isCustomConfigDir() { return !homeDirectory.equals( rootPath ); }
+	public boolean isCustomConfigDir() { return !DATASYNC_HOME.equals( rootPath ); }
 }

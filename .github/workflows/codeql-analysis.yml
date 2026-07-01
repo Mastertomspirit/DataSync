@@ -34,6 +34,9 @@ jobs:
       matrix:
         language: [ 'java' ]
 
+    env:
+      MAVEN_OPTS: "-Djdk.io.File.allowDeleteReadOnlyFiles=true --enable-native-access=ALL-UNNAMED"
+
     steps: 
     - name: Checkout repository
       uses: actions/checkout@v7
@@ -41,7 +44,7 @@ jobs:
     - name: Setup Java JDK
       uses: actions/setup-java@v5
       with:
-        java-version: '23'
+        java-version: '25'
     # Java distribution. See the list of supported distributions in README file
         distribution: 'temurin'
         cache: 'maven'

@@ -56,8 +56,8 @@ public final class Preference {
 	private final Map<Path, FileAttributes> syncMap = Model.createMap();
 
 	private static final String TRASHBIN_STRING = "Papierkorb";
-	private Path startSourcePath = Paths.get( System.getProperty( "user.home" ) );
-	private Path startDestPath = Paths.get( System.getProperty( "user.home" ) );
+	private Path startSourcePath = PreferenceManager.DATASYNC_HOME;
+	private Path startDestPath = PreferenceManager.DATASYNC_HOME;
 	private Path trashbinPath = startDestPath.resolve( TRASHBIN_STRING );
 
 	private ScanType scanMode = ScanType.FLAT_SCAN;
@@ -165,7 +165,7 @@ public final class Preference {
 			// --- STARTING & SYSTEM PATHS VALIDATION ---
 			if( json.containsKey( "startSourcePath" ) ) {
 				final Path p = Paths.get( json.getString( "startSourcePath" ) );
-				this.startSourcePath = Files.exists( p ) ? p : Paths.get( System.getProperty( "user.home" ) );
+				this.startSourcePath = Files.exists( p ) ? p : PreferenceManager.DATASYNC_HOME;
 			}
 
 			if( json.containsKey( "startDestPath" ) ) {
@@ -178,9 +178,9 @@ public final class Preference {
 			}
 
 			// --- PATH FALLBACK LOGIC ---
-			// Resilient protection layer: If structural filters left arrays empty, fall back to user home coordinates
+			// Resilient protection layer: If structural filters left arrays empty, fall back to datasync home coordinates
 			if( sourcePaths.isEmpty() || destPaths.isEmpty() ) {
-				final Path userHome = Paths.get( System.getProperty( "user.home" ) );
+				final Path userHome = PreferenceManager.DATASYNC_HOME;
 				if( sourcePaths.isEmpty() ) sourcePaths.add( userHome );
 				if( destPaths.isEmpty() ) destPaths.add( userHome );
 				this.startSourcePath = userHome;

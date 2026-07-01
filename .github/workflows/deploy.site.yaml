@@ -16,15 +16,15 @@ concurrency:
     group: "pages"
     cancel-in-progress: false
 
+env:
+    MAVEN_OPTS: "-Djdk.io.File.allowDeleteReadOnlyFiles=true --enable-native-access=ALL-UNNAMED"
+
 jobs:
     deploy:
         environment:
             name: github-pages
             url: ${{ steps.deployment.outputs.page_url }}
         runs-on: ubuntu-latest
-
-    env:
-        MAVEN_OPTS: "-Djdk.io.File.allowDeleteReadOnlyFiles=true --enable-native-access=ALL-UNNAMED"
 
         if: |
             github.event_name == 'workflow_dispatch' || 

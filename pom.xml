@@ -516,6 +516,7 @@
 							<icon>src/main/resources/icons/64x64.ico</icon>
 							<module>de.spiritscorp.DataSync/de.spiritscorp.DataSync.Main</module>
 							<javaoptions>-Dfile.encoding=UTF-8 -Xms32m -Xmx4096m -Dapp.instance.name=${project.artifactId}_v${project.version}</javaoptions>
+							<javaoptions>--enable-native-access=javafx.graphics</javaoptions>
 						</configuration>
 					</execution>
 				</executions>
@@ -533,7 +534,7 @@
 							<goal>copy-resources</goal>
 						</goals>
 						<configuration>
-							<outputDirectory> target/${project.artifactId}/jar/${project.artifactId}</outputDirectory>
+							<outputDirectory>target/${project.artifactId}/jar/${project.artifactId}</outputDirectory>
 							<resources>
 								<resource>
 									<directory>target/maven-jlink/default</directory>
@@ -551,7 +552,7 @@
 							<goal>copy-resources</goal>
 						</goals>
 						<configuration>
-							<outputDirectory> target/${project.artifactId}/jar/${project.artifactId}</outputDirectory>
+							<outputDirectory>target/${project.artifactId}/jar/${project.artifactId}</outputDirectory>
 							<resources>
 								<resource>
 									<directory>target/classes</directory>
@@ -587,7 +588,7 @@
 							<goal>copy-resources</goal>
 						</goals>
 						<configuration>
-							<outputDirectory> target/${project.artifactId}/jar/${project.artifactId}</outputDirectory>
+							<outputDirectory>target/${project.artifactId}/jar/${project.artifactId}</outputDirectory>
 							<resources>
 								<resource>
 									<directory>target</directory>
@@ -605,7 +606,7 @@
 							<goal>copy-resources</goal>
 						</goals>
 						<configuration>
-							<outputDirectory> target/${project.artifactId}/image/${project.artifactId}</outputDirectory>
+							<outputDirectory>target/${project.artifactId}/image/${project.artifactId}</outputDirectory>
 							<resources>
 								<resource>
 									<directory>target/classes</directory>
@@ -633,7 +634,7 @@
 						<configuration>
 							<finalName>${project.artifactId}-jar</finalName>
 							<appendAssemblyId>false</appendAssemblyId>
-							<outputDirectory> ${project.build.directory}/${project.artifactId}/jar</outputDirectory>
+							<outputDirectory>${project.build.directory}/${project.artifactId}/jar</outputDirectory>
 							<descriptors>
 								<descriptor>buildConfig/assembly/zip-full-jar.xml</descriptor>
 							</descriptors>
@@ -648,7 +649,7 @@
 						<configuration>
 							<finalName>${project.artifactId}-image</finalName>
 							<appendAssemblyId>false</appendAssemblyId>
-							<outputDirectory> ${project.build.directory}/${project.artifactId}/image</outputDirectory>
+							<outputDirectory>${project.build.directory}/${project.artifactId}/image</outputDirectory>
 							<descriptors>
 								<descriptor>buildConfig/assembly/zip-jpackage.xml</descriptor>
 							</descriptors>

@@ -99,10 +99,10 @@ class FileHandler {
 	 *         The map with sorted duplicates
 	 */
 	Map<Path, FileAttributes> findDuplicates( Map<Path, FileAttributes> sourceMap ) {
-		Debug.printDebug( "entryPaths -> %d", sourceMap.size() );
+		Debug.printDebug( "[FileHandler]  entryPaths -> %d", sourceMap.size() );
 		final Map<Path, FileAttributes> duplicateMap = Model.createMap();
 
-		final HashMap<Long, ArrayList<Path>> mapSize = new HashMap<>();
+		final Map<Long, ArrayList<Path>> mapSize = new HashMap<>();
 		for( final Map.Entry<Path, FileAttributes> entry : sourceMap.entrySet() ) {
 			if( Thread.currentThread().isInterrupted() ) return duplicateMap;
 			final long size = entry.getValue().getSize();
@@ -252,8 +252,8 @@ class FileHandler {
 				syncMaps( destMap, sourceMap, destValue, startSourcePath, syncMap );
 			}
 		}
-		Debug.printDebug( "[FileHandler] Full copySourceHitList size: %d  && Full copyDestHitList size: %d  && Full delHitList size: %d", copySourceHitList.size(), copyDestHitList.size(),
-				delHitList.size() );
+		Debug.printDebug( "[FileHandler] Full copySourceHitList size: %d  && Full copyDestHitList size: %d  && Full delHitList size: %d",
+				copySourceHitList.size(), copyDestHitList.size(), delHitList.size() );
 		return resultValue;
 	}
 
@@ -290,9 +290,15 @@ class FileHandler {
 					Files.createDirectories( trashbinPath.resolve( fileAttr.getRelativeFilePath() ) );
 					Files.copy( path, trashbinPath.resolve( fileAttr.getRelativeFilePath() ), StandardCopyOption.REPLACE_EXISTING );
 				}
-				if( !path.toFile().canWrite() ) path.toFile().setWritable( true );
-				Files.delete( path );
-				log.setEntry( path.toString(), "gelöscht", fileAttr );
+				boolean writable = true;
+				if( !path.toFile().canWrite() ) writable = path.toFile().setWritable( true );
+				if( writable ) {
+					Files.delete( path );
+					log.setEntry( path.toString(), "gelöscht", fileAttr );
+				}else {
+					log.setEntry( path.toString(), "SCHREIBSCHUTZ BEIM LÖSCHEN", fileAttr );
+					Debug.printDebug( "[FileHandler Error] Delete failed, target file is not writable: %s", path.toString() );
+				}
 			}catch( final IOException e ) {
 				log.setEntry( path.toString(), "FEHLER BEIM LÖSCHEN", fileAttr );
 				Debug.printDebug( "[FileHandler Error] Delete failed: %s", path.toString() );
@@ -331,17 +337,23 @@ class FileHandler {
 			if( fileAttr == null ) continue;
 			final Path path = destPath.resolve( fileAttr.getRelativeFilePath() );
 			final Path parentPath = path.getParent();
+			boolean writable = true;
 			try {
 				if( parentPath != null && !Files.exists( parentPath ) )
 					Files.createDirectories( parentPath );
-				else if( Files.exists( path ) && !path.toFile().canWrite() ) path.toFile().setWritable( true );
-				Files.copy(
-						entry.getKey(),
-						path,
-						StandardCopyOption.REPLACE_EXISTING,
-						StandardCopyOption.COPY_ATTRIBUTES );
-				Files.setAttribute( path, "creationTime", fileAttr.getCreateTime() );
-				log.setEntry( path.toString(), "kopiert", fileAttr );
+				else if( Files.exists( path ) && !path.toFile().canWrite() ) writable = path.toFile().setWritable( true );
+				if( writable ) {
+					Files.copy(
+							entry.getKey(),
+							path,
+							StandardCopyOption.REPLACE_EXISTING,
+							StandardCopyOption.COPY_ATTRIBUTES );
+					Files.setAttribute( path, "creationTime", fileAttr.getCreateTime() );
+					log.setEntry( path.toString(), "kopiert", fileAttr );
+				}else {
+					log.setEntry( path.toString(), "SCHREIBSCHUTZ BEIM KOPIEREN", fileAttr );
+					Debug.printDebug( "[FileHandler Error] Copy failed, target file is not writable: %s", path.toString() );
+				}
 			}catch( final IOException e ) {
 				log.setEntry( path.toString(), "FEHLER BEIM KOPIEREN", fileAttr );
 				Debug.printDebug( "[FileHandler Error] Copy failed: %s", path.toString() );
@@ -473,9 +485,7 @@ class FileHandler {
 	 * @param dest   Destination file attributes
 	 * @return true if source modification time is newer
 	 */
-	private boolean isNewer(
-			FileAttributes source,
-			FileAttributes dest ) {
+	private boolean isNewer( FileAttributes source, FileAttributes dest ) {
 
 		return source.getModTime().toMillis() > dest.getModTime().toMillis();
 	}

@@ -184,10 +184,10 @@ public class MainViewController implements ViewController {
 	public void handleExecuteTask( SyncJobContext job ) {
 		if( job != null ) {
 			switch( job.getSelectedMode() ) {
-			case ScanType.SYNCHRONIZE -> helper.startSynchronize( job );
-			case ScanType.DUBLICATE_SCAN -> helper.startDuplicateScan( job );
-			case DEEP_SCAN, FLAT_SCAN -> helper.startBackup( job );
-			default -> throw new IllegalArgumentException( "Unexpected value: " + job.getSelectedMode() );
+				case ScanType.SYNCHRONIZE -> helper.startSynchronize( job );
+				case ScanType.DUBLICATE_SCAN -> helper.startDuplicateScan( job );
+				case DEEP_SCAN, FLAT_SCAN -> helper.startBackup( job );
+				default -> throw new IllegalArgumentException( "Unexpected value: " + job.getSelectedMode() );
 			}
 		}
 	}

@@ -71,13 +71,13 @@ public final class SidebarView extends VBox {
 		hamburgerMenu.setMaxWidth( Double.MAX_VALUE );
 
 		final MenuItem taskViewItem = new MenuItem( "Aktiver Task-Monitor", Gui.createIcon( MaterialDesignF.FOLDER ) );
-		taskViewItem.setOnAction( e -> controller.handleNavigate( Gui.ViewState.MONITOR ) );
+		taskViewItem.setOnAction( _ -> controller.handleNavigate( Gui.ViewState.MONITOR ) );
 
 		final MenuItem settingsItem = new MenuItem( "Erweiterte Parameter", Gui.createIcon( MaterialDesignS.STORE_SETTINGS ) );
-		settingsItem.setOnAction( e -> controller.handleNavigate( Gui.ViewState.SETTINGS ) );
+		settingsItem.setOnAction( _ -> controller.handleNavigate( Gui.ViewState.SETTINGS ) );
 
 		final MenuItem infoItem = new MenuItem( "System-Informationen", Gui.createIcon( MaterialDesignI.INFORMATION ) );
-		infoItem.setOnAction( e -> controller.handleNavigate( Gui.ViewState.INFO ) );
+		infoItem.setOnAction( _ -> controller.handleNavigate( Gui.ViewState.INFO ) );
 
 		hamburgerMenu.getItems().addAll( taskViewItem, settingsItem, new SeparatorMenuItem(), infoItem );
 
@@ -93,13 +93,13 @@ public final class SidebarView extends VBox {
 		final Button addJobButton = new Button( "Task hinzufügen", Gui.createIcon( MaterialDesignP.PLUS ) );
 		addJobButton.setMaxWidth( Double.MAX_VALUE );
 		addJobButton.setStyle( "-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 11px;" );
-		addJobButton.setOnAction( e -> controller.handleCreateNewJob() );
+		addJobButton.setOnAction( _ -> controller.handleCreateNewJob() );
 
 		final Button exitButton = new Button( "Programm beenden", Gui.createIcon( MaterialDesignP.POWER ) );
 		exitButton.getGraphic().setStyle( "-fx-icon-color: white;" );
 		exitButton.setMaxWidth( Double.MAX_VALUE );
 		exitButton.setStyle( "-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 11px;" );
-		exitButton.setOnAction( e -> controller.handleApplicationShutdown() );
+		exitButton.setOnAction( _ -> controller.handleApplicationShutdown() );
 
 		this.getChildren().addAll( hamburgerMenu, sidebarHeader, sidebarListView, addJobButton, exitButton );
 		VBox.setVgrow( sidebarListView, Priority.ALWAYS );
@@ -130,14 +130,14 @@ public final class SidebarView extends VBox {
 			final ContextMenu contextMenu = new ContextMenu();
 
 			final MenuItem renameItem = new MenuItem( "Task umbenennen", Gui.createIcon( MaterialDesignS.SWAP_HORIZONTAL ) );
-			renameItem.setOnAction( event -> controller.handleRenameJob( cell ) );
+			renameItem.setOnAction( _ -> controller.handleRenameJob( cell ) );
 
 			final MenuItem duplicateItem = new MenuItem( "Task duplizieren", Gui.createIcon( MaterialDesignC.CONTENT_DUPLICATE ) );
-			duplicateItem.setOnAction( event -> controller.handleDuplicateJob( cell.getItem() ) );
+			duplicateItem.setOnAction( _ -> controller.handleDuplicateJob( cell.getItem() ) );
 
 			final MenuItem deleteItem = new MenuItem( "Task löschen", Gui.createIcon( MaterialDesignD.DELETE ) );
 			deleteItem.setStyle( "-fx-text-fill: #c0392b;" );
-			deleteItem.setOnAction( event -> controller.handleDeleteJob( cell.getItem() ) );
+			deleteItem.setOnAction( _ -> controller.handleDeleteJob( cell.getItem() ) );
 
 			contextMenu.getItems().addAll( renameItem, duplicateItem, new SeparatorMenuItem(), deleteItem );
 

@@ -125,7 +125,7 @@ public class BgController {
 	public void interruptBgJob( long timeoutPerThreadMs ) {
 		gui.getWindowStage().show();
 		shutdownExecutors( timeoutPerThreadMs );
-		Debug.printDebug( "[DataSync Daemon] Background routine interrupted" );
+		Debug.printDebug( "[BgController] Background routine interrupted" );
 	}
 
 	/**
@@ -149,14 +149,14 @@ public class BgController {
 			try {
 				sysTray.add( bgView.getTrayIcon() );
 			}catch( final AWTException e ) {
-				Debug.printError( "[DataSync Daemon] Failed to register TrayIcon context." );
+				Debug.printError( "[BgController] Failed to register TrayIcon context." );
 				Debug.printException( getClass(), e );
 				gui.getWindowStage().show();
 				return;
 			}
 		}
 
-		Debug.printDebug( "[DataSync Daemon] Multi-Job Background-Daemon initialization started." );
+		Debug.printDebug( "[BgController] Multi-Job Background-Daemon initialization started." );
 
 		// Dynamically determine the optimal check interval based on active jobs
 		final long calculatedTick = determineOptimalCheckTime();
@@ -166,7 +166,7 @@ public class BgController {
 		jobList.stream()
 				.filter( ( job ) -> job.getPreference()
 						.isBgSync() )
-				.forEach( ( job ) -> Debug.printDebug( "[DataSync Daemon] Executing background routine is activated for task: %s", job.getJobName() ) );
+				.forEach( ( job ) -> Debug.printDebug( "[BgController] Executing background routine is activated for task: %s", job.getJobName() ) );
 		// Begin tracking task list rules loops
 		this.scheduler.scheduleAtFixedRate( this::checkAndQueueJobs, initialDelay, tickInterval, TimeUnit.MILLISECONDS );
 	}
@@ -218,10 +218,10 @@ public class BgController {
 			if( pref != null && pref.isBgSync() ) {
 				final long timeDelta = System.currentTimeMillis() - pref.getLastScanTime();
 				final long targetInterval = (long) ( pref.getBgTime().getTime() * timeMultiplier );
-				Debug.printDebug( "[DataSync BgController] time since last check: %d", System.currentTimeMillis() - pref.getLastScanTime() );
+				Debug.printDebug( "[BgController] time since last check: %d", System.currentTimeMillis() - pref.getLastScanTime() );
 
 				if( timeDelta > targetInterval ) {
-					Debug.printDebug( "[DataSync Daemon] Polling threshold triggered for task: %s. Queueing worker task.", job.getJobName() );
+					Debug.printDebug( "[BgController] Polling threshold triggered for task: %s. Queueing worker task.", job.getJobName() );
 					job.setRunning( true );
 					// Dispatch into the dedicated loop queue lane (prevents hardware disk I/O thrashing)
 					workerQueue.execute( () -> {
@@ -230,15 +230,15 @@ public class BgController {
 
 							// Map active thread to the context token to let external shutdown requests throw interrupts
 							job.setActiveWorkerThread( Thread.currentThread() );
-							Debug.printDebug( "[DataSync Daemon] Executing background routine for task: %s", job.getJobName() );
+							Debug.printDebug( "[BgController] Executing background routine for task: %s", job.getJobName() );
 							bgModel.runBgJob();
 						}catch( final Exception e ) {
-							Debug.printDebug( "[Error DataSync Daemon] Critical fault captured inside background thread execution pipeline for: %s", job.getJobName() );
+							Debug.printDebug( "[BgController Error] Critical fault captured inside background thread execution pipeline for: %s", job.getJobName() );
 							Debug.printException( this.getClass(), e );
 						}finally {
 							job.setRunning( false );
 							job.setActiveWorkerThread( null );
-							Debug.printDebug( "[DataSync Daemon] Finished executing background routine for task: %s", job.getJobName() );
+							Debug.printDebug( "[BgController] Finished executing background routine for task: %s", job.getJobName() );
 						}
 					} );
 				}
@@ -264,7 +264,7 @@ public class BgController {
 	 *                           the lifecycle boundary is forcibly closed.
 	 */
 	private void shutdownExecutors( long timeoutPerThreadMs ) {
-		Debug.printDebug( "[DataSync Daemon] Dissolving executor pools and cleaning up task contexts." );
+		Debug.printDebug( "[BgController] Dissolving executor pools and cleaning up task contexts." );
 
 		if( scheduler != null ) {
 			scheduler.shutdownNow();
@@ -275,7 +275,7 @@ public class BgController {
 			workerQueue.shutdownNow();
 			try {
 				if( !workerQueue.awaitTermination( timeoutPerThreadMs, TimeUnit.MILLISECONDS ) ) {
-					Debug.printDebug( "[DataSync Daemon] Worker queue termination delayed. Enforcing lifecycle exit." );
+					Debug.printDebug( "[BgController] Worker queue termination delayed. Enforcing lifecycle exit." );
 				}
 			}catch( final InterruptedException e ) {
 				Thread.currentThread().interrupt();
@@ -293,7 +293,7 @@ public class BgController {
 			sysTray.remove( bgView.getTrayIcon() );
 		}
 
-		Debug.printDebug( "[DataSync Daemon] Background-Daemon terminated cleanly." );
+		Debug.printDebug( "[BgController] Background-Daemon terminated cleanly." );
 	}
 
 	/**

@@ -262,9 +262,9 @@ public final class WorkspaceView extends VBox {
 		cancelButton.disableProperty().bind( job.runningProperty().not() );
 		actionButton.disableProperty().bind( job.runningProperty() );
 
-		cancelButton.setOnAction( e -> controller.handleStopTask( job ) );
-		actionButton.setOnAction( e -> controller.handleExecuteTask( job ) );
-		deleteButton.setOnAction( e -> controller.deleteSelectedDuplicates( job ) );
+		cancelButton.setOnAction( _ -> controller.handleStopTask( job ) );
+		actionButton.setOnAction( _ -> controller.handleExecuteTask( job ) );
+		deleteButton.setOnAction( _ -> controller.deleteSelectedDuplicates( job ) );
 	}
 
 	/**
@@ -284,38 +284,35 @@ public final class WorkspaceView extends VBox {
 
 		// 2. Programmatic structural fallback: Set a default color via inline styles
 		// This acts as a safety net if the active CSS theme completely lacks the targeted class definition.
+		// CHECKSTYLE:OFF
 		switch( cssNotifyStatus ) {
-		case SUCESS -> {
-			contextInfoLabel.setStyle( "-fx-text-fill: #22aa22  !important; -fx-font-weight: bold;" );
-			contextInfoLabel.setText( "✔ " + message );
+			case SUCESS -> {
+				contextInfoLabel.setStyle( "-fx-text-fill: #22aa22  !important; -fx-font-weight: bold;" );
+				contextInfoLabel.setText( "✔ " + message );
+			}
+			case ERROR -> {
+				contextInfoLabel.setStyle( "-fx-text-fill: #ff3333  !important; -fx-font-weight: bold;" );
+				contextInfoLabel.setText( "❌ " + message );
+			}
+			case WARNING -> {
+				contextInfoLabel.setStyle( "-fx-text-fill: #ffaa00  !important; -fx-font-weight: bold;" );
+				contextInfoLabel.setText( "⚠ " + message );
+			}
 		}
-		case ERROR -> {
-			contextInfoLabel.setStyle( "-fx-text-fill: #ff3333  !important; -fx-font-weight: bold;" );
-			contextInfoLabel.setText( "❌ " + message );
-		}
-		case WARNING -> {
-			contextInfoLabel.setStyle( "-fx-text-fill: #ffaa00  !important; -fx-font-weight: bold;" );
-			contextInfoLabel.setText( "⚠ " + message );
-		}
-		default -> {
-			contextInfoLabel.setStyle( "-fx-font-weight: bold;" );
-			contextInfoLabel.setText( "❓ " + message );
-		}
-		}
+		// CHECKSTYLE:ON
 
 		// 3. Inject the theme's class rule.
 		// If the theme defines this class, the stylesheet will cleanly override our inline fallback style.
 		contextInfoLabel.getStyleClass().add( cssNotifyStatus.getCssClass() );
 
 		// Initialize asynchronous fade-out/revert timer
-		final Timeline fallbackTimeline = new Timeline(
-				new KeyFrame(
-						Duration.seconds( durationSec ),
-						event -> {
-							contextInfoLabel.setText( originalContextText );
-							contextInfoLabel.getStyleClass().remove( cssNotifyStatus.getCssClass() );
-							contextInfoLabel.setStyle( originalStyle );
-						} ) );
+		final Timeline fallbackTimeline = new Timeline( new KeyFrame(
+				Duration.seconds( durationSec ),
+				_ -> {
+					contextInfoLabel.setText( originalContextText );
+					contextInfoLabel.getStyleClass().remove( cssNotifyStatus.getCssClass() );
+					contextInfoLabel.setStyle( originalStyle );
+				} ) );
 
 		fallbackTimeline.setCycleCount( 1 );
 		fallbackTimeline.play();
@@ -408,7 +405,7 @@ public final class WorkspaceView extends VBox {
 		final ComboBox<AppTheme> themeComboBox = new ComboBox<>( mainGui.getAvailableThemes() );
 		themeComboBox.setTooltip( new Tooltip( "Listet alle möglichen Themes auf" ) );
 		// Custom cell rendering to display the specific Strategy names cleanly
-		themeComboBox.setCellFactory( lv -> new ListCell<>() {
+		themeComboBox.setCellFactory( _ -> new ListCell<>() {
 			@Override
 			protected void updateItem( AppTheme item, boolean empty ) {
 				super.updateItem( item, empty );
@@ -431,7 +428,7 @@ public final class WorkspaceView extends VBox {
 		final Button saveButton = new Button( "Einstellungen speichern", Gui.createIcon( MaterialDesignD.DISC ) );
 		saveButton.setStyle( "-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10px 24px;" );
 		saveButton.setTooltip( new Tooltip( "Übernimmt alle geänderten Zustandsparameter permanent in die JSON-Konfigurationsdatei" ) );
-		saveButton.setOnAction( e -> {
+		saveButton.setOnAction( _ -> {
 			PreferenceManager.getInstance().setGlobalAutoStart( globalAutostartCheck.isSelected() );
 			PreferenceManager.getInstance().setTheme( themeComboBox.getValue() );
 			final Preference jobPref = job.getPreference();
@@ -486,7 +483,7 @@ public final class WorkspaceView extends VBox {
 			final TextField srcField = new TextField( initialSrc.toString() );
 			srcField.setPrefWidth( 400 );
 			final Button srcBtn = new Button( "Durchsuchen..." );
-			srcBtn.setOnAction( e -> {
+			srcBtn.setOnAction( _ -> {
 				final File f = chooseDirectory( initialSrc.toFile(), "Quellverzeichnis für " + pref.getScanMode().getDescription() );
 				if( f != null ) {
 					srcField.setText( f.getAbsolutePath() );
@@ -503,7 +500,7 @@ public final class WorkspaceView extends VBox {
 			final TextField destField = new TextField( initialDest.toString() );
 			destField.setPrefWidth( 400 );
 			final Button destBtn = new Button( "Durchsuchen..." );
-			destBtn.setOnAction( e -> {
+			destBtn.setOnAction( _ -> {
 				final File f = chooseDirectory( initialDest.toFile(), "Zielverzeichnis für " + pref.getScanMode().getDescription() );
 				if( f != null ) {
 					destField.setText( f.getAbsolutePath() );
@@ -528,7 +525,7 @@ public final class WorkspaceView extends VBox {
 			final ListView<String> pathsListView = new ListView<>( backupPaths );
 			pathsListView.setPrefHeight( 100 );
 			final Button add = new Button( "Verzeichnis hinzufügen", Gui.createIcon( MaterialDesignP.PLUS ) );
-			add.setOnAction( e -> {
+			add.setOnAction( _ -> {
 				final File f = chooseDirectory( pathCtx.sources.getLast().toFile(), "Quellverzeichnis für " + pref.getScanMode().getDescription() );
 				if( f != null && !backupPaths.contains( f.getAbsolutePath() ) ) {
 					backupPaths.add( f.getAbsolutePath() );
@@ -536,7 +533,7 @@ public final class WorkspaceView extends VBox {
 				}
 			} );
 			final Button rem = new Button( "Entfernen", Gui.createIcon( MaterialDesignD.DELETE ) );
-			rem.setOnAction( e -> {
+			rem.setOnAction( _ -> {
 				final String sel = pathsListView.getSelectionModel().getSelectedItem();
 				if( sel != null ) {
 					backupPaths.remove( sel );
@@ -553,7 +550,7 @@ public final class WorkspaceView extends VBox {
 			final TextField destField = new TextField( initialDest );
 			destField.setPrefWidth( 400 );
 			final Button destBtn = new Button( "Durchsuchen..." );
-			destBtn.setOnAction( e -> {
+			destBtn.setOnAction( _ -> {
 				final File f = chooseDirectory( pathCtx.destinations.getFirst().toFile(), "Ziielverzeichnis für " + pref.getScanMode().getDescription() );
 				if( f != null ) {
 					destField.setText( f.getAbsolutePath() );

@@ -164,7 +164,11 @@ public class Gui extends Application {
 	public void setCurrentActiveJob( SyncJobContext job ) {
 		this.currentActiveJob = job;
 		workspaceView.bindJob( job );
-		workspaceView.refreshView( currentViewState, job );
+		if( this.currentViewState == ViewState.INFO ) {
+			workspaceView.displayCustomViewNode( buildAboutInfoNode() );
+		}else {
+			workspaceView.refreshView( currentViewState, job );
+		}
 	}
 
 	/**

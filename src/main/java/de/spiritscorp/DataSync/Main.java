@@ -191,25 +191,25 @@ public final class Main { // NOPMD ShortClassName
 		final String arg = args[currentIndex].trim();
 		final String generalArg = arg.toLowerCase( Locale.ROOT );
 		switch( generalArg ) {
-		// Modern multi-labels: replaces the logical OR (||) chains
-		case BOOT_DELAY_LONG, BOOT_DELAY_SHORT ->
-			firstStart = true;
+			// Modern multi-labels: replaces the logical OR (||) chains
+			case BOOT_DELAY_LONG, BOOT_DELAY_SHORT ->
+				firstStart = true;
 
-		case DEBUG_LONG, DEBUG_SHORT ->
-			debug = true;
+			case DEBUG_LONG, DEBUG_SHORT ->
+				debug = true;
 
-		case DEBUG_TO_FILE_LONG, DEBUG_TO_FILE_SHORT -> {
-			toFile = true;
-			debug = true;
-		}
+			case DEBUG_TO_FILE_LONG, DEBUG_TO_FILE_SHORT -> {
+				toFile = true;
+				debug = true;
+			}
 
-		// Pattern Matching with a 'when' guard to handle the .startsWith() logic
-		case final String genArg when genArg.startsWith( CONFIG_DIR_LONG ) || genArg.startsWith( CONFIG_DIR_SHORT ) ->
-			handleConfigDirectoryArgument( args, currentIndex, manager );
+			// Pattern Matching with a 'when' guard to handle the .startsWith() logic
+			case final String genArg when genArg.startsWith( CONFIG_DIR_LONG ) || genArg.startsWith( CONFIG_DIR_SHORT ) ->
+				handleConfigDirectoryArgument( args, currentIndex, manager );
 
-		default -> {
-			// No match found, skip silently
-		}
+			default -> {
+				// No match found, skip silently
+			}
 		}
 	}
 

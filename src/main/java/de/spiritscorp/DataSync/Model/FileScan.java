@@ -104,9 +104,9 @@ class FileScan implements Runnable {
 
 	private String deepScan() {
 		return switch( scanType ) {
-		case DEEP_SCAN, DUBLICATE_SCAN -> getSha256();
-		case FLAT_SCAN, SYNCHRONIZE -> "null";
-		default -> "null";
+			case DEEP_SCAN, DUBLICATE_SCAN -> getSha256();
+			case FLAT_SCAN, SYNCHRONIZE -> "null";
+			default -> "null";
 		};
 	}
 }

@@ -24,7 +24,7 @@ jobs:
         language: [ 'java' ]
 
     env:
-      MAVEN_OPTS: "-Djdk.io.File.allowDeleteReadOnlyFiles=true --enable-native-access=ALL-UNNAMED"
+      MAVEN_OPTS: "-Dgpg.skip=true -Djdk.io.File.allowDeleteReadOnlyFiles=true --enable-native-access=ALL-UNNAMED"
 
     steps: 
     - name: Checkout repository

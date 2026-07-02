@@ -17,7 +17,7 @@ concurrency:
     cancel-in-progress: false
 
 env:
-    MAVEN_OPTS: "-Djdk.io.File.allowDeleteReadOnlyFiles=true --enable-native-access=ALL-UNNAMED"
+    MAVEN_OPTS: "-Dgpg.skip=true -Djdk.io.File.allowDeleteReadOnlyFiles=true --enable-native-access=ALL-UNNAMED"
 
 jobs:
     deploy:

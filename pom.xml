@@ -115,7 +115,7 @@
 		<dep_junit-jupiter>6.1.1</dep_junit-jupiter>
 		<dep_junit-platform>6.1.1</dep_junit-platform>
 		<dep_mockito>5.23.0</dep_mockito>
-		<dep_bytebuddy>1.18.10</dep_bytebuddy>
+		<dep_bytebuddy>1.18.11</dep_bytebuddy>
 	</properties>
 
 	<build>

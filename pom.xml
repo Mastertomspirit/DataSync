@@ -452,7 +452,12 @@
 					</dependency>
 				</dependencies>
 				<configuration>
-					<argLine>-XX:+EnableDynamicAgentLoading -Xshare:off</argLine>
+					<argLine>
+						-XX:+EnableDynamicAgentLoading
+						-Xshare:off 
+						--enable-native-access=javafx.graphics
+					</argLine>
+					<useModulePath>true</useModulePath>
 					<reportFormat>plain</reportFormat>
 					<consoleOutputReporter>
 						<disable>false</disable>
@@ -482,8 +487,12 @@
 					<systemPropertyVariables>
 						<surefire.dump>false</surefire.dump>
 					</systemPropertyVariables>
-					<argLine>-XX:+EnableDynamicAgentLoading -Xshare:off</argLine>
-					<useModulePath>false</useModulePath>
+					<argLine>
+						-XX:+EnableDynamicAgentLoading
+						-Xshare:off
+						--enable-native-access=javafx.graphics
+					</argLine>
+					<useModulePath>true</useModulePath>
 					<reportFormat>plain</reportFormat>
 					<consoleOutputReporter>
 						<disable>false</disable>

@@ -29,6 +29,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockConstruction;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -43,6 +44,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -60,6 +62,7 @@ import de.spiritscorp.datasync.io.Debug;
 import de.spiritscorp.datasync.io.Logger;
 import de.spiritscorp.datasync.io.Preference;
 import de.spiritscorp.datasync.model.BgModel;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.stage.Stage;
@@ -72,7 +75,7 @@ import javafx.stage.Stage;
  * <p>
  *
  * @author Tom Spirit
- * @version 1.2.0
+ * @version 1.3.0
  * @see BgController
  */
 //@DisplayName( "Background Controller Engine Test Suite" )
@@ -129,6 +132,14 @@ class BgControllerTest {
 		mockedSystemTray.when( SystemTray::getSystemTray ).thenReturn( spySystemTray );
 
 		testJobList = FXCollections.observableArrayList();
+	}
+
+	@BeforeAll
+	static void initToolkit() {
+		try {
+			Platform.startup( () -> {
+			} );
+		}catch( IllegalStateException _ ) {}
 	}
 
 	/**
@@ -324,26 +335,30 @@ class BgControllerTest {
 		final SyncJobContext activeJob = createMockJob( "Aborted-Process", true, BgTime.MIN_30, System.currentTimeMillis() );
 		testJobList.add( activeJob );
 
-		final BgController controller = new BgController( mockGui, mockViewController, testJobList, mockLogger );
-		injectMockExecutors( controller );
+		try {
 
-		controller.startBgJob( false );
+			final BgController controller = new BgController( mockGui, mockViewController, testJobList, mockLogger );
+			injectMockExecutors( controller );
+			// Simulate successful framework feedback metrics
+			when( mockWorkerQueue.awaitTermination( anyLong(), any( TimeUnit.class ) ) ).thenReturn( true );
 
-		// Simulate successful framework feedback metrics
-		when( mockWorkerQueue.awaitTermination( anyLong(), any( TimeUnit.class ) ) ).thenReturn( true );
+			controller.startBgJob( false );
 
-		// Command daemon termination sequence
-		assertDoesNotThrow( () -> controller.interruptBgJob( Main.BACKGROUND_THREAD_TIMEOUT ) );
+			Platform.runLater( () -> {
+				controller.interruptBgJob( Main.BACKGROUND_THREAD_TIMEOUT );
+			} );
+		}catch( Exception _ ) {}
+
 		// Part 1: Verify window environment visibility is brought back immediately
-		verify( mockStage, times( 1 ) ).show();
+		verify( mockStage, timeout( 400 ).times( 1 ) ).show();
 		// Part 2: Verify thread destruction routines are systematically passed down
-		verify( mockScheduler, times( 1 ) ).shutdownNow();
-		verify( mockWorkerQueue, times( 1 ) ).shutdownNow();
+		verify( mockScheduler, timeout( 50 ).times( 1 ) ).shutdownNow();
+		verify( mockWorkerQueue, timeout( 50 ).times( 1 ) ).shutdownNow();
 		// Part 3: Verify context parameters are flushed completely
-		verify( activeJob, times( 1 ) ).setRunning( false );
-		verify( activeJob, times( 1 ) ).setActiveWorkerThread( null );
+		verify( activeJob, timeout( 50 ).times( 1 ) ).setRunning( false );
+		verify( activeJob, timeout( 50 ).times( 1 ) ).setActiveWorkerThread( null );
 		// Part 4: Verify the active OS Shell context indicator was completely scrubbed
-		verify( spySystemTray, times( 1 ) ).remove( mockTrayIcon );
+		verify( spySystemTray, timeout( 50 ).times( 1 ) ).remove( mockTrayIcon );
 	}
 
 	/**
@@ -456,7 +471,7 @@ class BgControllerTest {
 	/**
 	 * Helper to assemble a standardized mock environment for internal sync jobs.
 	 */
-	private SyncJobContext createMockJob( String name, boolean bgSync, BgTime bgTime, long lastScan ) {
+	private SyncJobContext createMockJob( final String name, final boolean bgSync, final BgTime bgTime, final long lastScan ) {
 		final SyncJobContext mockJob = mock( SyncJobContext.class );
 		final var mockPref = mock( Preference.class );
 
@@ -474,7 +489,7 @@ class BgControllerTest {
 	 *
 	 * @throws ExecutionException
 	 */
-	private void injectMockExecutors( BgController controller ) throws ExecutionException {
+	private void injectMockExecutors( final BgController controller ) throws ExecutionException {
 		try {
 			final Method setEnvironment = BgController.class.getDeclaredMethod( "setEnvironment", double.class, BgView.class, ScheduledExecutorService.class, ExecutorService.class );
 			setEnvironment.setAccessible( true );

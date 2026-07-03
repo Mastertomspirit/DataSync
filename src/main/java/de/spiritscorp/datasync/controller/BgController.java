@@ -28,6 +28,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import javafx.application.Platform;
+import javafx.collections.ObservableList;
+
 import de.spiritscorp.datasync.Main;
 import de.spiritscorp.datasync.gui.BgView;
 import de.spiritscorp.datasync.gui.Gui;
@@ -35,7 +38,6 @@ import de.spiritscorp.datasync.io.Debug;
 import de.spiritscorp.datasync.io.Logger;
 import de.spiritscorp.datasync.model.BgModel;
 import de.spiritscorp.datasync.model.Model;
-import javafx.collections.ObservableList;
 
 /**
  * Central orchestration engine handling asynchronous background file synchronization routines.
@@ -83,7 +85,7 @@ public class BgController {
 	 * @param jobList    The reactive data backing list containing operational task metrics and execution state tokens
 	 * @param logger     The standardized system logging framework interface
 	 */
-	BgController( final Gui gui, ViewController controller, final ObservableList<SyncJobContext> jobList, final Logger logger ) {
+	BgController( final Gui gui, final ViewController controller, final ObservableList<SyncJobContext> jobList, final Logger logger ) {
 		this.gui = gui;
 		this.controller = controller;
 		this.jobList = jobList;
@@ -123,8 +125,10 @@ public class BgController {
 	 *                           interruption signal is enforced.
 	 * @see #shutdownExecutors(long)
 	 */
-	public void interruptBgJob( long timeoutPerThreadMs ) {
-		gui.getWindowStage().show();
+	public void interruptBgJob( final long timeoutPerThreadMs ) {
+		if( Platform.isFxApplicationThread() ) {
+			gui.getWindowStage().show();
+		}
 		shutdownExecutors( timeoutPerThreadMs );
 		Debug.printDebug( "[BgController] Background routine interrupted" );
 	}
@@ -163,7 +167,7 @@ public class BgController {
 		final long calculatedTick = determineOptimalCheckTime();
 		final long tickInterval = (long) ( calculatedTick * timeMultiplier );
 		final long initialDelay = (long) ( ( bootDelay ? BOOT_START_DELAY : INITIAL_DELAY ) * timeMultiplier );
-		Debug.printDebug( "[DataSync Daemon] Heartbeat configured to tick every %d ms based on job preferences.", calculatedTick );
+		Debug.printDebug( "[BgController] Heartbeat configured to tick every %d ms based on job preferences.", calculatedTick );
 		jobList.stream()
 				.filter( ( job ) -> job.getPreference()
 						.isBgSync() )
@@ -233,9 +237,9 @@ public class BgController {
 							job.setActiveWorkerThread( Thread.currentThread() );
 							Debug.printDebug( "[BgController] Executing background routine for task: %s", job.getJobName() );
 							bgModel.runBgJob();
-						}catch( final Exception e ) {
+						}catch( final Exception exception ) {
 							Debug.printDebug( "[BgController Error] Critical fault captured inside background thread execution pipeline for: %s", job.getJobName() );
-							Debug.printException( this.getClass(), e );
+							Debug.printException( this.getClass(), exception );
 						}finally {
 							job.setRunning( false );
 							job.setActiveWorkerThread( null );
@@ -264,7 +268,7 @@ public class BgController {
 	 *                           I/O operations to complete task evaluation loops before
 	 *                           the lifecycle boundary is forcibly closed.
 	 */
-	private void shutdownExecutors( long timeoutPerThreadMs ) {
+	private void shutdownExecutors( final long timeoutPerThreadMs ) {
 		Debug.printDebug( "[BgController] Dissolving executor pools and cleaning up task contexts." );
 
 		if( scheduler != null ) {
@@ -278,7 +282,7 @@ public class BgController {
 				if( !workerQueue.awaitTermination( timeoutPerThreadMs, TimeUnit.MILLISECONDS ) ) {
 					Debug.printDebug( "[BgController] Worker queue termination delayed. Enforcing lifecycle exit." );
 				}
-			}catch( final InterruptedException e ) {
+			}catch( InterruptedException _ ) {
 				Thread.currentThread().interrupt();
 			}
 		}
@@ -310,7 +314,7 @@ public class BgController {
 	 * @param scheduler   The scheduled executor tracking the heartbeat loops
 	 * @param workerQueue The sequential worker queue processing pending sync transfers
 	 */
-	private void setEnvironment( double multiplier, BgView bgView, ScheduledExecutorService scheduler, ExecutorService workerQueue ) {
+	private void setEnvironment( final double multiplier, final BgView bgView, final ScheduledExecutorService scheduler, final ExecutorService workerQueue ) {
 		if( multiplier > 0.0 ) this.timeMultiplier = multiplier;
 		if( bgView != null ) this.bgView = bgView;
 		if( scheduler != null ) this.scheduler = scheduler;

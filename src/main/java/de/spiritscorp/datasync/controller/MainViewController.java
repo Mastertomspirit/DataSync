@@ -22,8 +22,15 @@ package de.spiritscorp.datasync.controller;
 
 import java.util.Map;
 
+import javafx.application.Platform;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.ListCell;
+import javafx.scene.control.TextInputDialog;
+
 import de.spiritscorp.datasync.Main;
-import de.spiritscorp.datasync.ScanType;
 import de.spiritscorp.datasync.gui.DialogService;
 import de.spiritscorp.datasync.gui.Gui;
 import de.spiritscorp.datasync.gui.WorkspaceView.NotifyStatus;
@@ -32,13 +39,6 @@ import de.spiritscorp.datasync.io.Logger;
 import de.spiritscorp.datasync.io.Preference;
 import de.spiritscorp.datasync.io.PreferenceManager;
 import de.spiritscorp.datasync.theme.AppTheme;
-import javafx.application.Platform;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
-import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.ListCell;
-import javafx.scene.control.TextInputDialog;
 
 /**
  * Central controller implementation executing operational state translations and business action flows.
@@ -56,7 +56,7 @@ public class MainViewController implements ViewController {
 	 *
 	 * @param gui The global display manager orchestrator application shell instance.
 	 */
-	public MainViewController( Gui gui ) {
+	public MainViewController( final Gui gui ) {
 		this(
 				gui,
 				new SyncJobService( new DialogService( gui.getWindowStage() ), new UiLogFormatter() ),
@@ -64,7 +64,7 @@ public class MainViewController implements ViewController {
 		loadInitialJobList();
 	}
 
-	MainViewController( Gui gui, SyncJobService helper, PreferenceManager manager ) {
+	MainViewController( final Gui gui, final SyncJobService helper, final PreferenceManager manager ) {
 		this.gui = gui;
 		this.helper = helper;
 		this.manager = manager;
@@ -83,7 +83,7 @@ public class MainViewController implements ViewController {
 	}
 
 	@Override
-	public void handleNavigate( Gui.ViewState state ) {
+	public void handleNavigate( final Gui.ViewState state ) {
 		gui.setViewState( state );
 		if( !gui.getWindowStage().isShowing() ) {
 			gui.getWindowStage().show();
@@ -134,7 +134,7 @@ public class MainViewController implements ViewController {
 	}
 
 	@Override
-	public void handleRenameJob( ListCell<SyncJobContext> cell ) {
+	public void handleRenameJob( final ListCell<SyncJobContext> cell ) {
 		final SyncJobContext selectedJob = cell.getItem();
 		if( selectedJob != null ) {
 			final String oldName = selectedJob.getJobName();
@@ -156,14 +156,14 @@ public class MainViewController implements ViewController {
 	}
 
 	@Override
-	public void handleDuplicateJob( SyncJobContext job ) {
+	public void handleDuplicateJob( final SyncJobContext job ) {
 		if( job != null ) {
 			gui.getJobList().add( new SyncJobContext( job.getJobName() + " (Kopie)", job.getPreference() ) );
 		}
 	}
 
 	@Override
-	public void handleDeleteJob( SyncJobContext job ) {
+	public void handleDeleteJob( final SyncJobContext job ) {
 		if( job != null ) {
 			final Alert alert = new Alert( Alert.AlertType.CONFIRMATION, "Task '" + job.getJobName() + "' wirklich unwiderruflich löschen?", ButtonType.YES, ButtonType.NO );
 			alert.setTitle( "Task entfernen" );
@@ -182,11 +182,11 @@ public class MainViewController implements ViewController {
 	}
 
 	@Override
-	public void handleExecuteTask( SyncJobContext job ) {
+	public void handleExecuteTask( final SyncJobContext job ) {
 		if( job != null ) {
 			switch( job.getSelectedMode() ) {
-				case ScanType.SYNCHRONIZE -> helper.startSynchronize( job );
-				case ScanType.DUBLICATE_SCAN -> helper.startDuplicateScan( job );
+				case SYNCHRONIZE -> helper.startSynchronize( job );
+				case DUBLICATE_SCAN -> helper.startDuplicateScan( job );
 				case DEEP_SCAN, FLAT_SCAN -> helper.startBackup( job );
 				default -> throw new IllegalArgumentException( "Unexpected value: " + job.getSelectedMode() );
 			}
@@ -194,12 +194,12 @@ public class MainViewController implements ViewController {
 	}
 
 	@Override
-	public void handleStopTask( SyncJobContext job ) {
-		job.cancelRunningTask( Main.THREAD_TIMEOUT );
+	public void handleStopTask( final SyncJobContext job ) {
+		job.cancelRunningTask( Main.EXIT_THREAD_TIMEOUT );
 	}
 
 	@Override
-	public void handleSaveSettings( Preference localPreferences, AppTheme targetTheme ) {
+	public void handleSaveSettings( final Preference localPreferences, final AppTheme targetTheme ) {
 		if( localPreferences == null ) return;
 
 		// Persist structural configuration states securely to disk
@@ -233,13 +233,13 @@ public class MainViewController implements ViewController {
 	}
 
 	@Override
-	public void runInBackground( boolean firstStart ) {
+	public void runInBackground( final boolean firstStart ) {
 		activeBgController = new BgController( gui, this, gui.getJobList(), new Logger() );
 		activeBgController.startBgJob( firstStart );
 	}
 
 	@Override
-	public void deleteSelectedDuplicates( SyncJobContext jobContext ) {
+	public void deleteSelectedDuplicates( final SyncJobContext jobContext ) {
 		helper.deleteSelectedDuplicates( jobContext );
 	}
 
@@ -250,8 +250,8 @@ public class MainViewController implements ViewController {
 	 * @param dynamicGracePeriod If true, allocates an extended time buffer per thread;
 	 *                           if false (OS shutdown), enforces tight, rapid deadlines.
 	 */
-	private void executeCoreShutdownSequence( boolean dynamicGracePeriod ) {
-		final long timeoutPerThreadMs = dynamicGracePeriod ? Main.BACKGROUND_THREAD_TIMEOUT : Main.THREAD_TIMEOUT;
+	private void executeCoreShutdownSequence( final boolean dynamicGracePeriod ) {
+		final long timeoutPerThreadMs = dynamicGracePeriod ? Main.BACKGROUND_THREAD_TIMEOUT : Main.EXIT_THREAD_TIMEOUT;
 		Debug.printDebug( "[Exit] Internal system teardown invoked. Dynamic grace mode: %b -> %d ms", dynamicGracePeriod, timeoutPerThreadMs );
 		// Delegate termination orchestration directly to the individual task contexts securely
 		for( final SyncJobContext job : gui.getJobList() ) {

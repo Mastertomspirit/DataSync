@@ -127,7 +127,7 @@ class ModelTest {
 			Files.createFile( entry.getKey() );
 		}
 
-		assertTrue( model.backupFiles( 0, false, TEST_PATH.resolve( "dest" ), false, null ), "Die listen sind nicht leer" );
+		assertTrue( model.backupFiles( true, false, TEST_PATH.resolve( "dest" ), false, null ), "Die listen sind nicht leer" );
 		final List<Path> listSource = getFileNamesInDirectory( TEST_PATH.resolve( "source" ) );
 		final List<Path> listDest = getFileNamesInDirectory( TEST_PATH.resolve( "dest" ) );
 

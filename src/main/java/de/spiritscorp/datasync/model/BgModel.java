@@ -56,7 +56,7 @@ public class BgModel {
 		final Path startDestPath = pref.getStartDestPath();
 		final Path trashbinPath = pref.getTrashbinPath();
 		final boolean trashbin = pref.isTrashbin();
-		final boolean autoBgDel = pref.isAutoBgDel();
+		final boolean autoDel = pref.isAutoDel();
 		final ScanType scanType = pref.getScanMode();
 
 		Debug.printDebug( "[BgModel] Time since last scan: %s", formatDuration( System.currentTimeMillis() - pref.getLastScanTime() ) );
@@ -132,7 +132,7 @@ public class BgModel {
 					Debug.printDebug( "[BgModel] Equals Files ready" );
 
 					Debug.printDebug( "[BgModel] Process files start" );
-					if( autoBgDel && !destMap.isEmpty() ) handler.deleteFiles( destMap, logOn, trashbin, trashbinPath );
+					if( autoDel && !destMap.isEmpty() ) handler.deleteFiles( destMap, logOn, trashbin, trashbinPath );
 					if( !sourceMap.isEmpty() ) handler.copyFiles( sourceMap, logOn, startDestPath );
 					pref.saveLastScanTime();
 					Debug.printDebug( "[BgModel] Files successfully processed" );

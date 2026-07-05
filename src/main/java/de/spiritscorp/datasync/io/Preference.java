@@ -116,7 +116,7 @@ public final class Preference {
 				.add( "logOn", logOn )
 				.add( "subDir", subDir )
 				.add( "autoDel", autoDel )
-				.add( "autoBgDel", autoBgDel )
+				// .add( "autoBgDel", autoBgDel )
 				.add( "autoSync", autoSync )
 				.add( "bgSync", bgSync )
 				.add( "trashbin", trashbin );
@@ -205,7 +205,7 @@ public final class Preference {
 			this.trashbin = getSafeBoolean( json, "trashbin", true );
 			this.subDir = getSafeBoolean( json, "subDir", false );
 			this.autoDel = getSafeBoolean( json, "autoDel", false );
-			this.autoBgDel = getSafeBoolean( json, "autoBgDel", false );
+//			this.autoBgDel = getSafeBoolean( json, "autoBgDel", false );
 			this.autoSync = getSafeBoolean( json, "autoSync", false );
 			this.bgSync = getSafeBoolean( json, "bgSync", false );
 
@@ -315,9 +315,9 @@ public final class Preference {
 
 	public void setAutoDel( boolean autoDel ) { this.autoDel = autoDel; }
 
-	public boolean isAutoBgDel() { return autoBgDel; }
-
-	public void setAutoBgDel( boolean autoBgDel ) { this.autoBgDel = autoBgDel; }
+//	public boolean isAutoBgDel() { return autoBgDel; }
+//
+//	public void setAutoBgDel( boolean autoBgDel ) { this.autoBgDel = autoBgDel; }
 
 	public boolean isAutoSync() { return autoSync; }
 

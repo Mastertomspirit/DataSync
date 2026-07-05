@@ -172,8 +172,8 @@ public class Model {
 	 * @return true if all file entries inside the tracking maps were successfully processed and cleared,
 	 *         false if unprocessed files remain due to operational faults or file system errors
 	 */
-	public boolean backupFiles( int del, boolean logOn, Path destPath, boolean trashbin, Path trashbinPath ) {
-		if( del == 0 && !destMap.isEmpty() ) handler.deleteFiles( destMap, logOn, trashbin, trashbinPath );
+	public boolean backupFiles( final boolean delete, final boolean logOn, final Path destPath, final boolean trashbin, final Path trashbinPath ) {
+		if( delete && !destMap.isEmpty() ) handler.deleteFiles( destMap, logOn, trashbin, trashbinPath );
 		if( !sourceMap.isEmpty() ) handler.copyFiles( sourceMap, logOn, destPath );
 		return sourceMap.isEmpty() && destMap.isEmpty();
 	}

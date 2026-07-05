@@ -196,10 +196,14 @@ public class SyncJobService {
 				boolean success = false;
 				String backupTimeFormatted = "";
 
-				final int del = ( pref.isAutoDel() || dialogService.askUser( "Dateien löschen", "Löschen bestätigen?", "Alle gelöschten Dateien auch im Zielverzeichnis löschen?" ) ) ? 0 : 1;
+				boolean delete = true;
+				if( !pref.isAutoDel() ) {
+					delete = dialogService.askUser( "Dateien löschen", "Löschen bestätigen?", "Alle gelöschten Dateien auch im Zielverzeichnis löschen?" );
+				}
+
 				if( pref.isAutoSync() || dialogService.askUser( "Dateien sichern", "Kopieren bestätigen?", "Alle neuen Dateien in  das Zielverzeichnis kopieren?" ) ) {
 					startTime = System.nanoTime();
-					success = model.backupFiles( del, pref.isLogOn(), startDestPath, pref.isTrashbin(), pref.getTrashbinPath() );
+					success = model.backupFiles( delete, pref.isLogOn(), startDestPath, pref.isTrashbin(), pref.getTrashbinPath() );
 					backupTimeFormatted = uiLog.getEndTimeFormatted( System.nanoTime() - startTime ) + " für das Synchronisieren";
 				}
 //				TODO output at manual abort

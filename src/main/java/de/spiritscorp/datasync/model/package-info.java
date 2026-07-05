@@ -1,0 +1,1 @@
+package de.spiritscorp.datasync.model;

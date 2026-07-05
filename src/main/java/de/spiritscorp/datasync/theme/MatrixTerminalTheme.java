@@ -28,7 +28,7 @@ import javafx.scene.Scene;
  */
 public class MatrixTerminalTheme implements AppTheme {
 	@Override
-	public void apply( Scene scene ) {
+	public void apply( final Scene scene ) {
 		scene.getRoot().setStyle( "-fx-font-size: 14; -fx-font-family: 'Consolas', 'Courier New', monospace; -fx-background-color: #050505; -fx-text-fill: #00ff00;" );
 		final String css = """
 				.list-view { -fx-background-color: #050505; }
@@ -37,7 +37,7 @@ public class MatrixTerminalTheme implements AppTheme {
 				.list-cell:selected { -fx-background-color: #003300; -fx-text-fill: #ffffff; -fx-border-color: #00ff00; }
 				.label { -fx-text-fill: #00ff00 !important; }
 				.button { -fx-background-color: #002200; -fx-text-fill: #00ff00; -fx-border-color: #00ff00; -fx-background-radius: 0; -fx-border-radius: 0; -fx-cursor: hand; }
-				.button:hover { -fx-background-color: #00ff00; -fx-text-fill: #000000; }
+				.button:hover { -fx-background-color: #00ff00; -fx-text-fill: #002200; }
 				.text-field, .combo-box, .text-area { -fx-background-color: #000000; -fx-text-fill: #00ff00; -fx-border-color: #00ff00; -fx-border-radius: 0; }
 				.text-field:focused, .combo-box:focused, .text-area:focused { -fx-border-color: #000000; }
 

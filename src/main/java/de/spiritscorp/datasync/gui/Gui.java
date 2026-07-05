@@ -109,11 +109,19 @@ public class Gui extends Application {
 	}
 
 	@Override
-	public void start( Stage primaryStage ) {
+	public void start( final Stage primaryStage ) {
 		this.windowStage = primaryStage;
 		this.controller = new MainViewController( this );
 		this.controller.registerNativeShutdownHook();
-		this.currentTheme = PreferenceManager.getInstance().getTheme();
+		AppTheme theme = PreferenceManager.getInstance().getTheme();
+
+		if( theme instanceof DarkSlateTheme ) {
+			this.currentTheme = availableThemes.get( 0 );
+		}else if( theme instanceof MatrixTerminalTheme ) {
+			this.currentTheme = availableThemes.get( 1 );
+		}else if( theme instanceof NordicLightTheme ) {
+			this.currentTheme = availableThemes.get( 2 );
+		}
 
 		primaryStage.setTitle( "DataSync Advanced Management Platform" );
 		primaryStage.getIcons().add( new Image( getClass().getResourceAsStream( "/icons/16x16.png" ) ) );

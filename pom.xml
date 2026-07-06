@@ -9,7 +9,7 @@
 	<description>
 	    DataSync is a high-performance, multi-threaded file synchronization and data management solution designed for robust asset alignment and backup automation. 
 	    Engineered with concurrency in mind, it features intelligent background job scheduling, advanced duplicate detection mechanisms, and high-efficiency scanning. 
-	    With integrated structured JSON logging, DataSync provides enterprise-grade observability and seamless integration into automated server monitoring stacks.
+	    With integrated structured JSON logging, DataSync provides enterprise-grade observability.
 	</description>
 	<inceptionYear>2022</inceptionYear>
 	<url>https://github.com/Mastertomspirit/DataSync</url>

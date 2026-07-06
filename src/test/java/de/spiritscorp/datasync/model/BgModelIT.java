@@ -48,9 +48,6 @@ import de.spiritscorp.datasync.ScanType;
 import de.spiritscorp.datasync.io.Debug;
 import de.spiritscorp.datasync.io.Logger;
 import de.spiritscorp.datasync.io.Preference;
-import de.spiritscorp.datasync.model.BgModel;
-import de.spiritscorp.datasync.model.FileAttributes;
-import de.spiritscorp.datasync.model.Model;
 
 /**
  * Integration test suite validating the background processing pipeline of {@link BgModel}.

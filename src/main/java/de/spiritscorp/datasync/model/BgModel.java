@@ -36,7 +36,7 @@ public class BgModel {
 	private final FileHandler handler;
 	private final Map<Path, FileAttributes> sourceMap, destMap;
 
-	public BgModel( Preference pref, Logger logger, Map<Path, FileAttributes> sourceMap, Map<Path, FileAttributes> destMap ) {
+	public BgModel( final Preference pref, final Logger logger, final Map<Path, FileAttributes> sourceMap, final Map<Path, FileAttributes> destMap ) {
 		this.pref = pref;
 		this.sourceMap = sourceMap;
 		this.destMap = destMap;
@@ -78,13 +78,6 @@ public class BgModel {
 					Debug.printDebug( "[BgModel] List ready" );
 					Debug.printDebug( "[BgModel] SourceMap size -> %s | DestMap size -> %s", sourceMap.size(), destMap.size() );
 					Debug.printDebug( "[BgModel] Synchronization start" );
-//					if (syncMap.isEmpty()) {
-//						final Map<Path, FileAttributes> tempSyncMap = Model.createMap();
-//						handler.listFiles(pref.getSourcePath(), tempSyncMap, ScanType.SYNCHRONIZE, false);
-//						for (final Map.Entry<Path, FileAttributes> entry : tempSyncMap.entrySet()) {
-//							syncMap.put(entry.getValue().getRelativeFilePath(), entry.getValue());
-//						}
-//					}
 					final ArrayList<Map<Path, FileAttributes>> result = handler.getSyncFiles( sourceMap, destMap, startSourcePath, startDestPath, syncMap );
 					Debug.printDebug( "[BgModel] Synchronization list ready" );
 

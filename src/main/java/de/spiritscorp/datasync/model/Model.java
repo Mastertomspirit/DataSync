@@ -62,7 +62,7 @@ public class Model {
 	 * @param sourceMap the tracking map used to store and evaluate source file attributes
 	 * @param destMap   the tracking map used to store and evaluate destination file attributes
 	 */
-	public Model( Logger logger, Map<Path, FileAttributes> sourceMap, Map<Path, FileAttributes> destMap ) {
+	public Model( final Logger logger, final Map<Path, FileAttributes> sourceMap, final Map<Path, FileAttributes> destMap ) {
 		this.sourceMap = sourceMap;
 		this.destMap = destMap;
 		handler = new FileHandler( logger );
@@ -103,7 +103,7 @@ public class Model {
 	 * @param trashbin     true to enable trashbin retention logic, false to bypass it
 	 * @return a Map containing all paths where failures, permission issues, or structural conflicts occurred
 	 */
-	public Map<Path, FileAttributes> scanSyncFiles( ArrayList<Path> sourcePathes, ArrayList<Path> destPathes, Long[] stats, ScanType deepScan, boolean subDir, boolean trashbin ) {
+	public Map<Path, FileAttributes> scanSyncFiles( final ArrayList<Path> sourcePathes, final ArrayList<Path> destPathes, final Long[] stats, final ScanType deepScan, final boolean subDir, final boolean trashbin ) {
 		Debug.printDebug( "[Model] list start" );
 		final Thread t1 = new Thread( () -> handler.listFiles( sourcePathes, sourceMap, deepScan, subDir ) );
 		final Thread t2 = new Thread( () -> handler.listFiles( destPathes, destMap, deepScan, subDir ) );
@@ -150,7 +150,7 @@ public class Model {
 	 *         index 1 (copyDestHitList): Files to be copied back from destination to source,
 	 *         index 2 (delHitList): Files marked for deletion from the target directory
 	 */
-	public ArrayList<Map<Path, FileAttributes>> getSyncFiles( Map<Path, FileAttributes> syncMap, Path sourcePath, Path destPath ) {
+	public ArrayList<Map<Path, FileAttributes>> getSyncFiles( final Map<Path, FileAttributes> syncMap, final Path sourcePath, final Path destPath ) {
 		Debug.printDebug( "[Model] getSyncFiles start" );
 		final ArrayList<Map<Path, FileAttributes>> result = handler.getSyncFiles( sourceMap, destMap, sourcePath, destPath, syncMap );
 		Debug.printDebug( "[Model] getSyncFiles ready" );
@@ -164,7 +164,7 @@ public class Model {
 	 * Phase 1 (Purge) clears obsolete files from the target directory first, and
 	 * Phase 2 (Transfer) physically copies new or updated files into the destination path.
 	 *
-	 * @param del          the mode flag determining deletions (processed exclusively if set to 0)
+	 * @param delete       the mode flag determining deletions (processed exclusively if set to 0)
 	 * @param logOn        true to output detailed file paths and transaction logs to the system logger
 	 * @param destPath     the absolute path to the target directory where files will be transferred to
 	 * @param trashbin     true to move deleted files safely into a local trash bin structure
@@ -192,7 +192,7 @@ public class Model {
 	 * @return true if the entire synchronization pipeline completed without unexpected exceptions,
 	 *         false if errors occurred during file interaction
 	 */
-	public boolean syncFiles( SyncJobContext ctx, ArrayList<Map<Path, FileAttributes>> result, Map<Path, FileAttributes> syncMap, Path sourcePath, Path destPath, boolean testOn ) {
+	public boolean syncFiles( final SyncJobContext ctx, final ArrayList<Map<Path, FileAttributes>> result, final Map<Path, FileAttributes> syncMap, final Path sourcePath, final Path destPath, final boolean testOn ) {
 		if( !result.get( 0 ).isEmpty() ) handler.copyFiles( result.get( 0 ), false, destPath );
 		if( !result.get( 1 ).isEmpty() ) handler.copyFiles( result.get( 1 ), false, sourcePath );
 		if( !result.get( 2 ).isEmpty() ) handler.deleteFiles( result.get( 2 ), false, false, null );
@@ -241,7 +241,7 @@ public class Model {
 	 * @param destMap   the tracking map containing the current destination file information
 	 * @return a filtered Map detailing all elements that failed to process correctly
 	 */
-	private Map<Path, FileAttributes> getFailtures( Map<Path, FileAttributes> sourceMap, Map<Path, FileAttributes> destMap ) {
+	private Map<Path, FileAttributes> getFailtures( final Map<Path, FileAttributes> sourceMap, final Map<Path, FileAttributes> destMap ) {
 		final Map<Path, FileAttributes> failMap = createMap();
 		if( sourceMap != null ) {
 			for( final Map.Entry<Path, FileAttributes> entry : sourceMap.entrySet() ) {
@@ -269,7 +269,7 @@ public class Model {
 	 * @param map the tracking map containing the file paths and their associated attributes
 	 * @return the total size of all files combined, represented in bytes
 	 */
-	private Long getBytes( Map<Path, FileAttributes> map ) {
+	private Long getBytes( final Map<Path, FileAttributes> map ) {
 		long allBytes = 0;
 		for( final FileAttributes p : map.values() ) {
 			allBytes += p.getSize();

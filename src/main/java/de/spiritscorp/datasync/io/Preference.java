@@ -70,9 +70,9 @@ public final class Preference {
 	private boolean autoDel;
 	private boolean autoSync;
 	private boolean bgSync;
-	private boolean autoBgDel;
+//	private boolean autoBgDel;
 
-	private Preference( String jobName ) {
+	private Preference( final String jobName ) {
 		this.jobName = jobName;
 		sourcePaths.add( startSourcePath );
 		destPaths.add( startDestPath );
@@ -88,7 +88,7 @@ public final class Preference {
 	 *
 	 * @return Isolated configuration state scope.
 	 */
-	static Preference createSinglePreference( String jobName ) {
+	static Preference createSinglePreference( final String jobName ) {
 		return new Preference( jobName );
 	}
 
@@ -132,7 +132,7 @@ public final class Preference {
 	 * @param json The serialized JSON object payload mapping the profile configuration.
 	 * @throws ConfigException If the structural state context is completely unrecoverable or malformed.
 	 */
-	void deserialize( JsonObject json ) throws ConfigException {
+	void deserialize( final JsonObject json ) throws ConfigException {
 		if( json == null ) { throw new ConfigException( "JSON payload context is null." ); }
 
 		try {
@@ -228,7 +228,7 @@ public final class Preference {
 	 * @param defaultValue The architectural primitive value fallback state if the verification sequence fails.
 	 * @return The evaluated value assigned to the target property key, or the predefined default.
 	 */
-	private boolean getSafeBoolean( JsonObject json, String key, boolean defaultValue ) {
+	private boolean getSafeBoolean( final JsonObject json, final String key, final boolean defaultValue ) {
 		if( !json.containsKey( key ) ) { return defaultValue; }
 		try {
 			return json.getBoolean( key );
@@ -272,23 +272,23 @@ public final class Preference {
 	// --- Setters and Getters ---
 	public String getJobName() { return jobName; }
 
-	void setJobNameFromManager( String newName ) { this.jobName = newName; }
+	void setJobNameFromManager( final String newName ) { this.jobName = newName; }
 
 	public ArrayList<Path> getSourcePath() { return sourcePaths; }
 
-	public void setSourcePath( ArrayList<Path> paths ) { this.sourcePaths = paths; }
+	public void setSourcePath( final ArrayList<Path> paths ) { this.sourcePaths = paths; }
 
 	public ArrayList<Path> getDestPath() { return destPaths; }
 
-	public void setDestPath( ArrayList<Path> paths ) { this.destPaths = paths; }
+	public void setDestPath( final ArrayList<Path> paths ) { this.destPaths = paths; }
 
 	public Path getStartSourcePath() { return startSourcePath; }
 
-	public void setStartSourcePath( Path p ) { this.startSourcePath = p; }
+	public void setStartSourcePath( final Path p ) { this.startSourcePath = p; }
 
 	public Path getStartDestPath() { return startDestPath; }
 
-	public void setStartDestPath( Path p ) {
+	public void setStartDestPath( final Path p ) {
 		this.startDestPath = p;
 		this.trashbinPath = p.resolve( TRASHBIN_STRING );
 	}
@@ -297,23 +297,23 @@ public final class Preference {
 
 	public ScanType getScanMode() { return scanMode; }
 
-	public void setScanMode( ScanType mode ) { this.scanMode = mode; }
+	public void setScanMode( final ScanType mode ) { this.scanMode = mode; }
 
 	public BgTime getBgTime() { return bgTime; }
 
-	public void setBgTime( BgTime time ) { this.bgTime = time; }
+	public void setBgTime( final BgTime time ) { this.bgTime = time; }
 
 	public boolean isLogOn() { return logOn; }
 
-	public void setLogOn( boolean logOn ) { this.logOn = logOn; }
+	public void setLogOn( final boolean logOn ) { this.logOn = logOn; }
 
 	public boolean isSubDir() { return subDir; }
 
-	public void setSubDir( boolean subDir ) { this.subDir = subDir; }
+	public void setSubDir( final boolean subDir ) { this.subDir = subDir; }
 
 	public boolean isAutoDel() { return autoDel; }
 
-	public void setAutoDel( boolean autoDel ) { this.autoDel = autoDel; }
+	public void setAutoDel( final boolean autoDel ) { this.autoDel = autoDel; }
 
 //	public boolean isAutoBgDel() { return autoBgDel; }
 //
@@ -321,15 +321,15 @@ public final class Preference {
 
 	public boolean isAutoSync() { return autoSync; }
 
-	public void setAutoSync( boolean autoSync ) { this.autoSync = autoSync; }
+	public void setAutoSync( final boolean autoSync ) { this.autoSync = autoSync; }
 
 	public boolean isBgSync() { return bgSync; }
 
-	public void setBgSync( boolean bgSync ) { this.bgSync = bgSync; }
+	public void setBgSync( final boolean bgSync ) { this.bgSync = bgSync; }
 
 	public boolean isTrashbin() { return trashbin; }
 
-	public void setTrashbin( boolean trashbin ) { this.trashbin = trashbin; }
+	public void setTrashbin( final boolean trashbin ) { this.trashbin = trashbin; }
 
 	public Path getTrashbinPath() { return trashbinPath; }
 

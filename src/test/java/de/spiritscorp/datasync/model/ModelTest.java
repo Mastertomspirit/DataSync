@@ -189,7 +189,7 @@ class ModelTest {
 	 * Safely extracts all non-directory file names from a target directory path.
 	 * Guarantees immediate closure of native file system handles.
 	 */
-	static List<Path> getFileNamesInDirectory( Path directory ) throws IOException {
+	static List<Path> getFileNamesInDirectory( final Path directory ) throws IOException {
 		try( Stream<Path> stream = Files.walk( directory ) ) {
 			return stream
 					.filter( path -> !Files.isDirectory( path ) )

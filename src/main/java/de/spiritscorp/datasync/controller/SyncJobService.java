@@ -32,6 +32,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import javafx.application.Platform;
+
 import de.spiritscorp.datasync.Main;
 import de.spiritscorp.datasync.gui.DialogService;
 import de.spiritscorp.datasync.io.Debug;
@@ -40,7 +42,6 @@ import de.spiritscorp.datasync.io.Preference;
 import de.spiritscorp.datasync.io.PreferenceManager;
 import de.spiritscorp.datasync.model.FileAttributes;
 import de.spiritscorp.datasync.model.Model;
-import javafx.application.Platform;
 
 /**
  * Orchestrates background thread processing for synchronization, backup,
@@ -66,7 +67,7 @@ public class SyncJobService {
 	 * @param dialogService the service provider for user interaction dialogs
 	 * @param uiLog         the formatter instance used to compile text summaries for the UI
 	 */
-	public SyncJobService( DialogService dialogService, UiLogFormatter uiLog ) {
+	public SyncJobService( final DialogService dialogService, final UiLogFormatter uiLog ) {
 		this.dialogService = dialogService;
 		this.uiLog = uiLog;
 	}
@@ -76,7 +77,7 @@ public class SyncJobService {
 	 *
 	 * @param context Target environment details providing task variables
 	 */
-	public void startSynchronize( SyncJobContext context ) {
+	public void startSynchronize( final SyncJobContext context ) {
 		if( context.isRunning() ) return;
 
 		context.setRunning( true );
@@ -158,7 +159,7 @@ public class SyncJobService {
 	 *
 	 * @param context Target environment details providing task variables
 	 */
-	public void startBackup( SyncJobContext context ) {
+	public void startBackup( final SyncJobContext context ) {
 		if( context.isRunning() ) return;
 
 		context.setRunning( true );
@@ -302,7 +303,7 @@ public class SyncJobService {
 	 *
 	 * @param context Target environment details providing task variables
 	 */
-	public void deleteSelectedDuplicates( SyncJobContext context ) {
+	public void deleteSelectedDuplicates( final SyncJobContext context ) {
 		final ArrayList<SyncJobContext.FileRow> toDelete = new ArrayList<>();
 		for( final SyncJobContext.FileRow row : context.getDuplicateFiles() ) {
 			if( row.isSelected() ) {
@@ -359,7 +360,7 @@ public class SyncJobService {
 	 * @param set Target flag to dictate whether to register or clear system integration entries.
 	 * @return true if the underlying system environment sub-process sequences executed without exceptions.
 	 */
-	public boolean setOSAutostart( boolean set ) {
+	public boolean setOSAutostart( final boolean set ) {
 		final String javaPath = System.getProperty( "sun.boot.library.path" );
 		final String exePath = System.getProperty( "jpackage.app-path" );
 		final String datei = System.getProperty( "sun.java.command" );
@@ -436,14 +437,14 @@ public class SyncJobService {
 		return stringBuilder.toString();
 	}
 
-	private void updateUIStatus( SyncJobContext context, boolean running, String message ) {
+	private void updateUIStatus( final SyncJobContext context, final boolean running, final String message ) {
 		Platform.runLater( () -> {
 			context.setRunning( running );
 			context.setStatusMessage( message );
 		} );
 	}
 
-	private void appendLogData( SyncJobContext context, String line ) {
+	private void appendLogData( final SyncJobContext context, final String line ) {
 		Platform.runLater( () -> context.appendLog( line ) );
 	}
 }

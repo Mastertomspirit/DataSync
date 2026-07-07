@@ -41,7 +41,6 @@ import de.spiritscorp.datasync.Main;
 import de.spiritscorp.datasync.controller.MainViewController;
 import de.spiritscorp.datasync.controller.SyncJobContext;
 import de.spiritscorp.datasync.controller.ViewController;
-import de.spiritscorp.datasync.gui.WorkspaceView.NotifyStatus;
 import de.spiritscorp.datasync.io.Debug;
 import de.spiritscorp.datasync.io.PreferenceManager;
 import de.spiritscorp.datasync.theme.AppTheme;
@@ -57,6 +56,7 @@ import de.spiritscorp.datasync.theme.NordicLightTheme;
  */
 public class Gui extends Application {
 
+	static final String CSS_BUTTON_ICON = "button-icon";
 	private static final int ICON_SIZE = 20;
 
 	private final ObservableList<SyncJobContext> jobList = FXCollections.observableArrayList();
@@ -114,8 +114,8 @@ public class Gui extends Application {
 		this.windowStage = primaryStage;
 		this.controller = new MainViewController( this );
 		this.controller.registerNativeShutdownHook();
-		AppTheme theme = PreferenceManager.getInstance().getTheme();
 
+		AppTheme theme = PreferenceManager.getInstance().getTheme();
 		if( theme instanceof DarkSlateTheme ) {
 			this.currentTheme = availableThemes.get( 0 );
 		}else if( theme instanceof MatrixTerminalTheme ) {
@@ -254,9 +254,9 @@ public class Gui extends Application {
 	 */
 	private Node buildAboutInfoNode() {
 		final VBox infoBox = new VBox( 10 );
-		infoBox.setStyle( "-fx-padding: 15px;" );
+		infoBox.getStyleClass().addAll( "info-box" );
 		final Label appTitle = new Label( "DataSync Core Engine" );
-		appTitle.setStyle( "-fx-font-size: 18px; -fx-font-weight: bold;" );
+		appTitle.getStyleClass().addAll( "app-title-label" );
 		final Label version = new Label( "Programmversion: " + Main.VERSION );
 		final Label vendor = new Label( "Lizenznehmer / Entwickler: Tom Spirit" );
 		final Label copyright = new Label( "Copyright: Licensed under GNU GPL v3.0 Copyleft System." );
@@ -271,7 +271,7 @@ public class Gui extends Application {
 						""" );
 		legalText.setEditable( false );
 		legalText.setPrefHeight( 150 );
-		legalText.setStyle( "-fx-font-family: monospace;" );
+		legalText.getStyleClass().addAll( "legalText" );
 
 		infoBox.getChildren().addAll( appTitle, version, vendor, copyright, sep, legalText );
 		return infoBox;

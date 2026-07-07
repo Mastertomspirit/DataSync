@@ -75,7 +75,7 @@ import de.spiritscorp.datasync.theme.AppTheme;
  * data lists, detailed execution metadata bars and the dynamic target settings configurations grid.
  * * @author Tom Spirit
  */
-public final class WorkspaceView extends VBox {
+final class WorkspaceView extends VBox {
 
 	private final Gui mainGui;
 	private final ViewController controller;
@@ -95,54 +95,42 @@ public final class WorkspaceView extends VBox {
 	private final ProgressBar progressBar;
 	private final Label statusLabel;
 
-	public enum NotifyStatus {
-		SUCESS( "status-success"),
-		ERROR( "status-error"),
-		WARNING( "status-warning");
-
-		private final String cssClass;
-
-		NotifyStatus( final String cssClass ) {
-			this.cssClass = cssClass;
-		}
-
-		String getCssClass() { return cssClass; }
-	}
-
 	/**
 	 * Prepares layouts and maps operations targets onto implementation controller.
 	 *
 	 * @param mainGui    Configuration context core coordinator link.
 	 * @param controller Strategy abstraction dealing with interface state management mutations.
 	 */
-	public WorkspaceView( final Gui mainGui, final ViewController controller ) {
+	WorkspaceView( final Gui mainGui, final ViewController controller ) {
 		this.mainGui = mainGui;
 		this.controller = controller;
 		this.setPadding( new Insets( 24 ) );
 		this.setSpacing( 12 );
 
 		workspaceHeaderLabel = new Label( "Kein Task aktiv" );
-		workspaceHeaderLabel.setStyle( "-fx-font-size: 22px; -fx-font-weight: bold;" );
+		workspaceHeaderLabel.getStyleClass().addAll( "workspace-header-label" );
 
 		// Subtitle dynamic information bar containing directories context mapping
 		contextInfoLabel = new Label( "" );
-		contextInfoLabel.setStyle( "-fx-font-size: 13px; -fx-font-style: italic; -fx-padding: 0 0 8px 0;" );
+		contextInfoLabel.getStyleClass().addAll( "context-info-label" );
 
 		controlToolbar = new HBox( 12 );
 		controlToolbar.setAlignment( Pos.CENTER_LEFT );
 
 		actionButton = new Button( "Ausführen", Gui.createIcon( MaterialDesignP.PLAY ) );
-		actionButton.setStyle( "-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10px 20px;" );
+		actionButton.getGraphic().getStyleClass().addAll( Gui.CSS_BUTTON_ICON );
+		actionButton.getStyleClass().addAll( "action-button" );
 		actionButton.setTooltip( new Tooltip( "Starte Job" ) );
 		cancelButton = new Button( "Abbrechen", Gui.createIcon( MaterialDesignS.STOP ) );
-		cancelButton.setStyle( "-fx-background-color: #95a5a6; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10px 16px;" );
+		cancelButton.getGraphic().getStyleClass().addAll( Gui.CSS_BUTTON_ICON );
+		cancelButton.getStyleClass().addAll( "cancel-button" );
 		cancelButton.setTooltip( new Tooltip( "Stoppe Job" ) );
 
 		controlToolbar.getChildren().addAll( actionButton, cancelButton );
 
 		consoleTextArea = new TextArea();
 		consoleTextArea.setEditable( false );
-		consoleTextArea.setStyle( " -fx-font-family: 'Consolas', monospace; -fx-font-size: 12px;" );
+		consoleTextArea.getStyleClass().addAll( "console-text-area" );
 		consoleViewNode = new ScrollPane( consoleTextArea );
 		consoleViewNode.setFitToWidth( true );
 		consoleViewNode.setFitToHeight( true );
@@ -173,7 +161,7 @@ public final class WorkspaceView extends VBox {
 		final TableColumn<SyncJobContext.FileRow, Boolean> selCol = new TableColumn<>( "Auswahl" );
 		selCol.setCellValueFactory( d -> d.getValue().selectedProperty() );
 		selCol.setCellFactory( CheckBoxTableCell.forTableColumn( selCol ) );
-		selCol.setPrefWidth( 50 );
+		selCol.setPrefWidth( 100 );
 
 		final TableColumn<SyncJobContext.FileRow, String> nameCol = new TableColumn<>( "Dateiname" );
 		nameCol.setCellValueFactory( d -> d.getValue().fileNameProperty() );
@@ -193,7 +181,8 @@ public final class WorkspaceView extends VBox {
 
 		duplicateTable.getColumns().addAll( List.of( selCol, nameCol, sizeCol, hashCol, pathCol ) );
 		deleteButton = new Button( "Duplikate löschen", Gui.createIcon( MaterialDesignD.DELETE ) );
-		deleteButton.setStyle( "-fx-background-color: #e74c3c; -fx-text-fill: white;" );
+		deleteButton.getGraphic().getStyleClass().addAll( Gui.CSS_BUTTON_ICON );
+		deleteButton.getStyleClass().addAll( "delete-button" );
 		deleteButton.setTooltip( new Tooltip( "Ausgewählte Dateien werden gelöscht" ) );
 
 		final VBox frame = new VBox( 8, duplicateTable, deleteButton );
@@ -207,12 +196,12 @@ public final class WorkspaceView extends VBox {
 	 *
 	 * @param job The selected target sync context model instance.
 	 */
-	public void refreshView( final Gui.ViewState state, final SyncJobContext job ) {
-		if( job == null ) return;
+	void refreshView( final Gui.ViewState state, final SyncJobContext job ) {
 
 		centerViewport.getChildren().clear();
 
 		if( state == Gui.ViewState.MONITOR ) {
+			if( job == null ) return;
 			workspaceHeaderLabel.setText( "Task-Monitor: " + job.getJobName() );
 			controlToolbar.setVisible( true );
 
@@ -229,10 +218,15 @@ public final class WorkspaceView extends VBox {
 				centerViewport.getChildren().add( consoleViewNode );
 			}
 		}else if( state == Gui.ViewState.SETTINGS ) {
+			if( job == null ) return;
 			workspaceHeaderLabel.setText( "Einstellungen für: " + job.getJobName() );
 			contextInfoLabel.setText( "Konfiguration der task-spezifischen Ablaufparameter, Dateiattribute und Verzeichnisstrukturen." );
 			controlToolbar.setVisible( false );
 			displayCustomViewNode( buildSettingsGridTab( job ) );
+		}else if( state == Gui.ViewState.INFO ) {
+			workspaceHeaderLabel.setText( "About" );
+			contextInfoLabel.setText( "Backup Software" );
+			controlToolbar.setVisible( false );
 		}
 	}
 
@@ -240,7 +234,7 @@ public final class WorkspaceView extends VBox {
 	 * Swaps out current content layouts for custom visual configurations nodes.
 	 * * @param content Visual layout UI node element.
 	 */
-	public void displayCustomViewNode( final Node content ) {
+	void displayCustomViewNode( final Node content ) {
 		centerViewport.getChildren().clear();
 		final ScrollPane scroll = new ScrollPane( content );
 		scroll.setFitToWidth( true );
@@ -252,7 +246,7 @@ public final class WorkspaceView extends VBox {
 	 * Rebinds background parameters changes metrics values directly onto visual output listeners text nodes.
 	 * * @param job Selected pipeline source.
 	 */
-	public void bindJob( final SyncJobContext job ) {
+	void bindJob( final SyncJobContext job ) {
 		statusLabel.textProperty().unbind();
 		consoleTextArea.textProperty().unbind();
 		statusLabel.textProperty().bind( job.statusMessageProperty() );
@@ -279,7 +273,7 @@ public final class WorkspaceView extends VBox {
 	 * @param durationSec     The visibility duration in seconds before auto-reverting.
 	 */
 	void displayTemporaryStatus( final String message, final NotifyStatus cssNotifyStatus, final int durationSec ) {
-		final String originalContextText = "Konfiguration der task-spezifischen Ablaufparameter, Dateiattribute und Verzeichnisstrukturen.";
+		final String originalContextText = contextInfoLabel.getText();
 		final String originalStyle = contextInfoLabel.getStyle();
 		// 1. Clean up any existing status style classes to prevent collision states
 		contextInfoLabel.getStyleClass().removeAll( "status-success", "status-error", "status-warning" );
@@ -288,16 +282,16 @@ public final class WorkspaceView extends VBox {
 		// This acts as a safety net if the active CSS theme completely lacks the targeted class definition.
 		// CHECKSTYLE:OFF
 		switch( cssNotifyStatus ) {
-			case SUCESS -> {
-				contextInfoLabel.setStyle( "-fx-text-fill: #22aa22  !important; -fx-font-weight: bold;" );
+			case SUCCESS -> {
+				contextInfoLabel.setStyle( "-fx-text-fill: #22aa22; -fx-font-weight: bold;" );
 				contextInfoLabel.setText( "✔ " + message );
 			}
 			case ERROR -> {
-				contextInfoLabel.setStyle( "-fx-text-fill: #ff3333  !important; -fx-font-weight: bold;" );
+				contextInfoLabel.setStyle( "-fx-text-fill: #ff3333; -fx-font-weight: bold;" );
 				contextInfoLabel.setText( "❌ " + message );
 			}
 			case WARNING -> {
-				contextInfoLabel.setStyle( "-fx-text-fill: #ffaa00  !important; -fx-font-weight: bold;" );
+				contextInfoLabel.setStyle( "-fx-text-fill: #ffaa00; -fx-font-weight: bold;" );
 				contextInfoLabel.setText( "⚠ " + message );
 			}
 		}
@@ -305,7 +299,7 @@ public final class WorkspaceView extends VBox {
 
 		// 3. Inject the theme's class rule.
 		// If the theme defines this class, the stylesheet will cleanly override our inline fallback style.
-		contextInfoLabel.getStyleClass().add( cssNotifyStatus.getCssClass() );
+		contextInfoLabel.getStyleClass().addFirst( cssNotifyStatus.getCssClass() );
 
 		// Initialize asynchronous fade-out/revert timer
 		final Timeline fallbackTimeline = new Timeline( new KeyFrame(
@@ -325,26 +319,27 @@ public final class WorkspaceView extends VBox {
 	 */
 	private Node buildSettingsGridTab( final SyncJobContext job ) {
 		final Preference pref = job.getPreference();
-		final GridPane grid = new GridPane();
-		grid.setHgap( 24 );
-		grid.setVgap( 16 );
-		grid.setPadding( new Insets( 10 ) );
+		final GridPane settingsGrid = new GridPane();
+		settingsGrid.setHgap( 24 );
+		settingsGrid.setVgap( 16 );
+		settingsGrid.setPadding( new Insets( 10 ) );
+		settingsGrid.getStyleClass().addAll( "settings-grid" );
 
 		// --- Section 1: Execution Mode Selection ---
-		final Label modeTitle = new Label( "Ausführungsmodus:" );
-		modeTitle.setStyle( "-fx-font-weight: bold;" );
+		final Label modeLabel = new Label( "Ausführungsmodus:" );
+		modeLabel.getStyleClass().addAll( "mode-label" );
 		final ComboBox<String> taskModeComboBox = new ComboBox<>();
 		taskModeComboBox.setTooltip( new Tooltip( "Listet die möglichen Betriebsmodis auf" ) );
 		taskModeComboBox.getItems().addAll( ScanType.getAllDescriptions() );
 		job.selectedModeProperty().set( pref.getScanMode() != null ? pref.getScanMode().getDescription() : ScanType.FLAT_SCAN.getDescription() );
 		taskModeComboBox.valueProperty().bindBidirectional( job.selectedModeProperty() );
 		taskModeComboBox.setPrefWidth( 260 );
-		grid.add( modeTitle, 0, 0 );
-		grid.add( taskModeComboBox, 1, 0 );
+		settingsGrid.add( modeLabel, 0, 0 );
+		settingsGrid.add( taskModeComboBox, 1, 0 );
 
 		// --- Section 2: Context Paths Configurations Box ---
 		final VBox dynamicPathsContainer = new VBox( 12 );
-		grid.add( dynamicPathsContainer, 0, 1, 2, 1 );
+		settingsGrid.add( dynamicPathsContainer, 0, 1, 2, 1 );
 
 		final PathContext pathCtx = new PathContext();
 		if( pref.getSourcePath() != null ) {
@@ -358,8 +353,8 @@ public final class WorkspaceView extends VBox {
 		renderContextPaths( job.getSelectedMode(), dynamicPathsContainer, pref, pathCtx );
 
 		// --- Section 3: Task Parameter Flags Options ---
-		final Label paramsTitle = new Label( "Erweiterte Ablaufparameter" );
-		paramsTitle.setStyle( "-fx-font-size: 14px; -fx-font-weight: bold;" );
+		final Label paramsTitleLabel = new Label( "Erweiterte Ablaufparameter" );
+		paramsTitleLabel.getStyleClass().addAll( "params-title-label" );
 
 		final CheckBox subDirCheck = new CheckBox( "Unterordner einbeziehen (SubDir)" );
 		subDirCheck.setSelected( pref.isSubDir() );
@@ -396,12 +391,12 @@ public final class WorkspaceView extends VBox {
 		bgTimeComboBox.getSelectionModel().select( pref.getBgTime() != null ? pref.getBgTime().getName() : BgTime.MIN_30.getName() );
 		bgTimeComboBox.disableProperty().bind( bgSyncCheck.selectedProperty().not() );
 
-		final VBox optionsBox = new VBox( 12, paramsTitle, subDirCheck, trashbinCheck, autoDelCheck, autoSyncCheck, logOnCheck, bgSyncCheck, new HBox( 8, bgTimeLabel, bgTimeComboBox ) );
-		grid.add( optionsBox, 0, 2, 2, 1 );
+		final VBox optionsBox = new VBox( 12, paramsTitleLabel, subDirCheck, trashbinCheck, autoDelCheck, autoSyncCheck, logOnCheck, bgSyncCheck, new HBox( 8, bgTimeLabel, bgTimeComboBox ) );
+		settingsGrid.add( optionsBox, 0, 2, 2, 1 );
 
 		// --- Section 4: Global Parameters Stack ---
-		final Label globalTitle = new Label( "Globale System-Konfiguration" );
-		globalTitle.setStyle( "-fx-font-size: 14px; -fx-font-weight: bold;" );
+		final Label globalTitleLabel = new Label( "Globale System-Konfiguration" );
+		globalTitleLabel.getStyleClass().addAll( "global-title-label" );
 
 		final CheckBox globalAutostartCheck = new CheckBox( "DataSync beim Systemstart minimiert laden (Autostart OS)" );
 		globalAutostartCheck.setSelected( PreferenceManager.getInstance().isGlobalAutoStart() ); // Bind status fallback trace
@@ -427,12 +422,13 @@ public final class WorkspaceView extends VBox {
 		} );
 		themeComboBox.getSelectionModel().select( mainGui.getCurrentTheme() );
 
-		final VBox globalBox = new VBox( 10, globalTitle, globalAutostartCheck, new HBox( 8, themeLabel, themeComboBox ) );
-		grid.add( globalBox, 0, 3, 2, 1 );
+		final VBox globalBox = new VBox( 10, globalTitleLabel, globalAutostartCheck, new HBox( 8, themeLabel, themeComboBox ) );
+		settingsGrid.add( globalBox, 0, 3, 2, 1 );
 
 		// --- Commit Action Triggers ---
 		final Button saveButton = new Button( "Einstellungen speichern", Gui.createIcon( MaterialDesignD.DISC ) );
-		saveButton.setStyle( "-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10px 24px;" );
+		saveButton.getGraphic().getStyleClass().addAll( Gui.CSS_BUTTON_ICON );
+		saveButton.getStyleClass().addAll( "save-button" );
 		saveButton.setTooltip( new Tooltip( "Übernimmt alle geänderten Zustandsparameter permanent in die JSON-Konfigurationsdatei" ) );
 		saveButton.setOnAction( _ -> {
 			PreferenceManager.getInstance().setGlobalAutoStart( globalAutostartCheck.isSelected() );
@@ -466,9 +462,9 @@ public final class WorkspaceView extends VBox {
 
 		final HBox buttonRow = new HBox( saveButton );
 		buttonRow.setAlignment( Pos.CENTER_RIGHT );
-		grid.add( buttonRow, 1, 4 );
+		settingsGrid.add( buttonRow, 1, 4 );
 
-		return grid;
+		return settingsGrid;
 	}
 
 	/**
@@ -480,25 +476,25 @@ public final class WorkspaceView extends VBox {
 		pathsGrid.setHgap( 12 );
 		pathsGrid.setVgap( 10 );
 
-		final Label title = new Label( "Verzeichnis-Konfiguration (" + type.getDescription() + ")" );
-		title.setStyle( "-fx-font-size: 14px; -fx-font-weight: bold;" );
-		container.getChildren().add( title );
+		final Label dirTitleLabel = new Label( "Verzeichnis-Konfiguration (" + type.getDescription() + ")" );
+		dirTitleLabel.getStyleClass().addAll( "dir-title-label" );
+		container.getChildren().add( dirTitleLabel );
 
 		if( ScanType.SYNCHRONIZE.equals( type ) || ScanType.DUBLICATE_SCAN.equals( type ) ) {
 			final Path initialSrc = ( pref.getSourcePath() != null && !pref.getSourcePath().isEmpty() ) ? pref.getSourcePath().get( 0 ) : null;
-			final TextField srcField = new TextField( initialSrc.toString() );
-			srcField.setPrefWidth( 400 );
+			final TextField srcTextField = new TextField( initialSrc.toString() );
+			srcTextField.setPrefWidth( 400 );
 			final Button srcBtn = new Button( "Durchsuchen..." );
 			srcBtn.setOnAction( _ -> {
 				final File f = chooseDirectory( initialSrc.toFile(), "Quellverzeichnis für " + pref.getScanMode().getDescription() );
 				if( f != null ) {
-					srcField.setText( f.getAbsolutePath() );
+					srcTextField.setText( f.getAbsolutePath() );
 					pathCtx.sources.clear();
 					pathCtx.sources.add( Paths.get( f.getAbsolutePath() ) );
 				}
 			} );
 			pathsGrid.add( new Label( ScanType.DUBLICATE_SCAN.equals( type ) ? "Scanverzeichnis:" : "Quellverzeichnis:" ), 0, 0 );
-			pathsGrid.add( new HBox( 8, srcField, srcBtn ), 1, 0 );
+			pathsGrid.add( new HBox( 8, srcTextField, srcBtn ), 1, 0 );
 		}
 
 		if( ScanType.SYNCHRONIZE.equals( type ) ) {
@@ -520,8 +516,8 @@ public final class WorkspaceView extends VBox {
 
 		if( ScanType.FLAT_SCAN.equals( type ) || ScanType.DEEP_SCAN.equals( type ) ) {
 			final VBox multiSrcBox = new VBox( 6 );
-			final Label multiLabel = new Label( "Quellverzeichnisse (Multi-Source Pathing):" );
-			multiLabel.setStyle( "-fx-font-weight: bold;" );
+			final Label multiSrcLabel = new Label( "Quellverzeichnisse (Multi-Source Pathing):" );
+			multiSrcLabel.getStyleClass().addAll( "multi-src-label" );
 
 			final ObservableList<String> backupPaths = FXCollections.observableArrayList();
 			for( final Path p : pathCtx.sources ) {
@@ -547,7 +543,7 @@ public final class WorkspaceView extends VBox {
 				}
 			} );
 
-			multiSrcBox.getChildren().addAll( multiLabel, pathsListView, new HBox( 8, add, rem ) );
+			multiSrcBox.getChildren().addAll( multiSrcLabel, pathsListView, new HBox( 8, add, rem ) );
 			pathsGrid.add( multiSrcBox, 0, 0, 2, 1 );
 
 			final GridPane destGrid = new GridPane();

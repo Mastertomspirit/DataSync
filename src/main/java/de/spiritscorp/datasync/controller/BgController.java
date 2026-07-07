@@ -36,6 +36,7 @@ import de.spiritscorp.datasync.gui.BgView;
 import de.spiritscorp.datasync.gui.Gui;
 import de.spiritscorp.datasync.io.Debug;
 import de.spiritscorp.datasync.io.Logger;
+import de.spiritscorp.datasync.io.Preference;
 import de.spiritscorp.datasync.model.BgModel;
 import de.spiritscorp.datasync.model.Model;
 
@@ -55,8 +56,8 @@ import de.spiritscorp.datasync.model.Model;
  */
 public class BgController {
 
-	static final long INITIAL_DELAY = 1000;
-	static final long BOOT_START_DELAY = 30000;
+	static final long INITIAL_DELAY = 1_000;
+	static final long BOOT_START_DELAY = 30_000;
 
 	private final SystemTray sysTray;
 	private final ObservableList<SyncJobContext> jobList;
@@ -69,7 +70,7 @@ public class BgController {
 	private ScheduledExecutorService scheduler;
 	private ExecutorService workerQueue;
 
-	// Test interface: Allows accelerating intervals inside JUnit execution tasks
+	/** Test interface: Allows accelerating intervals inside JUnit execution tasks */
 	private double timeMultiplier = 1.0;
 
 	/**
@@ -153,9 +154,9 @@ public class BgController {
 		if( sysTray != null && bgView.getTrayIcon() != null ) {
 			try {
 				sysTray.add( bgView.getTrayIcon() );
-			}catch( final AWTException e ) {
+			}catch( final AWTException exception ) {
 				Debug.printError( "[BgController] Failed to register TrayIcon context." );
-				Debug.printException( getClass(), e );
+				Debug.printException( getClass(), exception );
 				gui.getWindowStage().show();
 				return;
 			}
@@ -181,11 +182,11 @@ public class BgController {
 	 * Falls back to a default interval (10 sec) if no matching jobs are active.
 	 */
 	private long determineOptimalCheckTime() {
-		long minCheckTime = 10000; // Default fallback: 10 seconds
+		long minCheckTime = 10_000; // Default fallback: 10 seconds
 		boolean foundActiveJob = false;
 
 		for( final SyncJobContext job : jobList ) {
-			final var pref = job.getPreference();
+			final Preference pref = job.getPreference();
 			if( pref != null && pref.isBgSync() && pref.getBgTime() != null ) {
 				final long currentCheck = pref.getBgTime().getCheckTime();
 				if( !foundActiveJob || currentCheck < minCheckTime ) {
@@ -218,7 +219,7 @@ public class BgController {
 			// Skip tasks if they are actively running or already waiting inside the execution queue lane
 			if( job.isRunning() ) continue;
 
-			final var pref = job.getPreference();
+			final Preference pref = job.getPreference();
 			// Only process if background execution is explicitly requested for this task context
 			if( pref != null && pref.isBgSync() ) {
 				final long timeDelta = System.currentTimeMillis() - pref.getLastScanTime();

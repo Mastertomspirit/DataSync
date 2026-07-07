@@ -103,7 +103,8 @@ public class Model {
 	 * @param trashbin     true to enable trashbin retention logic, false to bypass it
 	 * @return a Map containing all paths where failures, permission issues, or structural conflicts occurred
 	 */
-	public Map<Path, FileAttributes> scanSyncFiles( final ArrayList<Path> sourcePathes, final ArrayList<Path> destPathes, final Long[] stats, final ScanType deepScan, final boolean subDir, final boolean trashbin ) {
+	public Map<Path, FileAttributes> scanSyncFiles( final ArrayList<Path> sourcePathes, final ArrayList<Path> destPathes, final Long[] stats, final ScanType deepScan, final boolean subDir,
+			final boolean trashbin ) {
 		Debug.printDebug( "[Model] list start" );
 		final Thread t1 = new Thread( () -> handler.listFiles( sourcePathes, sourceMap, deepScan, subDir ) );
 		final Thread t2 = new Thread( () -> handler.listFiles( destPathes, destMap, deepScan, subDir ) );
@@ -192,7 +193,8 @@ public class Model {
 	 * @return true if the entire synchronization pipeline completed without unexpected exceptions,
 	 *         false if errors occurred during file interaction
 	 */
-	public boolean syncFiles( final SyncJobContext ctx, final ArrayList<Map<Path, FileAttributes>> result, final Map<Path, FileAttributes> syncMap, final Path sourcePath, final Path destPath, final boolean testOn ) {
+	public boolean syncFiles( final SyncJobContext ctx, final ArrayList<Map<Path, FileAttributes>> result, final Map<Path, FileAttributes> syncMap, final Path sourcePath, final Path destPath,
+			final boolean testOn ) {
 		if( !result.get( 0 ).isEmpty() ) handler.copyFiles( result.get( 0 ), false, destPath );
 		if( !result.get( 1 ).isEmpty() ) handler.copyFiles( result.get( 1 ), false, sourcePath );
 		if( !result.get( 2 ).isEmpty() ) handler.deleteFiles( result.get( 2 ), false, false, null );

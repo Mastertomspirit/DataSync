@@ -45,8 +45,14 @@ When running a profile manually to audit your data boundaries, DataSync supports
 * **Interactive Querying (Flags Disabled):** If these options are unchecked, the engine behaves purely as a non-destructive analysis tool. It compiles a comprehensive structural delta report and explicitly prompts the user via an interactive dialog to approve or reject the calculated file operations before a single byte is altered on disk.
 * *Constraint:* Automated background automation is omitted from the pure **Sync** and **Duplicate** modes, where blind destructive runs are inherently unsafe.
 
-### Structured Machine-Readable JSON Logging
-Every filesystem interaction, checksum calculation, and profile state transition is pushed simultaneously to a standard console log and a structured, machine-readable JSON log file. This allows standard system administrators to seamlessly ingest DataSync performance metrics into enterprise log aggregation pipelines (such as Grafana Loki or ELK stacks) for real-time remote monitoring.
+### Structured Machine-Readable JSON Logging & Automatic Rotation
+
+Every filesystem interaction, checksum calculation, and profile state transition is pushed simultaneously to a standard console log and a structured, machine-readable JSON log file. This allows system administrators to seamlessly ingest DataSync performance metrics into enterprise log aggregation pipelines (such as Grafana Loki or ELK stacks) for real-time remote monitoring.
+
+To safeguard storage infrastructure during high-throughput synchronization tasks, the logging engine features an **integrated log rotation subsystem (`Logrotater`)**. This prevents disk space exhaustion by automatically managing the lifecycle of active and historical log files based on strict, configurable boundaries:
+
+*   **Size-Based Triggers (`maxFileSize`):** Automatically cuts and rotates the active log file the exact moment it breaches the configured byte threshold, keeping the active log footprint predictable.
+*   **Archival Retention Policies (`maxBackupIndex`):** Automatically coordinates index shifting for historical log files and enforces a strict capacity limit, purging the oldest backup segments once the maximum history depth is reached.
 
 ### Dynamic Configuration Routing (`--configPath` Bootstrap Flag)
 The application lifecycle can be dynamically re-routed during execution initialization by utilizing the new `--configPath <path>` CLI bootstrap argument. Passing this specific operational flag overrides the standard application directory layout ( at `${user.home}/DataSync}`):

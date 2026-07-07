@@ -199,10 +199,10 @@ public class SyncJobService {
 
 				boolean delete = true;
 				if( !pref.isAutoDel() ) {
-					delete = dialogService.askUser( "Dateien löschen", "Löschen bestätigen?", "Alle gelöschten Dateien auch im Zielverzeichnis löschen?" );
+					delete = dialogService.confirmUser( "Dateien löschen", "Löschen bestätigen?", "Alle gelöschten Dateien auch im Zielverzeichnis löschen?" );
 				}
 
-				if( pref.isAutoSync() || dialogService.askUser( "Dateien sichern", "Kopieren bestätigen?", "Alle neuen Dateien in  das Zielverzeichnis kopieren?" ) ) {
+				if( pref.isAutoSync() || dialogService.confirmUser( "Dateien sichern", "Kopieren bestätigen?", "Alle neuen Dateien in  das Zielverzeichnis kopieren?" ) ) {
 					startTime = System.nanoTime();
 					success = model.backupFiles( delete, pref.isLogOn(), startDestPath, pref.isTrashbin(), pref.getTrashbinPath() );
 					backupTimeFormatted = uiLog.getEndTimeFormatted( System.nanoTime() - startTime ) + " für das Synchronisieren";
@@ -315,7 +315,7 @@ public class SyncJobService {
 			context.setStatusMessage( "Keine Dateien zum Löschen ausgewählt." );
 			return;
 		}
-		if( !dialogService.askUser( "Duplikate entfernen", "Löschen bestätigen?", "Alle ausgewählten Dateien wirklich löschen?" ) ) return;
+		if( !dialogService.confirmUser( "Duplikate entfernen", "Löschen bestätigen?", "Alle ausgewählten Dateien wirklich löschen?" ) ) return;
 
 		context.setRunning( true );
 		context.setStatusMessage( "Lösche ausgewählte Duplikate..." );
@@ -366,11 +366,11 @@ public class SyncJobService {
 		final String datei = System.getProperty( "sun.java.command" );
 		final String fullPath = Paths.get( "" ).toAbsolutePath().toString() + System.getProperty( "file.separator" ) + datei;
 		final String possibleOS = System.getProperty( "os.name" );
-		String os = "";
-		if( possibleOS != null ) os = possibleOS.toLowerCase( Locale.ROOT );
+		String operatingSystem = "";
+		if( possibleOS != null ) operatingSystem = possibleOS.toLowerCase( Locale.ROOT );
 		final String flags = computeBootFlags();
 
-		if( os.contains( "win" ) ) {
+		if( operatingSystem.contains( "win" ) ) {
 			final String regCmd = "HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run";
 			try {
 				if( set ) {
@@ -390,7 +390,7 @@ public class SyncJobService {
 				Debug.printException( getClass(), e );
 				return false;
 			}
-		}else if( os.contains( "nix" ) || os.contains( "aix" ) || os.contains( "nux" ) ) {
+		}else if( operatingSystem.contains( "nix" ) || operatingSystem.contains( "aix" ) || operatingSystem.contains( "nux" ) ) {
 			final String crontab = "crontab";
 			try {
 				if( set ) {

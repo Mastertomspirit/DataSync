@@ -38,6 +38,7 @@ import de.spiritscorp.datasync.Main;
  * errors, and exception tracking. All outputs are automatically enriched with a timestamp
  * and the active application instance name.
  */
+@SuppressWarnings( { "java:S106" } )
 public final class Debug {
 
 	/**
@@ -118,7 +119,7 @@ public final class Debug {
 	 *               the extra arguments are ignored. The number of arguments is variable and may be zero. The maximum number of arguments is limited
 	 *               by the maximum dimension of a Java array as defined by The Java Virtual Machine Specification.
 	 */
-	@SuppressWarnings( { "java:S3457", "java:S106" } )
+	@SuppressWarnings( { "java:S3457" } )
 	public static void printDebugTimeless( final String format, final Object... args ) {
 		if( Main.isDebug() ) {
 			System.out.printf( format + "%n", args ); // NOPMD
@@ -132,7 +133,7 @@ public final class Debug {
 	 */
 	@SuppressWarnings( {
 			"PMD.SystemPrintln", "PMD.AvoidPrintStackTrace", // PMD
-			"java:S106", "java:S4507" // SonarLint
+			"java:S4507" // SonarLint
 	} )
 	public static void setDebugToFile() {
 		try {
@@ -147,9 +148,9 @@ public final class Debug {
 							PreferenceManager.getInstance().getErrorPath(),
 							StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.APPEND ),
 					true, StandardCharsets.UTF_8 ) );
-		}catch( final IOException e ) {
-			System.err.println( e.getMessage() );
-			e.printStackTrace();
+		}catch( final IOException exception ) {
+			System.err.println( exception.getMessage() );
+			exception.printStackTrace();
 		}
 	}
 

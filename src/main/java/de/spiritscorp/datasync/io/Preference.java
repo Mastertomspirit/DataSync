@@ -30,16 +30,17 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Map;
 
-import de.spiritscorp.datasync.BgTime;
-import de.spiritscorp.datasync.ScanType;
-import de.spiritscorp.datasync.model.FileAttributes;
-import de.spiritscorp.datasync.model.Model;
 import jakarta.json.Json;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonArrayBuilder;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 import jakarta.json.JsonValue;
+
+import de.spiritscorp.datasync.BgTime;
+import de.spiritscorp.datasync.ScanType;
+import de.spiritscorp.datasync.model.FileAttributes;
+import de.spiritscorp.datasync.model.Model;
 
 /**
  * Isolated parameters state tracker mapped to a dedicated profile workspace scope.
@@ -70,7 +71,6 @@ public final class Preference {
 	private boolean autoDel;
 	private boolean autoSync;
 	private boolean bgSync;
-//	private boolean autoBgDel;
 
 	private Preference( final String jobName ) {
 		this.jobName = jobName;
@@ -99,12 +99,12 @@ public final class Preference {
 		final JsonObjectBuilder builder = Json.createObjectBuilder();
 
 		final JsonArrayBuilder srcArr = Json.createArrayBuilder();
-		for( final Path p : sourcePaths )
-			srcArr.add( p.toString() );
+		for( final Path path : sourcePaths )
+			srcArr.add( path.toString() );
 
 		final JsonArrayBuilder destArr = Json.createArrayBuilder();
-		for( final Path p : destPaths )
-			destArr.add( p.toString() );
+		for( final Path path : destPaths )
+			destArr.add( path.toString() );
 
 		builder.add( "sourcePaths", srcArr.build() )
 				.add( "destPaths", destArr.build() )
@@ -116,7 +116,6 @@ public final class Preference {
 				.add( "logOn", logOn )
 				.add( "subDir", subDir )
 				.add( "autoDel", autoDel )
-				// .add( "autoBgDel", autoBgDel )
 				.add( "autoSync", autoSync )
 				.add( "bgSync", bgSync )
 				.add( "trashbin", trashbin );
@@ -140,14 +139,14 @@ public final class Preference {
 			sourcePaths.clear();
 			final JsonArray srcArr = json.getJsonArray( "sourcePaths" );
 			if( srcArr != null ) {
-				for( final JsonValue v : srcArr ) {
+				for( final JsonValue jsonValue : srcArr ) {
 					// Strip literal quotes from stringification boundaries
-					final Path p = Paths.get( v.toString().replace( "\"", "" ) );
+					final Path path = Paths.get( jsonValue.toString().replace( "\"", "" ) );
 					// Rigid validation requirement: Source directories MUST physically exist
-					if( Files.exists( p ) && Files.isDirectory( p ) ) {
-						sourcePaths.add( p );
+					if( Files.exists( path ) && Files.isDirectory( path ) ) {
+						sourcePaths.add( path );
 					}else {
-						Debug.printDebug( "[Preference] Warning: Source path no longer available on filesystem: " + p );
+						Debug.printDebug( "[Preference] Warning: Source path no longer available on filesystem: " + path );
 					}
 				}
 			}
@@ -156,22 +155,22 @@ public final class Preference {
 			destPaths.clear();
 			final JsonArray destArr = json.getJsonArray( "destPaths" );
 			if( destArr != null ) {
-				for( final JsonValue v : destArr ) {
-					final Path p = Paths.get( v.toString().replace( "\"", "" ) );
+				for( final JsonValue jsonValue : destArr ) {
+					final Path path = Paths.get( jsonValue.toString().replace( "\"", "" ) );
 					// Target paths are allowed to be offline temporarily (e.g., disconnected network mounts)
-					destPaths.add( p );
+					destPaths.add( path );
 				}
 			}
 
 			// --- STARTING & SYSTEM PATHS VALIDATION ---
 			if( json.containsKey( "startSourcePath" ) ) {
-				final Path p = Paths.get( json.getString( "startSourcePath" ) );
-				this.startSourcePath = Files.exists( p ) ? p : PreferenceManager.DATASYNC_HOME;
+				final Path path = Paths.get( json.getString( "startSourcePath" ) );
+				this.startSourcePath = Files.exists( path ) ? path : PreferenceManager.DATASYNC_HOME;
 			}
 
 			if( json.containsKey( "startDestPath" ) ) {
-				final Path p = Paths.get( json.getString( "startDestPath" ) );
-				setStartDestPath( p ); // Internally forces tracking updates for trashbinPath coordinates
+				final Path path = Paths.get( json.getString( "startDestPath" ) );
+				setStartDestPath( path ); // Internally forces tracking updates for trashbinPath coordinates
 			}
 
 			if( json.containsKey( "trashbinPath" ) ) {
@@ -205,16 +204,15 @@ public final class Preference {
 			this.trashbin = getSafeBoolean( json, "trashbin", true );
 			this.subDir = getSafeBoolean( json, "subDir", false );
 			this.autoDel = getSafeBoolean( json, "autoDel", false );
-//			this.autoBgDel = getSafeBoolean( json, "autoBgDel", false );
 			this.autoSync = getSafeBoolean( json, "autoSync", false );
 			this.bgSync = getSafeBoolean( json, "bgSync", false );
 
 			// Trigger downstream initialization matrix cache tracking parsing
 			ioSyncMap.loadSyncMap( syncMap );
 
-		}catch( final Exception e ) {
+		}catch( final Exception exception ) {
 			// Wrap any nested unhandled parsing or type violations into a predictable lifecycle runtime exception
-			throw new ConfigException( "JSON payload structure is corrupt or mismatched.", e );
+			throw new ConfigException( "JSON payload structure is corrupt or mismatched.", exception );
 		}
 	}
 
@@ -232,7 +230,7 @@ public final class Preference {
 		if( !json.containsKey( key ) ) { return defaultValue; }
 		try {
 			return json.getBoolean( key );
-		}catch( final ClassCastException e ) {
+		}catch( ClassCastException _ ) {
 			Debug.printDebug( "[Preference] Warning: Invalid data type mapping tracking key '%s'. Falling back to default: %s", key, defaultValue );
 			return defaultValue;
 		}
@@ -242,11 +240,12 @@ public final class Preference {
 	 * Persists the current timestamp as the last successful scan execution time.
 	 */
 	public void saveLastScanTime() {
-		try( BufferedWriter bw = Files.newBufferedWriter( jobScanTimePath,
+		try( BufferedWriter writer = Files.newBufferedWriter( jobScanTimePath,
 				StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING ) ) {
-			bw.write( String.valueOf( System.currentTimeMillis() ) );
-		}catch( final IOException e ) {
-			Debug.printException( this.getClass(), e );
+			writer.write( String.valueOf( System.currentTimeMillis() ) );
+		}catch( final IOException exception ) {
+			Debug.printDebug( "[Preference Error] IO write failed at '%s' message: %s", jobScanTimePath, exception.getMessage() );
+			Debug.printException( this.getClass(), exception );
 		}
 	}
 
@@ -257,10 +256,12 @@ public final class Preference {
 	 */
 	public long getLastScanTime() {
 		if( !Files.exists( jobScanTimePath ) ) { return 0; }
-		try( BufferedReader br = Files.newBufferedReader( jobScanTimePath ) ) {
-			final String str = br.readLine();
-			return ( str != null ) ? Long.parseLong( str.trim() ) : 0;
-		}catch( final IOException | NumberFormatException e ) {
+		try( BufferedReader reader = Files.newBufferedReader( jobScanTimePath ) ) {
+			final String line = reader.readLine();
+			return ( line != null ) ? Long.parseLong( line.trim() ) : 0;
+		}catch( final IOException | NumberFormatException exception ) {
+			Debug.printDebug( "[Preference Error] IO read failed at '%s' message: %s", jobScanTimePath, exception.getMessage() );
+			Debug.printException( this.getClass(), exception );
 			return 0;
 		}
 	}
@@ -276,28 +277,28 @@ public final class Preference {
 
 	public ArrayList<Path> getSourcePath() { return sourcePaths; }
 
-	public void setSourcePath( final ArrayList<Path> paths ) { this.sourcePaths = paths; }
+	public void setSourcePath( final ArrayList<Path> sourcePaths ) { this.sourcePaths = sourcePaths; }
 
 	public ArrayList<Path> getDestPath() { return destPaths; }
 
-	public void setDestPath( final ArrayList<Path> paths ) { this.destPaths = paths; }
+	public void setDestPath( final ArrayList<Path> destPaths ) { this.destPaths = destPaths; }
 
 	public Path getStartSourcePath() { return startSourcePath; }
 
-	public void setStartSourcePath( final Path p ) { this.startSourcePath = p; }
+	public void setStartSourcePath( final Path startSourcePath ) { this.startSourcePath = startSourcePath; }
 
 	public Path getStartDestPath() { return startDestPath; }
 
-	public void setStartDestPath( final Path p ) {
-		this.startDestPath = p;
-		this.trashbinPath = p.resolve( TRASHBIN_STRING );
+	public void setStartDestPath( final Path startDestPath ) {
+		this.startDestPath = startDestPath;
+		this.trashbinPath = startDestPath.resolve( TRASHBIN_STRING );
 	}
 
 	public Map<Path, FileAttributes> getSyncMap() { return syncMap; }
 
 	public ScanType getScanMode() { return scanMode; }
 
-	public void setScanMode( final ScanType mode ) { this.scanMode = mode; }
+	public void setScanMode( final ScanType scanMode ) { this.scanMode = scanMode; }
 
 	public BgTime getBgTime() { return bgTime; }
 
@@ -315,10 +316,6 @@ public final class Preference {
 
 	public void setAutoDel( final boolean autoDel ) { this.autoDel = autoDel; }
 
-//	public boolean isAutoBgDel() { return autoBgDel; }
-//
-//	public void setAutoBgDel( boolean autoBgDel ) { this.autoBgDel = autoBgDel; }
-
 	public boolean isAutoSync() { return autoSync; }
 
 	public void setAutoSync( final boolean autoSync ) { this.autoSync = autoSync; }
@@ -332,5 +329,4 @@ public final class Preference {
 	public void setTrashbin( final boolean trashbin ) { this.trashbin = trashbin; }
 
 	public Path getTrashbinPath() { return trashbinPath; }
-
 }

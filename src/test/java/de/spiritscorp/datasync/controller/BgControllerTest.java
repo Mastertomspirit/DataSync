@@ -34,6 +34,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.awt.AWTException;
 import java.awt.SystemTray;
 import java.awt.TrayIcon;
 import java.lang.reflect.InvocationTargetException;
@@ -42,6 +43,11 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+
+import javafx.application.Platform;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.stage.Stage;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -62,10 +68,6 @@ import de.spiritscorp.datasync.io.Debug;
 import de.spiritscorp.datasync.io.Logger;
 import de.spiritscorp.datasync.io.Preference;
 import de.spiritscorp.datasync.model.BgModel;
-import javafx.application.Platform;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
-import javafx.stage.Stage;
 
 /**
  * Enterprise-grade lifecycle and concurrency test suite for {@link BgController}.
@@ -457,7 +459,7 @@ class BgControllerTest {
 		injectMockExecutors( controller );
 
 		// Enforce an AWTException when the controller tries to add the TrayIcon to the OS SystemTray
-		doThrow( new java.awt.AWTException( "Simulated OS Tray Capacity Exhaustion" ) )
+		doThrow( new AWTException( "Simulated OS Tray Capacity Exhaustion" ) )
 				.when( spySystemTray ).add( any( TrayIcon.class ) );
 		assertDoesNotThrow( () -> controller.startBgJob( false ) );
 		// Part 1: Verify the lifecycle protocol hid the stage initially

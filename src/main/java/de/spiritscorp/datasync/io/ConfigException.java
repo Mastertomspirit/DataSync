@@ -24,12 +24,12 @@ final class ConfigException extends Exception {
 
 	private static final long serialVersionUID = -1857563011203287809L;
 
-	ConfigException( final String failture, Object... args ) {
+	ConfigException( final String failture, final Object... args ) {
 		super(
 				String.format( failture, args ) );
 	}
 
-	ConfigException( final String failture, Throwable throwable ) {
+	ConfigException( final String failture, final Throwable throwable ) {
 		super(
 				failture,
 				throwable );

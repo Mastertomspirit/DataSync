@@ -5,7 +5,7 @@ package de.spiritscorp.datasync;
 
 	@author Tom Spirit
 	@date 16.12.2021
-	@version	1.1.0.0-alpha
+	@version	1.1.0.0-beta
 	@email tomspirit@spiritscorp.network
 
 	Copyright ©
@@ -31,10 +31,11 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 import java.util.Locale;
 
+import javafx.application.Application;
+
 import de.spiritscorp.datasync.gui.Gui;
 import de.spiritscorp.datasync.io.Debug;
 import de.spiritscorp.datasync.io.PreferenceManager;
-import javafx.application.Application;
 
 /**
  * Main application entry point responsible for runtime arguments parsing,
@@ -49,7 +50,7 @@ public final class Main { // NOPMD ShortClassName
 	 * The current version of the application in semantic format,
 	 * including the development stage (e.g., alpha).
 	 */
-	public static final String VERSION = "V 1.1.0.0-alpha";
+	public static final String VERSION = "V 1.1.0.0-beta";
 
 	/**
 	 * The timeout limit in milliseconds for regular, worker threads
@@ -153,7 +154,7 @@ public final class Main { // NOPMD ShortClassName
 	 * @param args An array of string arguments passed to the application upon startup.
 	 *             Null elements within the array are safely ignored.
 	 */
-	/*package*/ static void parseArguments( final String... args ) {
+	static void parseArguments( final String... args ) {
 
 		final PreferenceManager manager = PreferenceManager.getInstance();
 
@@ -179,7 +180,7 @@ public final class Main { // NOPMD ShortClassName
 	 * between consecutive test executions and guarantee a deterministic environment.
 	 * </p>
 	 */
-	/*package*/ static void resetForTesting() {
+	static void resetForTesting() {
 		debug = false;
 		firstStart = false;
 	}
@@ -248,5 +249,4 @@ public final class Main { // NOPMD ShortClassName
 		Debug.printDebug( "[Info] Data Sync Application initialized. Beginning system initialization." );
 		Debug.printDebug( "[Setup] Set config root path -> %s", configPath.toString() );
 	}
-
 }

@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>de.spiritscorp</groupId>
 	<artifactId>datasync</artifactId>
-	<version>1.1.0.0-alpha</version>
+	<version>1.1.0.0-beta</version>
 	<name>Data Sync</name>
 	<description>
 	    DataSync is a high-performance, multi-threaded file synchronization and data management solution designed for robust asset alignment and backup automation. 

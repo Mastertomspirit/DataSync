@@ -35,8 +35,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
-import de.spiritscorp.datasync.theme.AppTheme;
-import de.spiritscorp.datasync.theme.DarkSlateTheme;
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
@@ -44,6 +42,9 @@ import jakarta.json.JsonReader;
 import jakarta.json.JsonWriter;
 import jakarta.json.JsonWriterFactory;
 import jakarta.json.stream.JsonGenerator;
+
+import de.spiritscorp.datasync.theme.AppTheme;
+import de.spiritscorp.datasync.theme.DarkSlateTheme;
 
 /**
  * Thread-safe global configurations orchestrator managing persistent JSON configurations.
@@ -149,7 +150,7 @@ public final class PreferenceManager {
 			}else {
 				Debug.printError( "[Error] initGlobalRootConfigPath() -> Profiles are allready locked" );
 			}
-		}catch( final InterruptedException e ) {
+		}catch( InterruptedException _ ) {
 			Thread.currentThread().interrupt();
 		}
 	}
@@ -176,7 +177,7 @@ public final class PreferenceManager {
 			}else {
 				Debug.printError( "[Error] createProfiles() -> Profiles are allready locked" );
 			}
-		}catch( final InterruptedException e ) {
+		}catch( InterruptedException _ ) {
 			Thread.currentThread().interrupt();
 		}
 		return null;
@@ -199,8 +200,8 @@ public final class PreferenceManager {
 	 * Atomically set a copy of an active synchronization job context tracking assignment.
 	 * Evicts cached properties from memory and updates the primary configuration storage file.
 	 *
-	 * @param job  The high-level UI task context container targeted for decommissioning.
-	 * @param pref Associated configuration parameters data segment instance.
+	 * @param jobName The high-level UI task context container targeted for decommissioning.
+	 * @param pref    Associated configuration parameters data segment instance.
 	 * @return The new configuration copy, or null if the configuration allready exists.
 	 */
 	public Preference setNewProfile( final String jobName, final Preference pref ) {
@@ -214,7 +215,7 @@ public final class PreferenceManager {
 						loadedProfiles.addLast( newPref );
 						if( saveAllPreferences() ) return newPref;
 					}
-				}catch( ConfigException e ) {
+				}catch( ConfigException _ ) {
 
 				}finally {
 					// Always ensure the lock is released if it was successfully acquired
@@ -223,7 +224,7 @@ public final class PreferenceManager {
 			}else {
 				Debug.printError( "[Error] setNewProfile() -> Profiles are allready locked" );
 			}
-		}catch( final InterruptedException e ) {
+		}catch( InterruptedException _ ) {
 			// Restore interrupted status if the thread was interrupted while waiting for the lock
 			Thread.currentThread().interrupt();
 		}
@@ -256,7 +257,7 @@ public final class PreferenceManager {
 			}else {
 				Debug.printError( "[Error] setProfile() -> Profiles are allready locked" );
 			}
-		}catch( final InterruptedException e ) {
+		}catch( InterruptedException _ ) {
 			// Restore interrupted status if the thread was interrupted while waiting for the lock
 			Thread.currentThread().interrupt();
 		}
@@ -289,7 +290,7 @@ public final class PreferenceManager {
 			}else {
 				Debug.printError( "[Error] renameProfile() -> Profiles are allready locked" );
 			}
-		}catch( final InterruptedException e ) {
+		}catch( InterruptedException _ ) {
 			// Restore interrupted status if the thread was interrupted while waiting for the lock
 			Thread.currentThread().interrupt();
 		}
@@ -318,7 +319,7 @@ public final class PreferenceManager {
 			}else {
 				Debug.printError( "[Error] removeProfile() -> Profiles are allready locked" );
 			}
-		}catch( final InterruptedException e ) {
+		}catch( InterruptedException _ ) {
 			Thread.currentThread().interrupt();
 		}
 		return false;
@@ -368,9 +369,9 @@ public final class PreferenceManager {
 						writer.write( rootBuilder.build() );
 						return true;
 					}
-				}catch( final IOException e ) {
-					Debug.printDebug( "[Error] Critical: Failed to serialize active memory states to 'conf.json'. Reason: %s", e.getMessage() );
-					Debug.printException( this.getClass(), e );
+				}catch( final IOException exception ) {
+					Debug.printDebug( "[Error] Critical: Failed to serialize active memory states to 'conf.json'. Reason: %s", exception.getMessage() );
+					Debug.printException( this.getClass(), exception );
 					return false;
 				}finally {
 					profileLock.unlock();
@@ -378,7 +379,7 @@ public final class PreferenceManager {
 			}else {
 				Debug.printError( "[Error] removeProfile() -> Profiles are allready locked" );
 			}
-		}catch( final InterruptedException e ) {
+		}catch( InterruptedException _ ) {
 			Thread.currentThread().interrupt();
 		}
 		return false;
@@ -410,9 +411,9 @@ public final class PreferenceManager {
 							Debug.printDebug( "[Warn] load profiles incompleted" );
 						}
 						return true;
-					}catch( final ClassCastException | IOException e ) {
-						Debug.printDebug( "[Error] Critical: Failed to load profiles. Reason: %s", e.getMessage() );
-						Debug.printException( this.getClass(), e );
+					}catch( final ClassCastException | IOException exception ) {
+						Debug.printDebug( "[Error] Critical: Failed to load profiles. Reason: %s", exception.getMessage() );
+						Debug.printException( this.getClass(), exception );
 						return false;
 					}
 				}finally {
@@ -421,7 +422,7 @@ public final class PreferenceManager {
 			}else {
 				Debug.printError( "[Error] loadAllPreferences() -> Profiles are allready locked" );
 			}
-		}catch( final InterruptedException e ) {
+		}catch( InterruptedException _ ) {
 			Thread.currentThread().interrupt();
 		}
 		return false;
@@ -439,9 +440,9 @@ public final class PreferenceManager {
 					this.theme = (AppTheme) themeClass.getDeclaredConstructor().newInstance();
 					return true;
 				}catch( final ClassNotFoundException | InstantiationException | IllegalAccessException | IllegalArgumentException
-						| InvocationTargetException | NoSuchMethodException | SecurityException e ) {
-					Debug.printDebug( "[Error] Falling back to default. Failed to instantiate theme class: %s", e.getMessage() );
-					Debug.printException( getClass(), e );
+						| InvocationTargetException | NoSuchMethodException | SecurityException exception ) {
+					Debug.printDebug( "[Error] Falling back to default. Failed to instantiate theme class: %s", exception.getMessage() );
+					Debug.printException( getClass(), exception );
 				}
 			}else {
 				Debug.printDebug( "[Warn] No value for instantiate theme class. Falling back to default." );
@@ -459,9 +460,9 @@ public final class PreferenceManager {
 			try {
 				pref.deserialize( jobData );
 				loadedProfiles.add( pref );
-			}catch( final ConfigException e ) {
-				Debug.printDebug( "[Error] Critical: Failed to load job profile '%s'. Skipping entry. Reason: %s", jobName, e.getMessage() );
-				Debug.printException( this.getClass(), e );
+			}catch( final ConfigException exception ) {
+				Debug.printDebug( "[Error] Critical: Failed to load job profile '%s'. Skipping entry. Reason: %s", jobName, exception.getMessage() );
+				Debug.printException( this.getClass(), exception );
 				return false;
 			}
 		}
@@ -519,7 +520,7 @@ public final class PreferenceManager {
 	/**
 	 * Sets the visual theme of the application.
 	 *
-	 * @param the new AppTheme
+	 * @param theme The new AppTheme
 	 */
 	public void setTheme( final AppTheme theme ) { this.theme = theme; }
 

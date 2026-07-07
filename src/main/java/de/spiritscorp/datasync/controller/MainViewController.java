@@ -131,9 +131,9 @@ public class MainViewController implements ViewController {
 	}
 
 	@Override
-	public void handleRenameJob( final SyncJobContext selectedJob ) {
-		if( selectedJob != null ) {
-			final String oldName = selectedJob.getJobName();
+	public void handleRenameJob( final SyncJobContext job ) {
+		if( job != null ) {
+			final String oldName = job.getJobName();
 			final TextInputDialog dialog = new TextInputDialog( oldName );
 			dialog.setTitle( "Task umbenennen" );
 			dialog.setHeaderText( "Geben Sie einen neuen Namen für den Task ein:" );
@@ -143,8 +143,8 @@ public class MainViewController implements ViewController {
 				final String trimmedName = newName.trim();
 //		Check if not the same and don`t exists
 				if( !trimmedName.isEmpty() && !trimmedName.equals( oldName ) && manager.getProfile( trimmedName ) == null ) {
-					manager.renameProfile( oldName, trimmedName, selectedJob.getPreference() );
-					selectedJob.setJobName( trimmedName );
+					manager.renameProfile( oldName, trimmedName, job.getPreference() );
+					job.setJobName( trimmedName );
 					gui.showStatusNotification( oldName + " wurde ersetzt und gespeichert durch" + newName, NotifyStatus.SUCCESS, Main.INFO_DELAY );
 				}else {
 					gui.showStatusNotification( oldName + " wurde nicht ersetzt", NotifyStatus.WARNING, Main.INFO_DELAY );

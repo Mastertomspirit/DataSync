@@ -44,11 +44,12 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-import de.spiritscorp.datasync.io.Debug;
 import javafx.application.Platform;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.stage.Stage;
+
+import de.spiritscorp.datasync.io.Debug;
 
 /**
  * Service responsible for managing UI dialogs and alerts.
@@ -78,7 +79,7 @@ public class DialogService {
 	 * @param content The message body containing instructions or questions
 	 * @return true if the user confirmed via OK, false if canceled or closed
 	 */
-	public boolean askUser( final String title, final String header, final String content ) {
+	public boolean confirmUser( final String title, final String header, final String content ) {
 		// Execute immediately if invoked directly on the JavaFX Application Thread
 		if( Platform.isFxApplicationThread() ) { return showConfirmationDialog( title, header, content ); }
 
@@ -89,19 +90,19 @@ public class DialogService {
 			try {
 				final boolean response = showConfirmationDialog( title, header, content );
 				userResponse.complete( response );
-			}catch( final Exception e ) {
-				userResponse.completeExceptionally( e );
+			}catch( final Exception exception ) {
+				userResponse.completeExceptionally( exception );
 			}
 		} );
 
 		try {
 			return userResponse.get(); // Halts the background worker here until the user interacts with the UI
-		}catch( final InterruptedException e ) {
+		}catch( InterruptedException _ ) {
 			Thread.currentThread().interrupt();
 			return false;
-		}catch( final ExecutionException e ) {
-			Debug.printDebug( "[Dialog Service Error] Execution Exception -> ", e.getMessage() );
-			Debug.printException( getClass(), e );
+		}catch( final ExecutionException exception ) {
+			Debug.printDebug( "[Dialog Service Error] Execution Exception -> ", exception.getMessage() );
+			Debug.printException( getClass(), exception );
 			return false;
 		}
 	}

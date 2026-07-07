@@ -374,7 +374,11 @@ public final class WorkspaceView extends VBox {
 		trashbinCheck.setTooltip( new Tooltip( "Verschiebt modifizierte/gelöschte Dateien temporär in Sicherungsstrukturen" ) );
 		final CheckBox autoDelCheck = new CheckBox( "Automatisches Löschen erlauben (AutoDel)" );
 		autoDelCheck.setSelected( pref.isAutoDel() );
-		autoDelCheck.setTooltip( new Tooltip( "Erlaubt dem System, verwaiste Dateien im Zielordner restlos zu bereinigen" ) );
+		String autoDelText = """
+				Erlaubt dem System, verwaiste Dateien im Zielordner restlos zu bereinigen
+				( Nötig für das hintergrund Backup )
+				""";
+		autoDelCheck.setTooltip( new Tooltip( autoDelText ) );
 		final CheckBox autoSyncCheck = new CheckBox( "Automatisches kopieren erlauben (AutoSync)" );
 		autoSyncCheck.setSelected( pref.isAutoSync() );
 		autoSyncCheck.setTooltip( new Tooltip( "Erlaubt dem System, nach einem Scan alle nötigen Dateien zu kopieren." ) );

@@ -98,7 +98,7 @@ class BgModelIT {
 		when( prefMock.getStartDestPath() ).thenReturn( ModelTest.TEST_PATH.resolve( "dest" ) );
 		when( prefMock.getTrashbinPath() ).thenReturn( null );
 		when( prefMock.isTrashbin() ).thenReturn( false );
-//		when( prefMock.isAutoBgDel() ).thenReturn( true );
+		when( prefMock.isAutoDel() ).thenReturn( true );
 		when( prefMock.getLastScanTime() ).thenReturn( 0L );
 		when( prefMock.isSubDir() ).thenReturn( false );
 		when( prefMock.getBgTime() ).thenReturn( BgTime.MIN_30 );

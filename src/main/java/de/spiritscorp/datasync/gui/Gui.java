@@ -160,6 +160,7 @@ public class Gui extends Application {
 	public void setViewState( final ViewState state ) {
 		this.currentViewState = state;
 		if( state == ViewState.INFO ) {
+			workspaceView.refreshView( state, null );
 			workspaceView.displayCustomViewNode( buildAboutInfoNode() );
 		}else {
 			workspaceView.refreshView( currentViewState, currentActiveJob );

@@ -149,7 +149,7 @@ final class SidebarView extends VBox {
 			final ContextMenu contextMenu = new ContextMenu();
 
 			final MenuItem renameItem = new MenuItem( "Task umbenennen", Gui.createIcon( MaterialDesignS.SWAP_HORIZONTAL ) );
-			renameItem.setOnAction( _ -> controller.handleRenameJob( cell ) );
+			renameItem.setOnAction( _ -> controller.handleRenameJob( cell.getItem() ) );
 
 			final MenuItem duplicateItem = new MenuItem( "Task duplizieren", Gui.createIcon( MaterialDesignC.CONTENT_DUPLICATE ) );
 			duplicateItem.setOnAction( _ -> controller.handleDuplicateJob( cell.getItem() ) );
@@ -172,11 +172,76 @@ final class SidebarView extends VBox {
 				event.consume();
 			} );
 
+			// ==========================================
+			// DRAG & DROP IMPLEMENTATION START
+			// ==========================================
+			cell.setOnDragDetected( event -> {
+				// Guard clause: Block gesture if disabled or triggered on an empty row
+				if( cell.isEmpty() || !dragAndDropEnabled ) { return; }
+
+				// Initiate move transfer mode and store the source index inside the dragboard
+				final Dragboard db = cell.startDragAndDrop( TransferMode.MOVE );
+				final ClipboardContent content = new ClipboardContent();
+				content.putString( String.valueOf( cell.getIndex() ) );
+				db.setContent( content );
+
+				event.consume();
+			} );
+
+			cell.setOnDragOver( event -> {
+				// Only accept the move if functionality is enabled and data type matches
+				if( dragAndDropEnabled && event.getDragboard().hasString() ) {
+					event.acceptTransferModes( TransferMode.MOVE );
+				}
+				event.consume();
+			} );
+
+			cell.setOnDragEntered( event -> {
+				// Apply visual feedback style when dragging an item over a valid cell
+				if( dragAndDropEnabled && !cell.isEmpty() && event.getDragboard().hasString() ) {
+					cell.getStyleClass().add( cssDrag );
+				}
+				event.consume();
+			} );
+
+			cell.setOnDragExited( event -> {
+				// Clear visual feedback style immediately when leaving the cell area
+				cell.getStyleClass().remove( cssDrag );
+				event.consume();
+			} );
+
+			cell.setOnDragDropped( event -> {
+				// Ensure style cleanup before processing data logic
+				cell.getStyleClass().remove( cssDrag );
+
+				if( !dragAndDropEnabled ) { return; }
+
+				final Dragboard db = event.getDragboard();
+				if( db.hasString() ) {
+					final int draggedIdx = Integer.parseInt( db.getString() );
+
+					// Fall back to last list index if item dropped onto an empty trailing cell
+					int thisIdx = cell.isEmpty() ? sidebarListView.getItems().size() - 1 : cell.getIndex();
+					if( thisIdx < 0 ) thisIdx = 0;
+					if( draggedIdx < thisIdx ) thisIdx -= 1;
+					if( draggedIdx != thisIdx && draggedIdx >= 0 ) {
+						controller.handleDragJob( thisIdx, draggedIdx );
+						// Immediately restore focus and selection onto the moved element
+						sidebarListView.getSelectionModel().select( thisIdx );
+						event.setDropCompleted( true );
+					}
+				}
+				event.consume();
+			} );
+			// ==========================================
+			// DRAG & DROP IMPLEMENTATION END
+			// ==========================================
+
 			return cell;
 		} );
 
 		sidebarListView.getSelectionModel().selectedItemProperty().addListener( ( obs, oldVal, newVal ) -> {
-			if( newVal != null ) mainGui.setCurrentActiveJob( newVal );
+			if( newVal != null && !newVal.equals( oldVal ) ) mainGui.setCurrentActiveJob( newVal );
 		} );
 	}
 

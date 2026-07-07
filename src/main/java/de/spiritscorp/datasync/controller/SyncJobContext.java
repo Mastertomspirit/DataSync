@@ -141,6 +141,10 @@ public class SyncJobContext {
 
 	public String getJobName() { return jobName.get(); }
 
+	void setJobName( final String newTaskName ) {
+		this.jobName.set( newTaskName );
+	}
+
 	public StringProperty jobNameProperty() {
 		return jobName;
 	}
@@ -231,10 +235,5 @@ public class SyncJobContext {
 		}
 
 		public Path getFileSystemPath() { return fileSystemPath; }
-	}
-
-	void setJobName( String newTaskName ) {
-		PreferenceManager.getInstance().renameProfile( jobName.get(), newTaskName, this.getPreference() );
-		this.jobName.set( newTaskName );
 	}
 }

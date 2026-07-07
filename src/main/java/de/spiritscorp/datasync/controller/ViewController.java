@@ -21,9 +21,7 @@ package de.spiritscorp.datasync.controller;
  */
 
 import de.spiritscorp.datasync.gui.Gui;
-import de.spiritscorp.datasync.io.Preference;
 import de.spiritscorp.datasync.theme.AppTheme;
-import javafx.scene.control.ListCell;
 
 /**
  * Core architectural interface decoupling user interface interactions from business logic orchestration.
@@ -50,11 +48,6 @@ public interface ViewController {
 	void handleApplicationShutdown();
 
 	/**
-	 * Load the whole jobList from the Preferences.
-	 */
-//	void loadInitialJobList();
-
-	/**
 	 * Handles the creation and append workflow for a new managed task synchronization context instance.
 	 */
 	void handleCreateNewJob();
@@ -62,9 +55,9 @@ public interface ViewController {
 	/**
 	 * Triggers the specialized configuration context dialog to change a job instance identification label.
 	 *
-	 * @param cell The graphical ListCell context container hosting the target model entity.
+	 * @param job The source configuration instance payload.
 	 */
-	void handleRenameJob( ListCell<SyncJobContext> cell );
+	void handleRenameJob( SyncJobContext job );
 
 	/**
 	 * Creates an independent copy of the currently selected task parameters profile mapping.
@@ -97,13 +90,36 @@ public interface ViewController {
 	/**
 	 * Commits altered orchestration state variables using the encapsulated properties entity carrier.
 	 *
-	 * @param localPreferences Altered context data parameters container reference.
-	 * @param targetTheme      Visual presentation theme strategy selection.
+	 * @param targetTheme Visual presentation theme strategy selection.
 	 */
-	void handleSaveSettings( Preference localPreferences, AppTheme targetTheme );
+	void handleSaveSettings( AppTheme targetTheme );
 
-	void runInBackground( boolean firstStart );
+	/**
+	 * Asynchronously dispatches the orchestration engine onto a background worker thread.
+	 * Optionally defers the initial execution sequence to accommodate bootstrap stabilization,
+	 * dependency initialization, or throttling requirements during application startup.
+	 *
+	 * @param bootDelay true to enforce an initial structural delay prior to thread execution;
+	 *                  false for immediate background execution.
+	 */
+	void runInBackground( boolean bootDelay );
 
-	void deleteSelectedDuplicates( SyncJobContext jobContext );
+	/**
+	 * Triggers a destructive purging routine to eliminate identified duplicate entities
+	 * within the scope of the given synchronization task context.
+	 * Mutates the active memory allocation state and immediately persists structural changes.
+	 *
+	 * @param job The specific synchronization runtime context targeting duplicate remediation.
+	 */
+	void deleteSelectedDuplicates( SyncJobContext job );
 
+	/**
+	 * Coordinates and processes drag-and-drop reordering requests originating from the job list.
+	 * Acts as the bridge to pass index mutations from the view architecture back to the
+	 * underlying sequential model registries.
+	 *
+	 * @param thisIdx    The destination target index where the dragged element is dropped.
+	 * @param draggedIdx The original source index where the drag gesture was initiated.
+	 */
+	void handleDragJob( int thisIdx, int draggedIdx );
 }

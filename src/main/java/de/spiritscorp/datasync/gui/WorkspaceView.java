@@ -457,7 +457,7 @@ final class WorkspaceView extends VBox {
 				displayTemporaryStatus( "Fehlender Pfad! Einstellungen nicht gespeichert!", NotifyStatus.WARNING, Main.INFO_DELAY );
 				return;
 			}
-			controller.handleSaveSettings( job.getPreference(), themeComboBox.getValue() );
+			controller.handleSaveSettings( themeComboBox.getValue() );
 		} );
 
 		final HBox buttonRow = new HBox( saveButton );

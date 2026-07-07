@@ -20,20 +20,17 @@ package de.spiritscorp.datasync.controller;
  * 		along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import java.util.Map;
-
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
-import javafx.scene.control.ListCell;
 import javafx.scene.control.TextInputDialog;
 
 import de.spiritscorp.datasync.Main;
 import de.spiritscorp.datasync.gui.DialogService;
 import de.spiritscorp.datasync.gui.Gui;
-import de.spiritscorp.datasync.gui.WorkspaceView.NotifyStatus;
+import de.spiritscorp.datasync.gui.NotifyStatus;
 import de.spiritscorp.datasync.io.Debug;
 import de.spiritscorp.datasync.io.Logger;
 import de.spiritscorp.datasync.io.Preference;
@@ -76,7 +73,7 @@ public class MainViewController implements ViewController {
 			// This block executes automatically if Windows/Linux sends a SIGTERM or shutdown signal
 			Debug.printDebug( "[Exit] Host operating system shutdown signal intercepted via native runtime hook." );
 			// Enforce rapid execution with small timeouts since the OS will forcefully kill us shortly
-			executeCoreShutdownSequence( true );
+			executeCoreShutdownSequence( false );
 			Debug.printDebug( "[Exit] BYE, BYE" );
 		}, "DataSync-OS-Shutdown-Hook-Thread" ) );
 		Debug.printDebug( "[Info] Native OS runtime shutdown hook successfully registered." );
@@ -110,14 +107,13 @@ public class MainViewController implements ViewController {
 		}
 	}
 
-//	@Override
 	private void loadInitialJobList() {
 		final ObservableList<SyncJobContext> jobList = FXCollections.observableArrayList();
 
 		if( manager.loadAllPreferences() ) {
-			for( final Map.Entry<String, Preference> entry : manager.getLoadedProfiles().entrySet() ) {
-				final SyncJobContext ctx = new SyncJobContext( entry.getKey(), entry.getValue() );
-				ctx.setSelectedMode( entry.getValue().getScanMode().getDescription() );
+			for( final Preference entry : manager.getLoadedProfiles() ) {
+				final SyncJobContext ctx = new SyncJobContext( entry.getJobName(), entry );
+				ctx.setSelectedMode( entry.getScanMode().getDescription() );
 				jobList.add( ctx );
 			}
 		}else {
@@ -131,23 +127,25 @@ public class MainViewController implements ViewController {
 	public void handleCreateNewJob() {
 		final String name = "Sync Job " + ( gui.getJobList().size() + 1 );
 		gui.getJobList().add( new SyncJobContext( name, manager.createProfile( name ) ) );
+		gui.showStatusNotification( name + " wurde erstellt und gespeichert", NotifyStatus.SUCCESS, Main.INFO_DELAY );
 	}
 
 	@Override
-	public void handleRenameJob( final ListCell<SyncJobContext> cell ) {
-		final SyncJobContext selectedJob = cell.getItem();
+	public void handleRenameJob( final SyncJobContext selectedJob ) {
 		if( selectedJob != null ) {
 			final String oldName = selectedJob.getJobName();
-			final TextInputDialog dialog = new TextInputDialog( selectedJob.getJobName() );
+			final TextInputDialog dialog = new TextInputDialog( oldName );
 			dialog.setTitle( "Task umbenennen" );
 			dialog.setHeaderText( "Geben Sie einen neuen Namen für den Task ein:" );
 			dialog.setContentText( "Name:" );
 			dialog.initOwner( gui.getWindowStage() );
 			dialog.showAndWait().ifPresent( newName -> {
 				final String trimmedName = newName.trim();
-				if( !trimmedName.isEmpty() && !trimmedName.equals( oldName ) ) {
+//		Check if not the same and don`t exists
+				if( !trimmedName.isEmpty() && !trimmedName.equals( oldName ) && manager.getProfile( trimmedName ) == null ) {
+					manager.renameProfile( oldName, trimmedName, selectedJob.getPreference() );
 					selectedJob.setJobName( trimmedName );
-					gui.showStatusNotification( oldName + " wurde ersetzt und gespeichert durch" + newName, NotifyStatus.SUCESS, Main.INFO_DELAY );
+					gui.showStatusNotification( oldName + " wurde ersetzt und gespeichert durch" + newName, NotifyStatus.SUCCESS, Main.INFO_DELAY );
 				}else {
 					gui.showStatusNotification( oldName + " wurde nicht ersetzt", NotifyStatus.WARNING, Main.INFO_DELAY );
 				}
@@ -158,7 +156,12 @@ public class MainViewController implements ViewController {
 	@Override
 	public void handleDuplicateJob( final SyncJobContext job ) {
 		if( job != null ) {
-			gui.getJobList().add( new SyncJobContext( job.getJobName() + " (Kopie)", job.getPreference() ) );
+			String newName = job.getJobName() + " (Kopie)";
+			Preference pref = job.getPreference();
+			gui.getJobList().addLast( new SyncJobContext( newName, manager.setNewProfile( newName, pref ) ) );
+			gui.showStatusNotification( newName + " wurde erstellt und gespeichert", NotifyStatus.SUCCESS, Main.INFO_DELAY );
+		}else {
+			gui.showStatusNotification( "Fehler: Job ist unbekannt", NotifyStatus.ERROR, Main.INFO_DELAY );
 		}
 	}
 
@@ -170,14 +173,24 @@ public class MainViewController implements ViewController {
 			alert.setHeaderText( null );
 			alert.initOwner( gui.getWindowStage() );
 			alert.showAndWait().ifPresent( response -> {
+				String jobName = job.getJobName();
 				if( response == ButtonType.YES ) {
 					gui.getJobList().remove( job );
-					PreferenceManager.getInstance().removeProfile( job );
-					gui.showStatusNotification( job.getJobName() + " wurde erfolgreich gelöscht", NotifyStatus.SUCESS, Main.INFO_DELAY );
+					manager.removeProfile( jobName );
+					gui.showStatusNotification( jobName + " wurde erfolgreich gelöscht", NotifyStatus.SUCCESS, Main.INFO_DELAY );
 				}else {
-					gui.showStatusNotification( job.getJobName() + " wurde nicht gelöscht", NotifyStatus.WARNING, Main.INFO_DELAY );
+					gui.showStatusNotification( jobName + " wurde nicht gelöscht", NotifyStatus.WARNING, Main.INFO_DELAY );
 				}
 			} );
+		}
+	}
+
+	@Override
+	public void handleDragJob( final int newIdx, final int draggedIdx ) {
+		SyncJobContext item = gui.getJobList().remove( draggedIdx );
+		if( item != null ) {
+			gui.getJobList().add( newIdx, item );
+			manager.moveProfile( newIdx, draggedIdx, item.getPreference() );
 		}
 	}
 
@@ -199,19 +212,18 @@ public class MainViewController implements ViewController {
 	}
 
 	@Override
-	public void handleSaveSettings( final Preference localPreferences, final AppTheme targetTheme ) {
-		if( localPreferences == null ) return;
+	public void handleSaveSettings( final AppTheme targetTheme ) {
 
 		// Persist structural configuration states securely to disk
-		final boolean prefsSaved = PreferenceManager.getInstance().saveAllPreferences();
+		final boolean prefsSaved = manager.saveAllPreferences();
 		if( prefsSaved ) {
 			Debug.printDebug( "[Settings] Configuration profile assets successfully serialized to disk." );
 		}else {
-			Debug.printDebug( "[Settings] Critical: Failed to persist configuration profile assets." );
+			Debug.printDebug( "[Settings Error] Critical: Failed to persist configuration profile assets." );
 		}
 
 		// Adjust underlying host operating system autostart integration context matrix
-		final boolean autostartTargetState = PreferenceManager.getInstance().isGlobalAutoStart();
+		final boolean autostartTargetState = manager.isGlobalAutoStart();
 		final boolean autostartSaved = helper.setOSAutostart( autostartTargetState );
 		if( autostartSaved ) {
 			Debug.printDebug( "[Settings] OS desktop autostart hooks successfully synchronized to state: " + autostartTargetState );
@@ -224,7 +236,7 @@ public class MainViewController implements ViewController {
 
 		// Trigger visual feedback via the global GUI proxy method using theme classes
 		if( prefsSaved && autostartSaved ) {
-			gui.showStatusNotification( "Settings successfully persisted to the configuration registry.", NotifyStatus.SUCESS, Main.INFO_DELAY );
+			gui.showStatusNotification( "Settings successfully persisted to the configuration registry.", NotifyStatus.SUCCESS, Main.INFO_DELAY );
 		}else if( !prefsSaved ) {
 			gui.showStatusNotification( "Error: Failed to write configuration payload to 'conf.json'.", NotifyStatus.ERROR, Main.INFO_DELAY );
 		}else {

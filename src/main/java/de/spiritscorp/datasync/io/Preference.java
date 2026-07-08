@@ -28,6 +28,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import jakarta.json.Json;
@@ -53,14 +54,12 @@ public final class Preference {
 	private final IOSyncMap ioSyncMap;
 	private final Path jobScanTimePath;
 
-	private ArrayList<Path> sourcePaths = new ArrayList<>();
-	private ArrayList<Path> destPaths = new ArrayList<>();
-	private final Map<Path, FileAttributes> syncMap = Model.createMap();
+	private ArrayList<Path> sourcePaths;
+	private ArrayList<Path> destPaths;
+	private final Map<Path, FileAttributes> syncMap;
 
 	private static final String TRASHBIN_STRING = "Papierkorb";
-	private Path startSourcePath = PreferenceManager.DATASYNC_HOME;
-	private Path startDestPath = PreferenceManager.DATASYNC_HOME;
-	private Path trashbinPath = startDestPath.resolve( TRASHBIN_STRING );
+	private Path trashbinPath;
 
 	private ScanType scanMode = ScanType.FLAT_SCAN;
 	private BgTime bgTime = BgTime.DAYLY;
@@ -74,11 +73,15 @@ public final class Preference {
 
 	private Preference( final String jobName ) {
 		this.jobName = jobName;
-		sourcePaths.add( startSourcePath );
-		destPaths.add( startDestPath );
+
+		syncMap = Model.createMap();
+		destPaths = new ArrayList<>( List.of( PreferenceManager.DATASYNC_HOME ) );
+		sourcePaths = new ArrayList<>( List.of( PreferenceManager.DATASYNC_HOME ) );
+		trashbinPath = destPaths.get( 0 ).resolve( TRASHBIN_STRING );
+
 		final String safeName = jobName.replaceAll( "[^a-zA-Z0-9-_]", "_" );
 		this.ioSyncMap = new IOSyncMap( safeName );
-		this.jobScanTimePath = PreferenceManager.getInstance().getConfigPath().getParent().resolve( "lastScanTime_" + safeName );
+		this.jobScanTimePath = PreferenceManager.getInstance().getRootPath().resolve( "lastScanTime_" + safeName );
 	}
 
 	/**
@@ -108,8 +111,6 @@ public final class Preference {
 
 		builder.add( "sourcePaths", srcArr.build() )
 				.add( "destPaths", destArr.build() )
-				.add( "startSourcePath", startSourcePath.toString() )
-				.add( "startDestPath", startDestPath.toString() )
 				.add( "trashbinPath", trashbinPath.toString() )
 				.add( "scanMode", scanMode.getDescription() )
 				.add( "bgTime", bgTime.getName() )
@@ -128,23 +129,23 @@ public final class Preference {
 	 * Validates path existence, structural availability, and sanitizes incoming
 	 * data types during structural parsing to prevent parsing exceptions.
 	 *
-	 * @param json The serialized JSON object payload mapping the profile configuration.
+	 * @param jsonObject The serialized JSON object payload mapping the profile configuration.
 	 * @throws ConfigException If the structural state context is completely unrecoverable or malformed.
 	 */
-	void deserialize( final JsonObject json ) throws ConfigException {
-		if( json == null ) { throw new ConfigException( "JSON payload context is null." ); }
+	void deserialize( final JsonObject jsonObject ) throws ConfigException {
+		if( jsonObject == null ) { throw new ConfigException( "JSON payload context is null." ); }
 
 		try {
 			// --- SOURCE PATHS VALIDATION ---
-			sourcePaths.clear();
-			final JsonArray srcArr = json.getJsonArray( "sourcePaths" );
+			this.sourcePaths.clear();
+			final JsonArray srcArr = jsonObject.getJsonArray( "sourcePaths" );
 			if( srcArr != null ) {
 				for( final JsonValue jsonValue : srcArr ) {
 					// Strip literal quotes from stringification boundaries
 					final Path path = Paths.get( jsonValue.toString().replace( "\"", "" ) );
 					// Rigid validation requirement: Source directories MUST physically exist
 					if( Files.exists( path ) && Files.isDirectory( path ) ) {
-						sourcePaths.add( path );
+						this.sourcePaths.add( path );
 					}else {
 						Debug.printDebug( "[Preference] Warning: Source path no longer available on filesystem: " + path );
 					}
@@ -152,29 +153,20 @@ public final class Preference {
 			}
 
 			// --- DESTINATION PATHS VALIDATION ---
-			destPaths.clear();
-			final JsonArray destArr = json.getJsonArray( "destPaths" );
+			this.destPaths.clear();
+			final JsonArray destArr = jsonObject.getJsonArray( "destPaths" );
 			if( destArr != null ) {
 				for( final JsonValue jsonValue : destArr ) {
 					final Path path = Paths.get( jsonValue.toString().replace( "\"", "" ) );
 					// Target paths are allowed to be offline temporarily (e.g., disconnected network mounts)
-					destPaths.add( path );
+					this.destPaths.add( path );
+					// Fallback
+					this.trashbinPath = path;
 				}
 			}
 
-			// --- STARTING & SYSTEM PATHS VALIDATION ---
-			if( json.containsKey( "startSourcePath" ) ) {
-				final Path path = Paths.get( json.getString( "startSourcePath" ) );
-				this.startSourcePath = Files.exists( path ) ? path : PreferenceManager.DATASYNC_HOME;
-			}
-
-			if( json.containsKey( "startDestPath" ) ) {
-				final Path path = Paths.get( json.getString( "startDestPath" ) );
-				setStartDestPath( path ); // Internally forces tracking updates for trashbinPath coordinates
-			}
-
-			if( json.containsKey( "trashbinPath" ) ) {
-				this.trashbinPath = Paths.get( json.getString( "trashbinPath" ) );
+			if( jsonObject.containsKey( "trashbinPath" ) ) {
+				this.trashbinPath = Paths.get( jsonObject.getString( "trashbinPath" ) );
 			}
 
 			// --- PATH FALLBACK LOGIC ---
@@ -183,29 +175,27 @@ public final class Preference {
 				final Path userHome = PreferenceManager.DATASYNC_HOME;
 				if( sourcePaths.isEmpty() ) sourcePaths.add( userHome );
 				if( destPaths.isEmpty() ) destPaths.add( userHome );
-				this.startSourcePath = userHome;
-				this.startDestPath = userHome;
 				this.trashbinPath = userHome.resolve( TRASHBIN_STRING );
 			}
 
 			// --- PRIMITIVE ENUM CONFIGS (With Type-Checking & Fallbacks) ---
-			if( json.containsKey( "scanMode" ) ) {
-				final ScanType parsed = ScanType.get( json.getString( "scanMode" ) );
+			if( jsonObject.containsKey( "scanMode" ) ) {
+				final ScanType parsed = ScanType.get( jsonObject.getString( "scanMode" ) );
 				this.scanMode = ( parsed != null ) ? parsed : ScanType.FLAT_SCAN;
 			}
-			if( json.containsKey( "bgTime" ) ) {
-				final BgTime parsed = BgTime.get( json.getString( "bgTime" ) );
+			if( jsonObject.containsKey( "bgTime" ) ) {
+				final BgTime parsed = BgTime.get( jsonObject.getString( "bgTime" ) );
 				this.bgTime = ( parsed != null ) ? parsed : BgTime.DAYLY;
 			}
 
 			// --- RESILIENT BOOLEAN INJECTION LAYER ---
 			// Intercepts structural ClassCastExceptions if human operators modified primitive types illegally
-			this.logOn = getSafeBoolean( json, "logOn", true );
-			this.trashbin = getSafeBoolean( json, "trashbin", true );
-			this.subDir = getSafeBoolean( json, "subDir", false );
-			this.autoDel = getSafeBoolean( json, "autoDel", false );
-			this.autoSync = getSafeBoolean( json, "autoSync", false );
-			this.bgSync = getSafeBoolean( json, "bgSync", false );
+			this.logOn = getSafeBoolean( jsonObject, "logOn", true );
+			this.trashbin = getSafeBoolean( jsonObject, "trashbin", true );
+			this.subDir = getSafeBoolean( jsonObject, "subDir", false );
+			this.autoDel = getSafeBoolean( jsonObject, "autoDel", false );
+			this.autoSync = getSafeBoolean( jsonObject, "autoSync", false );
+			this.bgSync = getSafeBoolean( jsonObject, "bgSync", false );
 
 			// Trigger downstream initialization matrix cache tracking parsing
 			ioSyncMap.loadSyncMap( syncMap );
@@ -275,23 +265,23 @@ public final class Preference {
 
 	void setJobNameFromManager( final String newName ) { this.jobName = newName; }
 
-	public ArrayList<Path> getSourcePath() { return sourcePaths; }
+	public ArrayList<Path> getSourcePaths() { return sourcePaths; }
 
-	public void setSourcePath( final ArrayList<Path> sourcePaths ) { this.sourcePaths = sourcePaths; }
+	public void setSourcePaths( final ArrayList<Path> sourcePaths ) { this.sourcePaths = sourcePaths; }
 
-	public ArrayList<Path> getDestPath() { return destPaths; }
+	public void setSourcePath( final Path sourcePath ) {
+		this.sourcePaths.add( sourcePath );
+	}
 
-	public void setDestPath( final ArrayList<Path> destPaths ) { this.destPaths = destPaths; }
+	public void removeSourcePath( final Path sourcePath ) {
+		this.sourcePaths.remove( sourcePath );
+	}
 
-	public Path getStartSourcePath() { return startSourcePath; }
+	public ArrayList<Path> getDestPaths() { return destPaths; }
 
-	public void setStartSourcePath( final Path startSourcePath ) { this.startSourcePath = startSourcePath; }
-
-	public Path getStartDestPath() { return startDestPath; }
-
-	public void setStartDestPath( final Path startDestPath ) {
-		this.startDestPath = startDestPath;
-		this.trashbinPath = startDestPath.resolve( TRASHBIN_STRING );
+	public void setDestPaths( final ArrayList<Path> destPaths ) {
+		this.destPaths = destPaths;
+		this.trashbinPath = destPaths.get( 0 ).resolve( TRASHBIN_STRING );
 	}
 
 	public Map<Path, FileAttributes> getSyncMap() { return syncMap; }

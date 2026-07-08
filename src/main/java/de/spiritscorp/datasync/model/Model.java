@@ -204,7 +204,7 @@ public class Model {
 		syncMap.clear();
 		if( !testOn ) {
 			final Map<Path, FileAttributes> tempMap = createMap();
-			handler.listFiles( ctx.getPreference().getSourcePath(), tempMap, ScanType.SYNCHRONIZE, false );
+			handler.listFiles( ctx.getPreference().getSourcePaths(), tempMap, ScanType.SYNCHRONIZE, false );
 			for( final Map.Entry<Path, FileAttributes> entry : tempMap.entrySet() ) {
 				syncMap.put( entry.getValue().getRelativeFilePath(), entry.getValue() );
 			}

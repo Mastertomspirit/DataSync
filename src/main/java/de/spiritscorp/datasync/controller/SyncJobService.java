@@ -94,20 +94,20 @@ public class SyncJobService {
 		final Thread worker = new Thread( () -> {
 			long startTime = System.nanoTime();
 			try {
-				final Path startDestPath = pref.getStartDestPath();
-				final Path startSourcePath = pref.getStartSourcePath();
+				final Path startDestPath = pref.getDestPaths().get( 0 );
+				final Path startSourcePath = pref.getSourcePaths().get( 0 );
 
 				if( startDestPath == null || !Files.exists( startDestPath ) ) {
 					updateUIStatus( context, false, "Kein Ziellaufwerk vorhanden" );
 					return;
 				}
 
-				if( pref.getSourcePath().size() > 1 ) {
+				if( pref.getSourcePaths().size() > 1 ) {
 					updateUIStatus( context, false, "Die Synchronisierung funktioniert nur mit einem Quellordner!" );
 					return;
 				}
 
-				failMap.putAll( model.scanSyncFiles( pref.getSourcePath(), pref.getDestPath(), stats, pref.getScanMode(), false, false ) );
+				failMap.putAll( model.scanSyncFiles( pref.getSourcePaths(), pref.getDestPaths(), stats, pref.getScanMode(), false, false ) );
 				if( Thread.currentThread().isInterrupted() ) throw new InterruptedException();
 
 				final ArrayList<Map<Path, FileAttributes>> result = model.getSyncFiles( pref.getSyncMap(), startSourcePath, startDestPath );
@@ -176,13 +176,13 @@ public class SyncJobService {
 		final Thread worker = new Thread( () -> {
 			long startTime = System.nanoTime();
 			try {
-				final Path startDestPath = pref.getStartDestPath();
+				final Path startDestPath = pref.getDestPaths().get( 0 );
 				if( startDestPath == null || !Files.exists( startDestPath ) ) {
 					updateUIStatus( context, false, "Kein Ziellaufwerk vorhanden" );
 					return;
 				}
 
-				failMap.putAll( model.scanSyncFiles( pref.getSourcePath(), pref.getDestPath(), stats, pref.getScanMode(), pref.isSubDir(), pref.isTrashbin() ) );
+				failMap.putAll( model.scanSyncFiles( pref.getSourcePaths(), pref.getDestPaths(), stats, pref.getScanMode(), pref.isSubDir(), pref.isTrashbin() ) );
 				model.getEqualsFiles();
 				final String scanTimeFormatted = uiLog.getEndTimeFormatted( System.nanoTime() - startTime ) + " für das Scannen";
 				Debug.printDebug( "[Controller Helper]  sourceMap size = %d, destMap size = %d, failtures = %d", stats[0], stats[1], failMap.size() );
@@ -259,7 +259,7 @@ public class SyncJobService {
 		final Thread worker = new Thread( () -> {
 			final long startTime = System.nanoTime();
 			try {
-				final Map<Path, FileAttributes> duplicateMap = model.scanDublicates( pref.getSourcePath(), stats );
+				final Map<Path, FileAttributes> duplicateMap = model.scanDublicates( pref.getSourcePaths(), stats );
 				final String scanTimeFormatted = uiLog.getEndTimeFormatted( System.nanoTime() - startTime );
 
 				if( Thread.currentThread().isInterrupted() ) throw new InterruptedException( "Manual abort ..." );

@@ -115,7 +115,8 @@ public class Gui extends Application {
 		this.controller = new MainViewController( this );
 		this.controller.registerNativeShutdownHook();
 
-		AppTheme theme = PreferenceManager.getInstance().getTheme();
+		PreferenceManager prefMan = PreferenceManager.getInstance();
+		AppTheme theme = prefMan.getTheme();
 		if( theme instanceof DarkSlateTheme ) {
 			this.currentTheme = availableThemes.get( 0 );
 		}else if( theme instanceof MatrixTerminalTheme ) {
@@ -123,6 +124,7 @@ public class Gui extends Application {
 		}else if( theme instanceof NordicLightTheme ) {
 			this.currentTheme = availableThemes.get( 2 );
 		}
+		prefMan.setTheme( currentTheme );
 
 		primaryStage.setTitle( "DataSync Advanced Management Platform" );
 		primaryStage.getIcons().add( new Image( getClass().getResourceAsStream( "/icons/16x16.png" ) ) );
@@ -132,7 +134,7 @@ public class Gui extends Application {
 			controller.runInBackground( false );
 		} );
 		sidebarView = new SidebarView( this, controller );
-		workspaceView = new WorkspaceView( this, controller );
+		workspaceView = new WorkspaceView( this, controller, new ContextPathRenderer() );
 
 		final BorderPane mainLayout = new BorderPane();
 		mainLayout.setLeft( sidebarView );

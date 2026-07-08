@@ -35,7 +35,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.AfterEach;
@@ -78,7 +77,7 @@ class ModelTest {
 		ctx = mock( SyncJobContext.class, RETURNS_DEEP_STUBS );
 		model = new Model( mock( Logger.class ), sourceMap, destMap );
 
-		when( ctx.getPreference().getSourcePath() ).thenReturn( new ArrayList<>() );
+		when( ctx.getPreference().getSourcePaths() ).thenReturn( new ArrayList<>() );
 	}
 
 	/**
@@ -96,14 +95,6 @@ class ModelTest {
 		if( mockDebug != null ) {
 			mockDebug.close();
 		}
-	}
-
-	/**
-	 * Testmethode für {@link de.spiritscorp.datasync.model.Model#scanSyncFiles(java.util.ArrayList, java.util.ArrayList, java.lang.Long[], de.spiritscorp.datasync.ScanType, boolean, boolean)}.
-	 */
-	@Test
-	final void testScanSyncFiles() {
-//		fail("Noch nicht implementiert");
 	}
 
 	/**
@@ -194,7 +185,7 @@ class ModelTest {
 			return stream
 					.filter( path -> !Files.isDirectory( path ) )
 					.map( Path::getFileName )
-					.collect( Collectors.toList() );
+					.toList();
 		}
 	}
 }

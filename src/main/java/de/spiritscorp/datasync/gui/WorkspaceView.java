@@ -20,17 +20,11 @@ package de.spiritscorp.datasync.gui;
  * 		along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import java.io.File;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -39,14 +33,11 @@ import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
-import javafx.scene.control.ListView;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.control.ScrollPane;
-import javafx.scene.control.Separator;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
-import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
 import javafx.scene.control.cell.CheckBoxTableCell;
 import javafx.scene.layout.GridPane;
@@ -54,7 +45,6 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import javafx.stage.DirectoryChooser;
 import javafx.util.Duration;
 
 import org.kordamp.ikonli.materialdesign2.MaterialDesignD;
@@ -79,6 +69,7 @@ final class WorkspaceView extends VBox {
 
 	private final Gui mainGui;
 	private final ViewController controller;
+	private final ContextPathRenderer renderer;
 	private final Label workspaceHeaderLabel;
 	private final Label contextInfoLabel;
 	private final HBox controlToolbar;
@@ -101,9 +92,10 @@ final class WorkspaceView extends VBox {
 	 * @param mainGui    Configuration context core coordinator link.
 	 * @param controller Strategy abstraction dealing with interface state management mutations.
 	 */
-	WorkspaceView( final Gui mainGui, final ViewController controller ) {
+	WorkspaceView( final Gui mainGui, final ViewController controller, final ContextPathRenderer renderer ) {
 		this.mainGui = mainGui;
 		this.controller = controller;
+		this.renderer = renderer;
 		this.setPadding( new Insets( 24 ) );
 		this.setSpacing( 12 );
 
@@ -207,24 +199,40 @@ final class WorkspaceView extends VBox {
 
 			// Build informative context metadata bar metrics string
 			final Preference p = job.getPreference();
-			final String src = p.getSourcePath() != null ? Arrays.toString( p.getSourcePath().toArray() ) : "Keine Quelle";
-			final String dest = p.getDestPath() != null && !p.getDestPath().isEmpty() ? p.getDestPath().toString() : "Kein Ziel";
+			final String src = p.getSourcePaths() != null ? Arrays.toString( p.getSourcePaths().toArray() ) : "Keine Quelle";
+			final String dest = p.getDestPaths() != null && !p.getDestPaths().isEmpty() ? p.getDestPaths().toString() : "Kein Ziel";
+			final String srcTip = src.replace( '[', ' ' ).replace( ']', ' ' ).replace( ',', '\n' );
+			final String destTip = dest.replace( '[', ' ' ).replace( ']', ' ' );
 
 			if( ScanType.DUBLICATE_SCAN.equals( job.getSelectedMode() ) ) {
-				contextInfoLabel.setText( String.format( "Modus: %s  |  Ziel: %s", job.getSelectedMode().getDescription(), src ) );
+				final String finalTip = String.format( """
+						Quelle:
+						%s
+						""", srcTip );
+				contextInfoLabel.setTooltip( new Tooltip( finalTip ) );
+				contextInfoLabel.setText( String.format( "Modus: %s  |  Verzeichnisse: %s", job.getSelectedMode().getDescription(), src ) );
 				centerViewport.getChildren().add( duplicateViewNode );
 			}else {
+				final String finalTip = String.format( """
+						Quelle:
+						%s
+						Ziel:
+						%s
+						""", srcTip, destTip );
+				contextInfoLabel.setTooltip( new Tooltip( finalTip ) );
 				contextInfoLabel.setText( String.format( "Modus: %s  |  Quelle: %s  |  Ziel: %s", job.getSelectedMode().getDescription(), src, dest ) );
 				centerViewport.getChildren().add( consoleViewNode );
 			}
 		}else if( state == Gui.ViewState.SETTINGS ) {
 			if( job == null ) return;
 			workspaceHeaderLabel.setText( "Einstellungen für: " + job.getJobName() );
+			contextInfoLabel.setTooltip( new Tooltip( "" ) );
 			contextInfoLabel.setText( "Konfiguration der task-spezifischen Ablaufparameter, Dateiattribute und Verzeichnisstrukturen." );
 			controlToolbar.setVisible( false );
 			displayCustomViewNode( buildSettingsGridTab( job ) );
 		}else if( state == Gui.ViewState.INFO ) {
 			workspaceHeaderLabel.setText( "About" );
+			contextInfoLabel.setTooltip( new Tooltip( "" ) );
 			contextInfoLabel.setText( "Backup Software" );
 			controlToolbar.setVisible( false );
 		}
@@ -280,7 +288,7 @@ final class WorkspaceView extends VBox {
 
 		// 2. Programmatic structural fallback: Set a default color via inline styles
 		// This acts as a safety net if the active CSS theme completely lacks the targeted class definition.
-		// CHECKSTYLE:OFF
+		// CHECKSTYLE:OFF its ok without a default
 		switch( cssNotifyStatus ) {
 			case SUCCESS -> {
 				contextInfoLabel.setStyle( "-fx-text-fill: #22aa22; -fx-font-weight: bold;" );
@@ -341,16 +349,8 @@ final class WorkspaceView extends VBox {
 		final VBox dynamicPathsContainer = new VBox( 12 );
 		settingsGrid.add( dynamicPathsContainer, 0, 1, 2, 1 );
 
-		final PathContext pathCtx = new PathContext();
-		if( pref.getSourcePath() != null ) {
-			pathCtx.sources.addAll( pref.getSourcePath() );
-		}
-		if( pref.getDestPath() != null ) {
-			pathCtx.destinations.addAll( pref.getDestPath() );
-		}
-
-		taskModeComboBox.valueProperty().addListener( ( obs, o, n ) -> renderContextPaths( ScanType.get( n ), dynamicPathsContainer, pref, pathCtx ) );
-		renderContextPaths( job.getSelectedMode(), dynamicPathsContainer, pref, pathCtx );
+		taskModeComboBox.valueProperty().addListener( ( _, _, n ) -> renderer.renderContextPaths( ScanType.get( n ), dynamicPathsContainer, pref, mainGui.getWindowStage() ) );
+		renderer.renderContextPaths( job.getSelectedMode(), dynamicPathsContainer, pref, mainGui.getWindowStage() );
 
 		// --- Section 3: Task Parameter Flags Options ---
 		final Label paramsTitleLabel = new Label( "Erweiterte Ablaufparameter" );
@@ -431,10 +431,17 @@ final class WorkspaceView extends VBox {
 		saveButton.getStyleClass().addAll( "save-button" );
 		saveButton.setTooltip( new Tooltip( "Übernimmt alle geänderten Zustandsparameter permanent in die JSON-Konfigurationsdatei" ) );
 		saveButton.setOnAction( _ -> {
+			final ScanType scanType = ScanType.get( taskModeComboBox.getValue() );
+			if( scanType == ScanType.DUBLICATE_SCAN && pref.getSourcePaths().isEmpty() ) {
+				displayTemporaryStatus( "Fehlender Scan Pfad! Einstellungen nicht gespeichert!", NotifyStatus.WARNING, Main.INFO_DELAY );
+				return;
+			}else if( pref.getSourcePaths().isEmpty() && pref.getDestPaths().isEmpty() ) {
+				displayTemporaryStatus( "Fehlende Pfad! Einstellungen nicht gespeichert!", NotifyStatus.WARNING, Main.INFO_DELAY );
+				return;
+			}
 			PreferenceManager.getInstance().setGlobalAutoStart( globalAutostartCheck.isSelected() );
 			PreferenceManager.getInstance().setTheme( themeComboBox.getValue() );
 			final Preference jobPref = job.getPreference();
-			final ScanType scanType = ScanType.get( taskModeComboBox.getValue() );
 			jobPref.setSubDir( subDirCheck.isSelected() );
 			jobPref.setTrashbin( trashbinCheck.isSelected() );
 			jobPref.setAutoDel( autoDelCheck.isSelected() );
@@ -444,19 +451,6 @@ final class WorkspaceView extends VBox {
 			jobPref.setAutoSync( autoSyncCheck.isSelected() );
 			jobPref.setScanMode( scanType );
 
-			jobPref.setSourcePath( new ArrayList<>( pathCtx.sources ) );
-			jobPref.setDestPath( new ArrayList<>( pathCtx.destinations ) );
-
-			if( scanType == ScanType.DUBLICATE_SCAN && !pathCtx.sources.isEmpty() ) {
-				jobPref.setStartSourcePath( pathCtx.sources.get( 0 ) );
-				jobPref.setStartDestPath( Paths.get( "" ) );
-			}else if( !pathCtx.sources.isEmpty() && !pathCtx.destinations.isEmpty() ) {
-				jobPref.setStartSourcePath( pathCtx.sources.get( 0 ) );
-				jobPref.setStartDestPath( pathCtx.destinations.get( 0 ) );
-			}else {
-				displayTemporaryStatus( "Fehlender Pfad! Einstellungen nicht gespeichert!", NotifyStatus.WARNING, Main.INFO_DELAY );
-				return;
-			}
 			controller.handleSaveSettings( themeComboBox.getValue() );
 		} );
 
@@ -465,122 +459,5 @@ final class WorkspaceView extends VBox {
 		settingsGrid.add( buttonRow, 1, 4 );
 
 		return settingsGrid;
-	}
-
-	/**
-	 * Morph layouts rendering dynamically mapped on target selected Action mode definitions.
-	 */
-	private void renderContextPaths( final ScanType type, final VBox container, final Preference pref, final PathContext pathCtx ) {
-		container.getChildren().clear();
-		final GridPane pathsGrid = new GridPane();
-		pathsGrid.setHgap( 12 );
-		pathsGrid.setVgap( 10 );
-
-		final Label dirTitleLabel = new Label( "Verzeichnis-Konfiguration (" + type.getDescription() + ")" );
-		dirTitleLabel.getStyleClass().addAll( "dir-title-label" );
-		container.getChildren().add( dirTitleLabel );
-
-		if( ScanType.SYNCHRONIZE.equals( type ) || ScanType.DUBLICATE_SCAN.equals( type ) ) {
-			final Path initialSrc = ( pref.getSourcePath() != null && !pref.getSourcePath().isEmpty() ) ? pref.getSourcePath().get( 0 ) : null;
-			final TextField srcTextField = new TextField( initialSrc.toString() );
-			srcTextField.setPrefWidth( 400 );
-			final Button srcBtn = new Button( "Durchsuchen..." );
-			srcBtn.setOnAction( _ -> {
-				final File f = chooseDirectory( initialSrc.toFile(), "Quellverzeichnis für " + pref.getScanMode().getDescription() );
-				if( f != null ) {
-					srcTextField.setText( f.getAbsolutePath() );
-					pathCtx.sources.clear();
-					pathCtx.sources.add( Paths.get( f.getAbsolutePath() ) );
-				}
-			} );
-			pathsGrid.add( new Label( ScanType.DUBLICATE_SCAN.equals( type ) ? "Scanverzeichnis:" : "Quellverzeichnis:" ), 0, 0 );
-			pathsGrid.add( new HBox( 8, srcTextField, srcBtn ), 1, 0 );
-		}
-
-		if( ScanType.SYNCHRONIZE.equals( type ) ) {
-			final Path initialDest = ( pref.getDestPath() != null && !pref.getDestPath().isEmpty() ) ? pref.getDestPath().get( 0 ) : null;
-			final TextField destField = new TextField( initialDest.toString() );
-			destField.setPrefWidth( 400 );
-			final Button destBtn = new Button( "Durchsuchen..." );
-			destBtn.setOnAction( _ -> {
-				final File f = chooseDirectory( initialDest.toFile(), "Zielverzeichnis für " + pref.getScanMode().getDescription() );
-				if( f != null ) {
-					destField.setText( f.getAbsolutePath() );
-					pathCtx.destinations.clear();
-					pathCtx.destinations.add( Paths.get( f.getAbsolutePath() ) );
-				}
-			} );
-			pathsGrid.add( new Label( "Zielverzeichnis:" ), 0, 1 );
-			pathsGrid.add( new HBox( 8, destField, destBtn ), 1, 1 );
-		}
-
-		if( ScanType.FLAT_SCAN.equals( type ) || ScanType.DEEP_SCAN.equals( type ) ) {
-			final VBox multiSrcBox = new VBox( 6 );
-			final Label multiSrcLabel = new Label( "Quellverzeichnisse (Multi-Source Pathing):" );
-			multiSrcLabel.getStyleClass().addAll( "multi-src-label" );
-
-			final ObservableList<String> backupPaths = FXCollections.observableArrayList();
-			for( final Path p : pathCtx.sources ) {
-				backupPaths.add( p.toString() );
-			}
-
-			final ListView<String> pathsListView = new ListView<>( backupPaths );
-			pathsListView.setPrefHeight( 100 );
-			final Button add = new Button( "Verzeichnis hinzufügen", Gui.createIcon( MaterialDesignP.PLUS ) );
-			add.setOnAction( _ -> {
-				final File f = chooseDirectory( pathCtx.sources.getLast().toFile(), "Quellverzeichnis für " + pref.getScanMode().getDescription() );
-				if( f != null && !backupPaths.contains( f.getAbsolutePath() ) ) {
-					backupPaths.add( f.getAbsolutePath() );
-					pathCtx.sources.add( Paths.get( f.getAbsolutePath() ) );
-				}
-			} );
-			final Button rem = new Button( "Entfernen", Gui.createIcon( MaterialDesignD.DELETE ) );
-			rem.setOnAction( _ -> {
-				final String sel = pathsListView.getSelectionModel().getSelectedItem();
-				if( sel != null ) {
-					backupPaths.remove( sel );
-					pathCtx.sources.remove( Paths.get( sel ) );
-				}
-			} );
-
-			multiSrcBox.getChildren().addAll( multiSrcLabel, pathsListView, new HBox( 8, add, rem ) );
-			pathsGrid.add( multiSrcBox, 0, 0, 2, 1 );
-
-			final GridPane destGrid = new GridPane();
-			destGrid.setHgap( 12 );
-			final String initialDest = ( pref.getDestPath() != null && !pref.getDestPath().isEmpty() ) ? pref.getDestPath().get( 0 ).toString() : "";
-			final TextField destField = new TextField( initialDest );
-			destField.setPrefWidth( 400 );
-			final Button destBtn = new Button( "Durchsuchen..." );
-			destBtn.setOnAction( _ -> {
-				final File f = chooseDirectory( pathCtx.destinations.getFirst().toFile(), "Ziielverzeichnis für " + pref.getScanMode().getDescription() );
-				if( f != null ) {
-					destField.setText( f.getAbsolutePath() );
-					pathCtx.destinations.clear();
-					pathCtx.destinations.add( Paths.get( f.getAbsolutePath() ) );
-				}
-			} );
-			destGrid.add( new Label( "Zielverzeichnis:" ), 0, 0 );
-			destGrid.add( new HBox( 8, destField, destBtn ), 1, 0 );
-			pathsGrid.add( new VBox( 10, new Separator(), destGrid ), 0, 1, 2, 1 );
-		}
-
-		container.getChildren().add( pathsGrid );
-	}
-
-	private File chooseDirectory( final File initialDir, final String title ) {
-		final DirectoryChooser chooser = new DirectoryChooser();
-		if( initialDir != null && initialDir.exists() ) chooser.setInitialDirectory( initialDir );
-		chooser.setTitle( title );
-		return chooser.showDialog( mainGui.getWindowStage() );
-	}
-
-	/**
-	 * Simple structural model container mirroring active paths modifications
-	 * decoupled from underlying live Node hierarchies.
-	 */
-	private static final class PathContext {
-		private final ArrayList<Path> sources = new ArrayList<>();
-		private final ArrayList<Path> destinations = new ArrayList<>();
 	}
 }

@@ -539,4 +539,11 @@ public final class PreferenceManager {
 	 */
 	public boolean isCustomConfigDir() { return !DATASYNC_HOME.equals( rootPath ); }
 
+	/**
+	 * Retrieves the absolute configuration root storage path locator.
+	 *
+	 * @return The absolute filesystem path directing to the root config path.
+	 */
+	public Path getRootPath() { return rootPath; }
+
 }

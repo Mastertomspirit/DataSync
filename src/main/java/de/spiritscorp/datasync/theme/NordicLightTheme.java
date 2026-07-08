@@ -109,7 +109,7 @@ public class NordicLightTheme implements AppTheme {
 				/* Workspace View */
 				.console-text-area { -fx-font-family: 'Consolas', monospace; -fx-font-size: 12px; }
 				.workspace-header-label { -fx-font-size: 22px; -fx-font-weight: bold; }
-				.context-info-label { -fx-font-size: 13px; -fx-font-style: italic; -fx-padding: 0 0 8px 0; }
+				.context-info-label { -fx-font-size: 15px; -fx-font-style: italic; -fx-padding: 0 0 8px 0; }
 				.action-button { -fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10px 20px; }
 				.cancel-button { -fx-background-color: #95a5a6; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10px 20px; }
 

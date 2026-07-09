@@ -38,14 +38,25 @@ import de.spiritscorp.datasync.io.PreferenceManager;
 import de.spiritscorp.datasync.theme.AppTheme;
 
 /**
- * Central controller implementation executing operational state translations and business action flows.
- * * @author Tom Spirit
+ * Central controller implementation executing operational state translations and business action flows.<br>
+ *
+ * Acting as the primary orchestrator (Mediator pattern), this component decouples the reactive
+ * JavaFX user interface layer from the transactional backend service domains and persistence engines.
+ * It intercepts user-driven view interactions, coordinates lifecycle mutations of background synchronization
+ * tasks, and dispatches state-change signals across the active runtime workspace.
+ *
+ * @author Tom Spirit
+ * @since 1.1.0
  */
 public class MainViewController implements ViewController {
 
+	/** The primary user interface orchestration shell managing view states, layouts, and volatile notifications. */
 	private final Gui gui;
+	/** The core service layer processing execution requests and lifecycle validations for synchronization tasks. */
 	private final SyncJobService helper;
+	/** The central preference manager coordinating serialization, persistence, and registration of global and job-specific profiles. */
 	private final PreferenceManager manager;
+	/** The active execution controller overseeing scheduled background worker threads and daemon interval routines. */
 	private BgController activeBgController;
 
 	/**
@@ -61,6 +72,15 @@ public class MainViewController implements ViewController {
 		loadInitialJobList();
 	}
 
+	/**
+	 * For TESTING
+	 * <br>
+	 * Constructs a new central view controller initialized with its core architectural dependencies.
+	 *
+	 * @param gui     The visual layout shell managing view hierarchies and user interaction states
+	 * @param helper  The core service layer orchestrating synchronization job execution routines
+	 * @param manager The central preference authority handling profile configuration persistence
+	 */
 	MainViewController( final Gui gui, final SyncJobService helper, final PreferenceManager manager ) {
 		this.gui = gui;
 		this.helper = helper;
@@ -77,15 +97,6 @@ public class MainViewController implements ViewController {
 			Debug.printDebug( "[Exit] BYE, BYE" );
 		}, "DataSync-OS-Shutdown-Hook-Thread" ) );
 		Debug.printDebug( "[Info] Native OS runtime shutdown hook successfully registered." );
-	}
-
-	@Override
-	public void handleNavigate( final Gui.ViewState state ) {
-		gui.setViewState( state );
-		if( !gui.getWindowStage().isShowing() ) {
-			gui.getWindowStage().show();
-			gui.getWindowStage().toFront();
-		}
 	}
 
 	@Override
@@ -107,20 +118,29 @@ public class MainViewController implements ViewController {
 		}
 	}
 
-	private void loadInitialJobList() {
-		final ObservableList<SyncJobContext> jobList = FXCollections.observableArrayList();
+	@Override
+	public void runInBackground( final boolean firstStart ) {
+		activeBgController = new BgController( gui, this, gui.getJobList(), new Logger() );
+		activeBgController.startBgJob( firstStart );
+	}
 
-		if( manager.loadAllPreferences() ) {
-			for( final Preference entry : manager.getLoadedProfiles() ) {
-				final SyncJobContext ctx = new SyncJobContext( entry.getJobName(), entry );
-				ctx.setSelectedMode( entry.getScanMode().getDescription() );
-				jobList.add( ctx );
-			}
+	@Override
+	public void handleAutostart( final boolean autostart ) {
+		manager.setGlobalAutoStart( autostart );
+		if( helper.setOSAutostart( autostart ) && manager.saveAllPreferences() ) {
+			Debug.printDebug( "[Settings] OS desktop autostart hooks successfully synchronized to state: " + autostart );
 		}else {
-			jobList.add( new SyncJobContext( "NAS Dokumenten-Spiegel", manager.createProfile( "NAS Dokus" ) ) );
-			jobList.add( new SyncJobContext( "Lokales Code-Workspace Backup", manager.createProfile( "WorkspaceRepo" ) ) );
+			Debug.printDebug( "[Settings] Warning: Failed to apply host operating system autostart modifications." );
 		}
-		gui.setInitialJobConfigurations( jobList );
+	}
+
+	@Override
+	public void handleNavigate( final Gui.ViewState state ) {
+		gui.setViewState( state );
+		if( !gui.getWindowStage().isShowing() ) {
+			gui.getWindowStage().show();
+			gui.getWindowStage().toFront();
+		}
 	}
 
 	@Override
@@ -163,6 +183,11 @@ public class MainViewController implements ViewController {
 		}else {
 			gui.showStatusNotification( "Fehler: Job ist unbekannt", NotifyStatus.ERROR, Main.INFO_DELAY );
 		}
+	}
+
+	@Override
+	public void deleteSelectedDuplicates( final SyncJobContext jobContext ) {
+		helper.deleteSelectedDuplicates( jobContext );
 	}
 
 	@Override
@@ -214,45 +239,17 @@ public class MainViewController implements ViewController {
 	@Override
 	public void handleSaveSettings( final AppTheme targetTheme ) {
 
-		// Persist structural configuration states securely to disk
-		final boolean prefsSaved = manager.saveAllPreferences();
-		if( prefsSaved ) {
-			Debug.printDebug( "[Settings] Configuration profile assets successfully serialized to disk." );
-		}else {
-			Debug.printDebug( "[Settings Error] Critical: Failed to persist configuration profile assets." );
-		}
-
-		// Adjust underlying host operating system autostart integration context matrix
-		final boolean autostartTargetState = manager.isGlobalAutoStart();
-		final boolean autostartSaved = helper.setOSAutostart( autostartTargetState );
-		if( autostartSaved ) {
-			Debug.printDebug( "[Settings] OS desktop autostart hooks successfully synchronized to state: " + autostartTargetState );
-		}else {
-			Debug.printDebug( "[Settings] Warning: Failed to apply host operating system autostart modifications." );
-		}
-
 		gui.changeTheme( targetTheme );
 		gui.setViewState( Gui.ViewState.SETTINGS );
 
-		// Trigger visual feedback via the global GUI proxy method using theme classes
-		if( prefsSaved && autostartSaved ) {
+		// Persist structural configuration states securely to disk
+		if( manager.saveAllPreferences() ) {
 			gui.showStatusNotification( "Settings successfully persisted to the configuration registry.", NotifyStatus.SUCCESS, Main.INFO_DELAY );
-		}else if( !prefsSaved ) {
-			gui.showStatusNotification( "Error: Failed to write configuration payload to 'conf.json'.", NotifyStatus.ERROR, Main.INFO_DELAY );
+			Debug.printDebug( "[Settings] Configuration profile assets successfully serialized to disk." );
 		}else {
-			gui.showStatusNotification( "Warning: Profiles saved, but host operating system autostart configuration failed.", NotifyStatus.WARNING, Main.INFO_DELAY );
+			gui.showStatusNotification( "Error: Failed to write configuration payload to 'conf.json'.", NotifyStatus.ERROR, Main.INFO_DELAY );
+			Debug.printDebug( "[Settings Error] Critical: Failed to persist configuration profile assets." );
 		}
-	}
-
-	@Override
-	public void runInBackground( final boolean firstStart ) {
-		activeBgController = new BgController( gui, this, gui.getJobList(), new Logger() );
-		activeBgController.startBgJob( firstStart );
-	}
-
-	@Override
-	public void deleteSelectedDuplicates( final SyncJobContext jobContext ) {
-		helper.deleteSelectedDuplicates( jobContext );
 	}
 
 	/**
@@ -271,5 +268,31 @@ public class MainViewController implements ViewController {
 		}
 		if( !gui.isShowing() && activeBgController != null ) activeBgController.interruptBgJob( timeoutPerThreadMs );
 		Debug.printDebug( "[Exit] Core teardown protocol finalized. Flushing runtime buffers." );
+	}
+
+	/**
+	 * Bootstraps the primary synchronization job registry during application startup.
+	 * <br>
+	 * This method attempts to load and deserialize all previously persisted task profiles
+	 * from the underlying configuration storage. If existing preferences are successfully recovered,
+	 * they are mapped into operational context instances. If no data is found or initialization
+	 * fails (e.g., during the first application launch), a pre-configured set of standard fallback
+	 * profiles is generated to guarantee a seamless out-of-the-box user experience.
+	 *
+	 */
+	private void loadInitialJobList() {
+		final ObservableList<SyncJobContext> jobList = FXCollections.observableArrayList();
+
+		if( manager.loadAllPreferences() ) {
+			for( final Preference entry : manager.getLoadedProfiles() ) {
+				final SyncJobContext ctx = new SyncJobContext( entry.getJobName(), entry );
+				ctx.setSelectedMode( entry.getScanMode().getDescription() );
+				jobList.add( ctx );
+			}
+		}else {
+			jobList.add( new SyncJobContext( "NAS Dokumenten-Spiegel", manager.createProfile( "NAS Dokus" ) ) );
+			jobList.add( new SyncJobContext( "Lokales Code-Workspace Backup", manager.createProfile( "WorkspaceRepo" ) ) );
+		}
+		gui.setInitialJobConfigurations( jobList );
 	}
 }

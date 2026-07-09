@@ -91,14 +91,18 @@ public class MatrixTerminalTheme implements AppTheme {
 				.dialog-pane .button:hover { -fx-background-color: #00ff00 !important; -fx-text-fill: #000000 !important; }
 
 				/* Combo Box */
-				.combo-box { -fx-background-color: #151515; -fx-text-fill: #00ff00 !important;  -fx-background-radius: 10px; -fx-border-radius: 10px; }
-				.combo-box:hover { -fx-border-color: #009900; -fx-cursor: hand; }
-				.combo-box .list-cell { -fx-background-color: #00ff00; -fx-text-fill: #252525; -fx-background-radius: 10px; -fx-border-radius: 10px; }
-				.combo-box .list-cell:hover, .combo-box .list-cell:selected { -fx-background-color: #252525; -fx-text-fill: #00ff00; -fx-cursor: hand; }
+				.combo-box {
+				-fx-background-color: #151515; -fx-border-color: #009900; -fx-text-fill: #00ff00 !important;
+				-fx-background-radius: 10px; -fx-border-radius: 10px; -fx-cursor: hand;
+				}
+				.combo-box:hover { -fx-border-color: #00e5ff; }
+				.combo-box .list-cell { -fx-background-color: #00ff00; -fx-text-fill: #252525; -fx-background-radius: 10px; -fx-border-radius: 10px; -fx-cursor: hand; }
+				.combo-box .list-cell:hover, .combo-box .list-cell:selected { -fx-background-color: #252525; -fx-text-fill: #00ff00; }
 
 				/* Check Box */
-				.check-box .box { -fx-background-color: #000000;  -fx-text-fill: #00ff00; -fx-border-color: #00ff00; -fx-background-radius: 3; }
-				.check-box:hover .box { -fx-border-color: #3498db;  -fx-cursor: hand; }
+				.check-box .box { -fx-background-color: #000000;  -fx-text-fill: #00ff00; -fx-border-color: #00ff00;
+				-fx-border-radius: 15; -fx-background-radius: 15; -fx-border-width: 2px 2px 2px 2px; -fx-cursor: hand; }
+				.check-box:hover .box { -fx-border-color: #00e5ff; -fx-background-color: rgba(0, 229, 255, 0.3); }
 				.check-box .text { -fx-fill: #00ff00;  -fx-background-color: #00ff00; }
 				.check-box:selected .mark { -fx-background-color: #00ff00; }
 

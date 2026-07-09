@@ -90,14 +90,14 @@ public class DarkSlateTheme implements AppTheme {
 				.dialog-pane .button:hover { -fx-background-color: #3498db !important; -fx-text-fill: #b9c0c7 !important; }
 
 				/* Combo Box */
-				.combo-box { -fx-background-color: #2488cb; -fx-text-fill: #b9c0c7 !important;  -fx-background-radius: 10px; -fx-border-radius: 10px; }
-				.combo-box:hover { -fx-border-color: #3498db; -fx-cursor: hand; }
-				.combo-box .list-cell { -fx-background-color: #b9c0c7 !important; -fx-text-fill: #2c3e50 !important; -fx-border-width: 0; -fx-background-radius: 10px; -fx-border-radius: 10px; }
-				.combo-box .list-cell:hover, .combo-box .list-cell:selected { -fx-background-color: #3498db !important; -fx-text-fill: #b9c0c7 !important; -fx-cursor: hand; }
+				.combo-box { -fx-background-color: #2488cb; -fx-border-color: #3498db; -fx-text-fill: #b9c0c7 !important;  -fx-background-radius: 10px; -fx-border-radius: 10px; -fx-cursor: hand; }
+				.combo-box:hover { -fx-border-color: #000000; }
+				.combo-box .list-cell { -fx-background-color: #b9c0c7 !important; -fx-text-fill: #2c3e50 !important; -fx-border-width: 0; -fx-background-radius: 10px; -fx-border-radius: 10px; -fx-cursor: hand; }
+				.combo-box .list-cell:hover, .combo-box .list-cell:selected { -fx-background-color: #3498db !important; -fx-text-fill: #b9c0c7 !important; }
 
 				/* Check Box */
-				.check-box .box { -fx-background-color: #b9c0c7; -fx-border-color: #f4f6f9; -fx-border-width: 1px; -fx-background-radius: 3px; -fx-border-radius: 3px; }
-				.check-box:hover .box { -fx-border-color: #3498db;  -fx-cursor: hand; }
+				.check-box .box { -fx-background-color: #b9c0c7; -fx-border-color: #f4f6f9; -fx-border-width: 1px; -fx-background-radius: 7px; -fx-border-radius: 7px; -fx-cursor: hand;  }
+				.check-box:hover .box { -fx-border-color: #3498db; }
 				.check-box .text { -fx-fill: #b9c0c7 !important; }
 				.check-box:selected .mark { -fx-background-color: #3498db; }
 

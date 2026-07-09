@@ -134,7 +134,7 @@ public class Gui extends Application {
 			controller.runInBackground( false );
 		} );
 		sidebarView = new SidebarView( this, controller );
-		workspaceView = new WorkspaceView( this, controller, new ContextPathRenderer() );
+		workspaceView = new WorkspaceView( this, controller );
 
 		final BorderPane mainLayout = new BorderPane();
 		mainLayout.setLeft( sidebarView );

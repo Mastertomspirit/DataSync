@@ -38,18 +38,18 @@ public class NordicLightTheme implements AppTheme {
 
 				/* List View */
 				.list-view { -fx-background-color: #e0e0e7; -fx-border-color: #d8dee9; -fx-border-width: 1px; }
-				.list-cell { -fx-background-color: #e0e0e7; -fx-text-fill: #2e44a4; -fx-padding: 12px; -fx-border-color: #d8dee9; -fx-border-width: 0 0 1px 0; }
+				.list-cell { -fx-background-color: #e0e0e7; -fx-text-fill: #2e44a4; -fx-padding: 12px; -fx-border-color: #d8dee9; -fx-border-width: 0 0 1px 0; -fx-cursor: hand; }
 				.list-cell:hover { -fx-background-color: #88c0d0; }
-				.list-cell:selected { -fx-background-color: #88c0d0; -fx-text-fill: #2e44a4 !important; -fx-font-weight: bold;  -fx-cursor: hand; }
+				.list-cell:selected { -fx-background-color: #88c0d0; -fx-text-fill: #2e44a4 !important; -fx-font-weight: bold; }
 
 				/* Form Inputs & Dropdowns */
 				.text-field, .text-area, .text-area .content { -fx-background-color: #ffffff; -fx-text-fill: #2e3440; -fx-border-color: #d8dee9; -fx-background-radius: 10px; -fx-border-radius: 10px; }
 				.text-field:focused, .combo-box:focused, .text-area:focused { -fx-border-color: #3498db; }
 
 				/* Dropdown Menu Button */
-				 .menu-button, .menu-item { -fx-background-color: #88c0d0; -fx-text-fill: #2e44a4; -fx-border-color: #2c3e50; -fx-background-radius: 16px; -fx-border-radius: 16px; }
+				 .menu-button, .menu-item { -fx-background-color: #88c0d0; -fx-text-fill: #2e44a4; -fx-border-color: #2c3e50; -fx-background-radius: 16px; -fx-border-radius: 16px; -fx-cursor: hand; }
 				.menu-button .label { -fx-text-fill: #2e44a4 !important; }
-				.menu-button:hover { -fx-background-color: #2e44a4;  -fx-border-color: #3498db; -fx-cursor: hand; }
+				.menu-button:hover { -fx-background-color: #2e44a4;  -fx-border-color: #3498db; }
 				.menu-button:hover .label { -fx-text-fill: #88c0d0 !important; }
 
 				/* Context Menu */
@@ -84,14 +84,16 @@ public class NordicLightTheme implements AppTheme {
 				.dialog-pane { -fx-background-color: #ffffff; }
 
 				/* Combo Box */
-				.combo-box { -fx-background-color: #78b0c0; -fx-text-fill: #2e44a4 !important;  -fx-background-radius: 10px; -fx-border-radius: 10px; }
-				.combo-box:hover { -fx-border-color: #95a5a6; -fx-cursor: hand; }
-				.combo-box .list-cell { -fx-background-color: #ffffff; -fx-text-fill: #2e44a4; -fx-background-radius: 10px; -fx-border-radius: 10px; }
-				.combo-box .list-cell:hover, .combo-box .list-cell:selected { -fx-background-color: #88c0d0; -fx-text-fill: #2e44a4 !important; -fx-cursor: hand; }
+				.combo-box { -fx-background-color: #78b0c0; -fx-border-color: #95a5a6; -fx-text-fill: #2e44a4 !important;
+				-fx-background-radius: 10px; -fx-border-radius: 10px; -fx-cursor: hand;
+				}
+				.combo-box:hover { -fx-border-color: #000000; }
+				.combo-box .list-cell { -fx-background-color: #ffffff; -fx-text-fill: #2e44a4; -fx-background-radius: 10px; -fx-border-radius: 10px; -fx-cursor: hand; }
+				.combo-box .list-cell:hover, .combo-box .list-cell:selected { -fx-background-color: #88c0d0; -fx-text-fill: #2e44a4 !important; }
 
 				/* Check Box */
-				.check-box .box { -fx-background-color: #ffffff; -fx-border-color: #d8dee9; -fx-background-radius: 3px; }
-				.check-box:hover .box { -fx-border-color: #3498db;  -fx-cursor: hand; }
+				.check-box .box { -fx-background-color: #ffffff; -fx-border-color: #d8dee9;  -fx-background-radius: 8px; -fx-border-radius: 8px;  -fx-cursor: hand; }
+				.check-box:hover .box { -fx-border-color: #3498db; -fx-background-color: rgb(52, 152, 219, 0.15); }
 				.check-box .text { -fx-fill: #2e44a4;  -fx-background-color: #2e44a4; }
 				.check-box:selected .mark { -fx-background-color: #81a1c1; }
 

@@ -23,16 +23,17 @@
 			<property name="violationSuppressXPath" value="ancestor-or-self::*[matches(@SimpleName, '.*Test$')]" />
 		</properties>
 	</rule>
+	<rule ref="category/java/design.xml/LawOfDemeter">
+    <properties>
+        <property name="trustRadius" value="2" />
+    </properties>
+</rule>
 	<!-- CODESTYLE -->
 	<rule ref="category/java/codestyle.xml">
 		<exclude name="OnlyOneReturn" />
 		<exclude name="ControlStatementBraces" />
 		<exclude name="CommentDefaultAccessModifier" />
-	</rule>
-	<rule ref="category/java/codestyle.xml/AtLeastOneConstructor">
-		<properties>
-			<property name="violationSuppressXPath" value="ancestor-or-self::*[matches(@SimpleName, '.*Test$')]" />
-		</properties>
+		<exclude name="AtLeastOneConstructor"/>
 	</rule>
 	<rule ref="category/java/codestyle.xml/TooManyStaticImports">
 		<properties>

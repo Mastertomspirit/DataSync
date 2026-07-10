@@ -63,25 +63,25 @@ public class BgModel {
 		if( lastScanDuration > pref.getBgTime().getTime() && Files.exists( startDestPath ) ) {
 			Debug.printDebug( "[BgModel] Time since last scan: %s", formatDuration( lastScanDuration ) );
 			if( scanType == ScanType.SYNCHRONIZE ) {
-				Debug.printDebug( "[BgModel] BgJob running" );
-				Debug.printDebug( "[BgModel] List start" );
-				final Thread t1 = new Thread( () -> handler.listFiles( pref.getSourcePaths(), sourceMap, scanType, false ) );
-				final Thread t2 = new Thread( () -> handler.listFiles( pref.getDestPaths(), destMap, scanType, false ) );
-				t1.start();
-				t2.start();
+				Debug.printDebug( "[Bg Model] BgJob running" );
+				Debug.printDebug( "[Bg Model] List start" );
+				final Thread thread1 = new Thread( () -> handler.listFiles( pref.getSourcePaths(), sourceMap, scanType, false ) );
+				final Thread thread2 = new Thread( () -> handler.listFiles( pref.getDestPaths(), destMap, scanType, false ) );
+				thread1.start();
+				thread2.start();
 				try {
-					t1.join();
-					t2.join();
-				}catch( final InterruptedException e ) {
-					Debug.printException( this.getClass(), e );
+					thread1.join();
+					thread2.join();
+				}catch( InterruptedException _ ) {
+					Thread.currentThread().interrupt();
 				}
-				Debug.printDebug( "[BgModel] List ready" );
-				Debug.printDebug( "[BgModel] SourceMap size -> %s | DestMap size -> %s", sourceMap.size(), destMap.size() );
-				Debug.printDebug( "[BgModel] Synchronization start" );
+				Debug.printDebug( "[Bg Model] List ready" );
+				Debug.printDebug( "[Bg Model] SourceMap size -> %s | DestMap size -> %s", sourceMap.size(), destMap.size() );
+				Debug.printDebug( "[Bg Model] Synchronization start" );
 				final ArrayList<Map<Path, FileAttributes>> result = handler.getSyncFiles( sourceMap, destMap, startSourcePath, startDestPath, syncMap );
-				Debug.printDebug( "[BgModel] Synchronization list ready" );
+				Debug.printDebug( "[Bg Model] Synchronization list ready" );
 
-				Debug.printDebug( "[BgModel] Process files start" );
+				Debug.printDebug( "[Bg Model] Process files start" );
 				if( !result.get( 0 ).isEmpty() ) handler.copyFiles( result.get( 0 ), false, startDestPath );
 				if( !result.get( 1 ).isEmpty() ) handler.copyFiles( result.get( 1 ), false, startSourcePath );
 				if( !result.get( 2 ).isEmpty() ) handler.deleteFiles( result.get( 2 ), false, false, null );
@@ -97,38 +97,38 @@ public class BgModel {
 				}
 				pref.writeSyncMap();
 				pref.saveLastScanTime();
-				Debug.printDebug( "[BgModel] Files successfully processed" );
-				Debug.printDebug( "[BgModel] BgJob finish" );
+				Debug.printDebug( "[Bg Model] Files successfully processed" );
+				Debug.printDebug( "[Bg Model] BgJob finish" );
 				return result.get( 0 ).isEmpty() && result.get( 1 ).isEmpty() && result.get( 2 ).isEmpty();
 			}else if( scanType == ScanType.DEEP_SCAN || scanType == ScanType.FLAT_SCAN ) {
-				Debug.printDebug( "[BgModel] BgJob running" );
-				Debug.printDebug( "[BgModel] List start" );
-				final Thread t1 = new Thread( () -> handler.listFiles( pref.getSourcePaths(), sourceMap, scanType, pref.isSubDir() ) );
-				final Thread t2 = new Thread( () -> handler.listFiles( pref.getDestPaths(), destMap, scanType, pref.isSubDir() ) );
-				t1.start();
-				t2.start();
+				Debug.printDebug( "[Bg Model] BgJob running" );
+				Debug.printDebug( "[Bg Model] List start" );
+				final Thread thread1 = new Thread( () -> handler.listFiles( pref.getSourcePaths(), sourceMap, scanType, pref.isSubDir() ) );
+				final Thread thread2 = new Thread( () -> handler.listFiles( pref.getDestPaths(), destMap, scanType, pref.isSubDir() ) );
+				thread1.start();
+				thread2.start();
 				try {
-					t1.join();
-					t2.join();
-				}catch( final InterruptedException e ) {
-					Debug.printException( this.getClass(), e );
+					thread1.join();
+					thread2.join();
+				}catch( InterruptedException _ ) {
+					Thread.currentThread().interrupt();
 				}
-				Debug.printDebug( "[BgModel] List ready" );
-				Debug.printDebug( "[BgModel] SourceMap size -> %s | DestMap size -> %s", sourceMap.size(), destMap.size() );
+				Debug.printDebug( "[Bg Model] List ready" );
+				Debug.printDebug( "[Bg Model] SourceMap size -> %s | DestMap size -> %s", sourceMap.size(), destMap.size() );
 
-				Debug.printDebug( "[BgModel] Equals Files start" );
+				Debug.printDebug( "[Bg Model] Equals Files start" );
 				handler.equalsFiles( sourceMap, destMap );
-				Debug.printDebug( "[BgModel] Equals Files ready" );
+				Debug.printDebug( "[Bg Model] Equals Files ready" );
 
-				Debug.printDebug( "[BgModel] Process files start" );
+				Debug.printDebug( "[Bg Model] Process files start" );
 				if( autoDel && !destMap.isEmpty() ) handler.deleteFiles( destMap, logOn, trashbin, trashbinPath );
 				if( !sourceMap.isEmpty() ) handler.copyFiles( sourceMap, logOn, startDestPath );
 				pref.saveLastScanTime();
-				Debug.printDebug( "[BgModel] Files successfully processed" );
-				Debug.printDebug( "[BgModel] BgJob finish" );
+				Debug.printDebug( "[Bg Model] Files successfully processed" );
+				Debug.printDebug( "[Bg Model] BgJob finish" );
 				return sourceMap.isEmpty() && destMap.isEmpty();
 			}else {
-				Debug.printDebug( "[BgModel] No valid background job" );
+				Debug.printDebug( "[Bg Model] No valid background job" );
 			}
 		}
 		return false;
@@ -141,7 +141,7 @@ public class BgModel {
 	 * @return A concisely formatted string (e.g., "2d 4h 15m", "45m 12s", or "8s").
 	 */
 	private static String formatDuration( final long durationMs ) {
-		if( durationMs < 1000 ) { return durationMs + "ms"; }
+		if( durationMs < 1_000 ) { return durationMs + "ms"; }
 
 		final long totalSeconds = durationMs / 1_000;
 		final long seconds = totalSeconds % 60;

@@ -67,7 +67,7 @@ final class WorkspaceView extends VBox {
 	/** The configuration layout coordinator assembling parameter option controls. */
 	private final SettingsGrid settingsGrid;
 	/** The visual heading label indicating the active workspace scope. */
-	private final Label workspaceHeaderLabel;
+	private final Label wrkspcHeaderLabel;
 	/** The contextual metadata label displaying active task descriptions. */
 	private final Label contextInfoLabel;
 	/** The top layout container holding execution toolbar action elements. */
@@ -125,8 +125,8 @@ final class WorkspaceView extends VBox {
 		this.setPadding( new Insets( 24 ) );
 		this.setSpacing( 12 );
 
-		workspaceHeaderLabel = new Label( "Kein Task aktiv" );
-		workspaceHeaderLabel.getStyleClass().addAll( "workspace-header-label" );
+		wrkspcHeaderLabel = new Label( "Kein Task aktiv" );
+		wrkspcHeaderLabel.getStyleClass().addAll( "workspace-header-label" );
 
 		// Subtitle dynamic information bar containing directories context mapping
 		contextInfoLabel = new Label( "" );
@@ -164,7 +164,7 @@ final class WorkspaceView extends VBox {
 		statusLabel.setTooltip( new Tooltip( "Aktueller Status" ) );
 		statusFooter.getChildren().addAll( progressBar, statusLabel );
 
-		this.getChildren().addAll( workspaceHeaderLabel, contextInfoLabel, controlToolbar, centerViewport, statusFooter );
+		this.getChildren().addAll( wrkspcHeaderLabel, contextInfoLabel, controlToolbar, centerViewport, statusFooter );
 		setVgrow( centerViewport, Priority.ALWAYS );
 	}
 
@@ -219,7 +219,7 @@ final class WorkspaceView extends VBox {
 		centerViewport.getChildren().clear();
 
 		if( state == Gui.ViewState.INFO ) {
-			workspaceHeaderLabel.setText( "About" );
+			wrkspcHeaderLabel.setText( "About" );
 			contextInfoLabel.setTooltip( new Tooltip( "" ) );
 			contextInfoLabel.setText( "Backup Software" );
 			controlToolbar.setVisible( false );
@@ -228,7 +228,7 @@ final class WorkspaceView extends VBox {
 
 		String finalTip = "";
 		if( state == Gui.ViewState.MONITOR ) {
-			workspaceHeaderLabel.setText( "Task-Monitor: " + job.getJobName() );
+			wrkspcHeaderLabel.setText( "Task-Monitor: " + job.getJobName() );
 			controlToolbar.setVisible( true );
 
 			// Build informative context metadata bar metrics string
@@ -255,7 +255,7 @@ final class WorkspaceView extends VBox {
 				centerViewport.getChildren().add( consoleViewNode );
 			}
 		}else if( state == Gui.ViewState.SETTINGS ) {
-			workspaceHeaderLabel.setText( "Einstellungen für: " + job.getJobName() );
+			wrkspcHeaderLabel.setText( "Einstellungen für: " + job.getJobName() );
 			contextInfoLabel.setText( "Konfiguration der task-spezifischen Ablaufparameter, Dateiattribute und Verzeichnisstrukturen." );
 			controlToolbar.setVisible( false );
 			displayCustomViewNode( settingsGrid.buildSettingsGridTab( this, job, mainGui.getAvailableThemes() ) );

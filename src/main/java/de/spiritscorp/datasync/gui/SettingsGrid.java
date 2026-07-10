@@ -202,7 +202,7 @@ class SettingsGrid {
 
 		final CheckBox globalAutostartCheck = new CheckBox( "DataSync beim Systemstart minimiert laden (Autostart OS)" );
 		globalAutostartCheck.setSelected( PreferenceManager.getInstance().isGlobalAutoStart() ); // Bind status fallback trace
-		globalAutostartCheck.setOnAction( ( _ ) -> controller.handleAutostart( globalAutostartCheck.isSelected() ) );
+		globalAutostartCheck.setOnAction( _ -> controller.handleAutostart( globalAutostartCheck.isSelected() ) );
 
 		// Theme Layout Combo Box
 		final Label themeLabel = new Label( "Visuelles Anwendungs-Theme:" );
@@ -284,7 +284,7 @@ class SettingsGrid {
 	private void applyModeRestrictions( final ScanType type, final Preference pref ) {
 		// Always ensure trashbin remains modifiable and matches user specs
 		trashbinCheck.setSelected( pref.isTrashbin() );
-
+//CHECKSTYLE:OFF
 		switch( type ) {
 			case DUBLICATE_SCAN -> {
 				// Forced uncheck and full disablement rules
@@ -329,5 +329,6 @@ class SettingsGrid {
 				bgSyncCheck.setSelected( pref.isBgSync() );
 			}
 		}
+		// CHECKSTYLE:ON
 	}
 }

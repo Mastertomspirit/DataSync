@@ -183,7 +183,7 @@ public class SyncJobService {
 				}
 
 				failMap.putAll( model.scanSyncFiles( pref.getSourcePaths(), pref.getDestPaths(), stats, pref.getScanMode(), pref.isSubDir(), pref.isTrashbin() ) );
-				model.getEqualsFiles();
+				model.compareEqualsFiles();
 				final String scanTimeFormatted = uiLog.getEndTimeFormatted( System.nanoTime() - startTime ) + " für das Scannen";
 				Debug.printDebug( "[Controller Helper]  sourceMap size = %d, destMap size = %d, failtures = %d", stats[0], stats[1], failMap.size() );
 

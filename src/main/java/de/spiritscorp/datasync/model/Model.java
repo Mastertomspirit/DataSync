@@ -23,6 +23,7 @@ package de.spiritscorp.datasync.model;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -34,12 +35,14 @@ import de.spiritscorp.datasync.io.Logger;
 /**
  * Core controller class responsible for managing high-performance file synchronization,
  * directory scanning, and backup operations.
- * <p>
+ * <br>
+ * <br>
  * This class orchestrates the synchronization pipeline by utilizing multi-threaded
  * file traversals to process source and destination structures simultaneously. It tracks
  * file attributes, evaluates state deltas to isolate unique changes, detects duplicate
  * files based on sizes or checksum configurations, and handles safe file transfers.
- * <p>
+ * <br>
+ * <br>
  * To ensure data integrity, structural backups are handled via a strict two-phase execution
  * model: clearing obsolete files first (with optional local trashbin staging) before transferring
  * new payloads. Internal storage maps are wrapped in synchronized structures to maintain
@@ -48,13 +51,17 @@ import de.spiritscorp.datasync.io.Logger;
  */
 public class Model {
 
+	/** Internal lookup registry mapping absolute source paths to their metadata profiles. */
 	private final Map<Path, FileAttributes> sourceMap;
+	/** Internal lookup registry mapping absolute destination paths to their metadata profiles. */
 	private final Map<Path, FileAttributes> destMap;
+	/** Operational synchronization engine executing low-level deployment and file erasure routines. */
 	private final FileHandler handler;
 
 	/**
 	 * Constructs a new Model controller instance and sets up the central tracking components.
-	 * <p>
+	 * <br>
+	 * <br>
 	 * Initializes the internal system logger for transaction auditing and binds the
 	 * reference maps used for storing file attribute states on the source and destination sides.
 	 *
@@ -70,7 +77,8 @@ public class Model {
 
 	/**
 	 * Creates a thread-safe, synchronized sorted map backed by a standard TreeMap.
-	 * <p>
+	 * <br>
+	 * <br>
 	 * This helper method is crucial for concurrent environments where multiple threads
 	 * need to read and write to the file mapping without risking memory corruption.
 	 *
@@ -84,10 +92,12 @@ public class Model {
 
 	/**
 	 * Lists all files in both source and destination directories concurrently using dedicated threads.
-	 * <p>
+	 * <br>
+	 * <br>
 	 * To maximize performance on multi-core systems, this method spawns two parallel threads:
 	 * One for the source path scanning and one for the destination path scanning.
-	 * <p>
+	 * <br>
+	 * <br>
 	 * After both threads have finished execution, the provided statistics array is populated
 	 * with the size and byte metrics of both maps.
 	 *
@@ -103,18 +113,19 @@ public class Model {
 	 * @param trashbin     true to enable trashbin retention logic, false to bypass it
 	 * @return a Map containing all paths where failures, permission issues, or structural conflicts occurred
 	 */
-	public Map<Path, FileAttributes> scanSyncFiles( final ArrayList<Path> sourcePathes, final ArrayList<Path> destPathes, final Long[] stats, final ScanType deepScan, final boolean subDir,
+	public Map<Path, FileAttributes> scanSyncFiles( final List<Path> sourcePathes, final List<Path> destPathes, final Long[] stats, final ScanType deepScan, final boolean subDir,
 			final boolean trashbin ) {
 		Debug.printDebug( "[Model] list start" );
-		final Thread t1 = new Thread( () -> handler.listFiles( sourcePathes, sourceMap, deepScan, subDir ) );
-		final Thread t2 = new Thread( () -> handler.listFiles( destPathes, destMap, deepScan, subDir ) );
-		t1.start();
-		t2.start();
+		final Thread thread1 = new Thread( () -> handler.listFiles( sourcePathes, sourceMap, deepScan, subDir ) );
+		final Thread thread2 = new Thread( () -> handler.listFiles( destPathes, destMap, deepScan, subDir ) );
+		thread1.start();
+		thread2.start();
 		try {
-			t1.join();
-			t2.join();
-		}catch( final InterruptedException e ) {
-			Debug.printException( this.getClass(), e );
+			thread1.join();
+			thread2.join();
+		}catch( final InterruptedException exception ) {
+			Debug.printException( this.getClass(), exception );
+			Thread.currentThread().interrupt();
 		}
 		stats[0] = (long) sourceMap.size();
 		stats[1] = (long) destMap.size();
@@ -126,12 +137,13 @@ public class Model {
 
 	/**
 	 * Compares the pre-loaded source and destination maps to isolate identical files.
-	 * <p>
+	 * <br>
+	 * <br>
 	 * This method triggers the internal handlers to filter out matching files from both
 	 * maps. After execution, both maps will only contain unique entries that require
 	 * synchronization actions like copy, update, or delete.
 	 */
-	public void getEqualsFiles() {
+	public void compareEqualsFiles() {
 		Debug.printDebug( "[Model] getEqualsFiles start" );
 		handler.equalsFiles( sourceMap, destMap );
 		Debug.printDebug( "[Model] getEqualsFiles ready" );
@@ -139,7 +151,8 @@ public class Model {
 
 	/**
 	 * Analyzes the file state differentials to categorize synchronization requirements.
-	 * <p>
+	 * <br>
+	 * <br>
 	 * Evaluates file modification dates, sizes, or checksums between the source and destination
 	 * targets. The results are split into three structural hitlists returned as an indexed list.
 	 *
@@ -160,7 +173,8 @@ public class Model {
 
 	/**
 	 * Executes the physical file backup sequence on the local storage system.
-	 * <p>
+	 * <br>
+	 * <br>
 	 * To ensure a clean and predictable operation, this method enforces a strict two-phase execution order:
 	 * Phase 1 (Purge) clears obsolete files from the target directory first, and
 	 * Phase 2 (Transfer) physically copies new or updated files into the destination path.
@@ -181,7 +195,8 @@ public class Model {
 
 	/**
 	 * Synchronizes files bi-directionally between the configured directories.
-	 * <p>
+	 * <br>
+	 * <br>
 	 * This function consumes the pre-calculated multi-hitlist results, transfers the newest file states,
 	 * and structurally synchronizes both directories to reach an identical file state.
 	 *
@@ -215,8 +230,9 @@ public class Model {
 
 	/**
 	 * Scans the selected target paths to locate and extract duplicate file structures.
-	 * <p>
-	 * Utilizes a specialized duplicate scan handler that matches files based on identical
+	 * <br>
+	 * <br>
+	 * Utilizes a specialized duplicate scan analyzer that matches files based on identical
 	 * parameters like sizing blocks or checksums. Any errors encountered during the filesystem
 	 * traversal are collected and merged into the final state mapping.
 	 *
@@ -235,7 +251,8 @@ public class Model {
 
 	/**
 	 * Aggregates processing errors, missing file attributes, or permission blocks into a dedicated failure tracking map.
-	 * <p>
+	 * <br>
+	 * <br>
 	 * This private utility evaluates the unresolved differences between the source and destination maps
 	 * after an operation has completed, isolating paths that caused structural system errors.
 	 *
@@ -245,16 +262,17 @@ public class Model {
 	 */
 	private Map<Path, FileAttributes> getFailtures( final Map<Path, FileAttributes> sourceMap, final Map<Path, FileAttributes> destMap ) {
 		final Map<Path, FileAttributes> failMap = createMap();
+		final String failture = "Failed";
 		if( sourceMap != null ) {
 			for( final Map.Entry<Path, FileAttributes> entry : sourceMap.entrySet() ) {
-				if( entry.getValue().getFileHash().equals( "Failed" ) ) {
+				if( failture.equals( entry.getValue().getFileHash() ) ) {
 					failMap.put( entry.getKey(), entry.getValue() );
 				}
 			}
 		}
 		if( destMap != null ) {
 			for( final Map.Entry<Path, FileAttributes> entry : destMap.entrySet() ) {
-				if( entry.getValue().getFileHash().equals( "Failed" ) ) {
+				if( failture.equals( entry.getValue().getFileHash() ) ) {
 					failMap.put( entry.getKey(), entry.getValue() );
 				}
 			}

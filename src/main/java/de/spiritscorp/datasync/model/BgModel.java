@@ -22,7 +22,7 @@ package de.spiritscorp.datasync.model;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import de.spiritscorp.datasync.ScanType;
@@ -33,6 +33,7 @@ import de.spiritscorp.datasync.io.Preference;
 public class BgModel {
 
 	private final Preference pref;
+	private final FileAnalyzer analyzer;
 	private final FileHandler handler;
 	private final Map<Path, FileAttributes> sourceMap;
 	private final Map<Path, FileAttributes> destMap;
@@ -41,6 +42,7 @@ public class BgModel {
 		this.pref = pref;
 		this.sourceMap = sourceMap;
 		this.destMap = destMap;
+		analyzer = new FileAnalyzer();
 		handler = new FileHandler( logger );
 	}
 
@@ -78,7 +80,7 @@ public class BgModel {
 				Debug.printDebug( "[Bg Model] List ready" );
 				Debug.printDebug( "[Bg Model] SourceMap size -> %s | DestMap size -> %s", sourceMap.size(), destMap.size() );
 				Debug.printDebug( "[Bg Model] Synchronization start" );
-				final ArrayList<Map<Path, FileAttributes>> result = handler.getSyncFiles( sourceMap, destMap, startSourcePath, startDestPath, syncMap );
+				final List<Map<Path, FileAttributes>> result = analyzer.getSyncFiles( sourceMap, destMap, startSourcePath, startDestPath, syncMap );
 				Debug.printDebug( "[Bg Model] Synchronization list ready" );
 
 				Debug.printDebug( "[Bg Model] Process files start" );
@@ -117,7 +119,7 @@ public class BgModel {
 				Debug.printDebug( "[Bg Model] SourceMap size -> %s | DestMap size -> %s", sourceMap.size(), destMap.size() );
 
 				Debug.printDebug( "[Bg Model] Equals Files start" );
-				handler.equalsFiles( sourceMap, destMap );
+				analyzer.equalsFiles( sourceMap, destMap );
 				Debug.printDebug( "[Bg Model] Equals Files ready" );
 
 				Debug.printDebug( "[Bg Model] Process files start" );

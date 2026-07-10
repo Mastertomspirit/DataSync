@@ -55,6 +55,8 @@ public class Model {
 	private final Map<Path, FileAttributes> sourceMap;
 	/** Internal lookup registry mapping absolute destination paths to their metadata profiles. */
 	private final Map<Path, FileAttributes> destMap;
+	/** Analytical core component tasked with deep directory evaluations and delta state indexing. */
+	private final FileAnalyzer analyzer;
 	/** Operational synchronization engine executing low-level deployment and file erasure routines. */
 	private final FileHandler handler;
 
@@ -72,7 +74,8 @@ public class Model {
 	public Model( final Logger logger, final Map<Path, FileAttributes> sourceMap, final Map<Path, FileAttributes> destMap ) {
 		this.sourceMap = sourceMap;
 		this.destMap = destMap;
-		handler = new FileHandler( logger );
+		this.analyzer = new FileAnalyzer();
+		this.handler = new FileHandler( logger );
 	}
 
 	/**
@@ -145,7 +148,7 @@ public class Model {
 	 */
 	public void compareEqualsFiles() {
 		Debug.printDebug( "[Model] getEqualsFiles start" );
-		handler.equalsFiles( sourceMap, destMap );
+		analyzer.equalsFiles( sourceMap, destMap );
 		Debug.printDebug( "[Model] getEqualsFiles ready" );
 	}
 
@@ -166,7 +169,7 @@ public class Model {
 	 */
 	public ArrayList<Map<Path, FileAttributes>> getSyncFiles( final Map<Path, FileAttributes> syncMap, final Path sourcePath, final Path destPath ) {
 		Debug.printDebug( "[Model] getSyncFiles start" );
-		final ArrayList<Map<Path, FileAttributes>> result = handler.getSyncFiles( sourceMap, destMap, sourcePath, destPath, syncMap );
+		final ArrayList<Map<Path, FileAttributes>> result = analyzer.getSyncFiles( sourceMap, destMap, sourcePath, destPath, syncMap );
 		Debug.printDebug( "[Model] getSyncFiles ready" );
 		return result;
 	}
@@ -241,7 +244,7 @@ public class Model {
 	 */
 	public Map<Path, FileAttributes> scanDublicates( final ArrayList<Path> paths, final Long... stats ) {
 		handler.listFiles( paths, sourceMap, ScanType.DUBLICATE_SCAN, false );
-		final Map<Path, FileAttributes> duplicateMap = handler.findDuplicates( sourceMap );
+		final Map<Path, FileAttributes> duplicateMap = analyzer.findDuplicates( sourceMap );
 		stats[0] = (long) sourceMap.size();
 		stats[1] = (long) getFailtures( sourceMap, destMap ).size();
 		stats[2] = 0L;

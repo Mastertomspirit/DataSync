@@ -115,7 +115,7 @@ public class SyncJobService {
 
 				if( Thread.currentThread().isInterrupted() ) throw new InterruptedException();
 
-				appendLogData( context, uiLog.formatMaps( pref.getScanMode(), sourceMap, destMap, failMap ) );
+				appendLogData( context, uiLog.formatMaps( pref.getScanMode(), result.get( 0 ), result.get( 1 ), result.get( 2 ) ) );
 				appendLogData( context, String.format( "Quelldateien: %d Stück und Zieldateien: %d Stück", stats[0], stats[1] ) );
 				appendLogData( context, String.format( "Größe aller Quelldateien: %s | Größe aller Zieldateien: %s", uiLog.getReadableBytes( stats[2] ), uiLog.getReadableBytes( stats[3] ) ) );
 				appendLogData( context, String.format( "Fehlerhafter Zugriff: %d", failMap.size() ) );

@@ -55,8 +55,10 @@ import de.spiritscorp.datasync.model.Model;
  */
 public class BgController {
 
-	static final long INITIAL_DELAY = 1_000;
-	static final long BOOT_START_DELAY = 30_000;
+	/** Default initial delay in milliseconds before the background scheduler activates. */
+	static final long INITIAL_DELAY = 15L * 1_000;
+	/** Extended delay in milliseconds applied during system boot execution to prevent early resource contention. */
+	static final long BOOT_START_DELAY = 10L * 60 * 1_000;
 
 	/** Operating system tray integration proxy for minimizing the application frame. */
 	private final SystemTray sysTray;

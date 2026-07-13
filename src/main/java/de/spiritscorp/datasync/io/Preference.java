@@ -267,7 +267,10 @@ public final class Preference {
 
 	public ArrayList<Path> getSourcePaths() { return sourcePaths; }
 
-	public void setSourcePaths( final ArrayList<Path> sourcePaths ) { this.sourcePaths = sourcePaths; }
+	public void setSourcePaths( final ArrayList<Path> sourcePaths ) {
+		this.sourcePaths = sourcePaths;
+		ioSyncMap.deleteSyncMap();
+	}
 
 	public void setSourcePath( final Path sourcePath ) {
 		this.sourcePaths.add( sourcePath );
@@ -282,6 +285,7 @@ public final class Preference {
 	public void setDestPaths( final ArrayList<Path> destPaths ) {
 		this.destPaths = destPaths;
 		this.trashbinPath = destPaths.get( 0 ).resolve( TRASHBIN_STRING );
+		ioSyncMap.deleteSyncMap();
 	}
 
 	public Map<Path, FileAttributes> getSyncMap() { return syncMap; }

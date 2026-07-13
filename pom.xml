@@ -97,7 +97,7 @@
 		<pl_assembly.version>3.8.0</pl_assembly.version>
 		<pl_jxr.version>3.6.0</pl_jxr.version>
 		<pl_checkstyle.version>3.6.0</pl_checkstyle.version>
-		<pl_checkstyle_puppycrawl.version>13.7.0</pl_checkstyle_puppycrawl.version>
+		<pl_checkstyle_puppycrawl.version>13.8.0</pl_checkstyle_puppycrawl.version>
 		<pl_pmd.version>3.28.0</pl_pmd.version>
 		<pl_release>3.3.1</pl_release>
 		<pl_source>3.4.0</pl_source>
@@ -113,8 +113,8 @@
 		<dep_ikonli_materialdesign2.version>12.4.0</dep_ikonli_materialdesign2.version>
 		<dep_jakarta.json.api.version>2.1.3</dep_jakarta.json.api.version>
 		<dep_glassfish.jakarta.json.version>2.0.1</dep_glassfish.jakarta.json.version>
-		<dep_junit-jupiter>6.1.1</dep_junit-jupiter>
-		<dep_junit-platform>6.1.1</dep_junit-platform>
+		<dep_junit-jupiter>6.1.2</dep_junit-jupiter>
+		<dep_junit-platform>6.1.2</dep_junit-platform>
 		<dep_mockito>5.23.0</dep_mockito>
 		<dep_bytebuddy>1.18.11</dep_bytebuddy>
 		<dep_jimfs.version>1.3.1</dep_jimfs.version>

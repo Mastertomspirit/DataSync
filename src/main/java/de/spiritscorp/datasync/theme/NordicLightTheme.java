@@ -94,7 +94,7 @@ public class NordicLightTheme implements AppTheme {
 				/* Check Box */
 				.check-box .box { -fx-background-color: #ffffff; -fx-border-color: #d8dee9;  -fx-background-radius: 8px; -fx-border-radius: 8px;  -fx-cursor: hand; }
 				.check-box:hover .box { -fx-border-color: #3498db; -fx-background-color: rgb(52, 152, 219, 0.15); }
-				.check-box .text { -fx-fill: #2e44a4;  -fx-background-color: #2e44a4; }
+				.check-box .text { -fx-fill: #2e44a4;  -fx-background-color: #2e44a4; -fx-cursor: hand;}
 				.check-box:selected .mark { -fx-background-color: #81a1c1; }
 
 				/* Icons */

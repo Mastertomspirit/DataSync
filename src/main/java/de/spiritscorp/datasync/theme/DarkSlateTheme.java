@@ -38,9 +38,9 @@ public class DarkSlateTheme implements AppTheme {
 
 				/* List View */
 				.list-view { -fx-background-color: #2c3e50 !important; -fx-border-color: #506880; -fx-border-width: 1px;}
-				.list-cell { -fx-background-color: #2c3e50; -fx-text-fill: #b9c0c7; -fx-padding: 12px; -fx-border-color: #506880; -fx-border-width: 0 0 1px 0; }
+				.list-cell { -fx-background-color: #2c3e50; -fx-text-fill: #b9c0c7; -fx-padding: 12px; -fx-border-color: #506880; -fx-border-width: 0 0 1px 0; -fx-cursor: hand;}
 				.list-cell:hover { -fx-background-color: #34495e; }
-				.list-cell:selected { -fx-background-color: #3498db; -fx-text-fill: #b9c0c7;  -fx-font-weight: bold;  -fx-cursor: hand; }
+				.list-cell:selected { -fx-background-color: #3498db; -fx-text-fill: #b9c0c7;  -fx-font-weight: bold; }
 
 				/* Form Inputs & Dropdowns */
 				.text-field, .text-area { -fx-background-color: #b9c0c7; -fx-text-fill: #2c3e50; -fx-border-color: #bdc3c7;  -fx-border-width: 1px; -fx-background-radius: 10px; -fx-border-radius: 10px; }
@@ -98,7 +98,7 @@ public class DarkSlateTheme implements AppTheme {
 				/* Check Box */
 				.check-box .box { -fx-background-color: #b9c0c7; -fx-border-color: #f4f6f9; -fx-border-width: 1px; -fx-background-radius: 7px; -fx-border-radius: 7px; -fx-cursor: hand;  }
 				.check-box:hover .box { -fx-border-color: #3498db; }
-				.check-box .text { -fx-fill: #b9c0c7 !important; }
+				.check-box .text { -fx-fill: #b9c0c7 !important; -fx-cursor: hand; }
 				.check-box:selected .mark { -fx-background-color: #3498db; }
 
 				/* Icons */

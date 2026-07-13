@@ -39,7 +39,7 @@ public class MatrixTerminalTheme implements AppTheme {
 
 				/* List View */
 				.list-view { -fx-background-color: #050505; -fx-border-color: #003300; -fx-border-width: 1px; }
-				.list-cell { -fx-background-color: #050505; -fx-text-fill: #00ff00; -fx-padding: 12px; -fx-border-color: #003300; -fx-border-width: 0 0 1px 0; }
+				.list-cell { -fx-background-color: #050505; -fx-text-fill: #00ff00; -fx-padding: 12px; -fx-border-color: #003300; -fx-border-width: 0 0 1px 0; -fx-cursor: hand; }
 				.list-cell:hover { -fx-background-color: #001a00; }
 				.list-cell:selected { -fx-background-color: #003300; -fx-text-fill: #ffffff; -fx-border-color: #00ff00; }
 
@@ -103,7 +103,7 @@ public class MatrixTerminalTheme implements AppTheme {
 				.check-box .box { -fx-background-color: #000000;  -fx-text-fill: #00ff00; -fx-border-color: #00ff00;
 				-fx-border-radius: 15; -fx-background-radius: 15; -fx-border-width: 2px 2px 2px 2px; -fx-cursor: hand; }
 				.check-box:hover .box { -fx-border-color: #00e5ff; -fx-background-color: rgba(0, 229, 255, 0.3); }
-				.check-box .text { -fx-fill: #00ff00;  -fx-background-color: #00ff00; }
+				.check-box .text { -fx-fill: #00ff00;  -fx-background-color: #00ff00; -fx-cursor: hand; }
 				.check-box:selected .mark { -fx-background-color: #00ff00; }
 
 				/* Icons */

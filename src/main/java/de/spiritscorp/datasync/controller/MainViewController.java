@@ -23,9 +23,6 @@ package de.spiritscorp.datasync.controller;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.TextInputDialog;
 
 import de.spiritscorp.datasync.gui.DialogService;
 import de.spiritscorp.datasync.gui.Gui;
@@ -45,7 +42,7 @@ import de.spiritscorp.datasync.theme.AppTheme;
  * tasks, and dispatches state-change signals across the active runtime workspace.
  *
  * @author Tom Spirit
- * @since 1.1.0
+ * @since 1.2.0
  */
 public class MainViewController implements ViewController {
 
@@ -56,6 +53,8 @@ public class MainViewController implements ViewController {
 
 	/** The primary user interface orchestration shell managing view states, layouts, and volatile notifications. */
 	private final Gui gui;
+	/** The centralized dialog orchestration service managing modal view lifecycles and user confirmation flows. */
+	private final DialogService dialogService;
 	/** The core service layer processing execution requests and lifecycle validations for synchronization tasks. */
 	private final SyncJobService helper;
 	/** The central preference manager coordinating serialization, persistence, and registration of global and job-specific profiles. */
@@ -64,28 +63,44 @@ public class MainViewController implements ViewController {
 	private BgController bgController;
 
 	/**
-	 * Allocates a new controller instance tied directly to the display engine layer hook.
+	 * Constructs a primary controller instance, automatically provisioning the underlying dialog subsystem using the active window stage hook.
 	 *
-	 * @param gui The global display manager orchestrator application shell instance.
+	 * @param gui The primary user interface orchestration shell managing view states and layouts.
 	 */
 	public MainViewController( final Gui gui ) {
 		this(
 				gui,
-				new SyncJobService( new DialogService( gui.getWindowStage() ), new UiLogFormatter() ),
-				PreferenceManager.getInstance() );
+				new DialogService( gui.getWindowStage() ) );
+	}
+
+	/**
+	 * Allocates a new controller instance tied directly to the display engine layer hook, bootstrapping the intermediate execution and configuration service layers.
+	 *
+	 * @param gui           The global display manager orchestrator application shell instance.
+	 * @param dialogService The centralized dialog orchestration service managing modal view lifecycles.
+	 */
+	MainViewController( final Gui gui, final DialogService dialogService ) {
+		this(
+				gui,
+				new SyncJobService( dialogService, new UiLogFormatter() ),
+				PreferenceManager.getInstance(),
+				dialogService );
 		loadInitialJobList();
 	}
 
 	/**
 	 * For TESTING
 	 * <br>
-	 * Constructs a new central view controller initialized with its core architectural dependencies.
+	 * Constructs a new central view controller fully decoupled and initialized with its core
+	 * architectural dependencies for isolated execution tracking.
 	 *
-	 * @param gui     The visual layout shell managing view hierarchies and user interaction states
-	 * @param helper  The core service layer orchestrating synchronization job execution routines
-	 * @param manager The central preference authority handling profile configuration persistence
+	 * @param gui           The visual layout shell managing view hierarchies and user interaction states.
+	 * @param helper        The core service layer orchestrating synchronization job execution routines.
+	 * @param manager       The central preference authority handling profile configuration persistence.
+	 * @param dialogService The centralized dialog orchestration service managing modal view lifecycles.
 	 */
-	MainViewController( final Gui gui, final SyncJobService helper, final PreferenceManager manager ) {
+	MainViewController( final Gui gui, final SyncJobService helper, final PreferenceManager manager, final DialogService dialogService ) {
+		this.dialogService = dialogService;
 		this.gui = gui;
 		this.helper = helper;
 		this.manager = manager;
@@ -105,13 +120,7 @@ public class MainViewController implements ViewController {
 
 	@Override
 	public void handleApplicationShutdown() {
-		final Alert confirmation = new Alert( Alert.AlertType.CONFIRMATION, "Hintergrunddienste werden beendet.", ButtonType.OK, ButtonType.CANCEL );
-		confirmation.setTitle( "Programm beenden" );
-		confirmation.setHeaderText( "Möchten Sie DataSync wirklich schließen?" );
-		confirmation.setContentText( "Aktive Hintergrunddienste werden wenn möglich sauber beendet." );
-		confirmation.initOwner( gui.getWindowStage() );
-
-		if( confirmation.showAndWait().orElse( ButtonType.CANCEL ) == ButtonType.OK ) {
+		if( dialogService.promptOkChancel( "Programm beenden", "Möchten sie DataSync wirklich schließen?", "Aktive Hintergrunddienste werden wenn möglich sauber beendet." ) ) {
 			Debug.printDebug( "[Exit] Complete system teardown triggered manually via user confirmation." );
 
 			// Tear down the JavaFX UI framework layer immediately so the window closes for the user
@@ -158,22 +167,15 @@ public class MainViewController implements ViewController {
 	public void handleRenameJob( final SyncJobContext job ) {
 		if( job != null ) {
 			final String oldName = job.getJobName();
-			final TextInputDialog dialog = new TextInputDialog( oldName );
-			dialog.setTitle( "Task umbenennen" );
-			dialog.setHeaderText( "Geben Sie einen neuen Namen für den Task ein:" );
-			dialog.setContentText( "Name:" );
-			dialog.initOwner( gui.getWindowStage() );
-			dialog.showAndWait().ifPresent( newName -> {
-				final String trimmedName = newName.trim();
+			final String newName = dialogService.promptTextInput( "Task umbenennen: " + oldName, "Geben Sie einen neuen Namen für den Task ein", "Neuer Name:" );
 //		Check if not the same and don`t exists
-				if( !trimmedName.isEmpty() && !trimmedName.equals( oldName ) && manager.getProfile( trimmedName ) == null ) {
-					manager.renameProfile( oldName, trimmedName, job.getPreference() );
-					job.setJobName( trimmedName );
-					gui.showStatusNotification( oldName + " wurde ersetzt und gespeichert durch" + newName, NotifyStatus.SUCCESS, Main.INFO_DELAY );
-				}else {
-					gui.showStatusNotification( oldName + " wurde nicht ersetzt", NotifyStatus.WARNING, Main.INFO_DELAY );
-				}
-			} );
+			if( !newName.isBlank() && !newName.equals( oldName ) && manager.getProfile( newName ) == null ) {
+				manager.renameProfile( oldName, newName, job.getPreference() );
+				job.setJobName( newName );
+				gui.showStatusNotification( oldName + " wurde ersetzt und gespeichert durch" + newName, NotifyStatus.SUCCESS, Gui.INFO_DELAY );
+			}else {
+				gui.showStatusNotification( oldName + " wurde nicht ersetzt", NotifyStatus.WARNING, Gui.INFO_DELAY );
+			}
 		}
 	}
 
@@ -197,20 +199,14 @@ public class MainViewController implements ViewController {
 	@Override
 	public void handleDeleteJob( final SyncJobContext job ) {
 		if( job != null ) {
-			final Alert alert = new Alert( Alert.AlertType.CONFIRMATION, "Task '" + job.getJobName() + "' wirklich unwiderruflich löschen?", ButtonType.YES, ButtonType.NO );
-			alert.setTitle( "Task entfernen" );
-			alert.setHeaderText( null );
-			alert.initOwner( gui.getWindowStage() );
-			alert.showAndWait().ifPresent( response -> {
-				String jobName = job.getJobName();
-				if( response == ButtonType.YES ) {
-					gui.getJobList().remove( job );
-					manager.removeProfile( jobName );
-					gui.showStatusNotification( jobName + " wurde erfolgreich gelöscht", NotifyStatus.SUCCESS, Main.INFO_DELAY );
-				}else {
-					gui.showStatusNotification( jobName + " wurde nicht gelöscht", NotifyStatus.WARNING, Main.INFO_DELAY );
-				}
-			} );
+			final String jobName = job.getJobName();
+			if( dialogService.promptYesNo( "Task entfernen", null, "Task '" + job.getJobName() + "' wirklich unwiderruflich löschen?" ) ) {
+				gui.getJobList().remove( job );
+				manager.removeProfile( jobName );
+				gui.showStatusNotification( jobName + " wurde erfolgreich gelöscht", NotifyStatus.SUCCESS, Gui.INFO_DELAY );
+			}else {
+				gui.showStatusNotification( jobName + " wurde nicht gelöscht", NotifyStatus.WARNING, Gui.INFO_DELAY );
+			}
 		}
 	}
 

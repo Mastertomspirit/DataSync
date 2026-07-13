@@ -82,12 +82,12 @@ public class DarkSlateTheme implements AppTheme {
 				.progress-bar .bar { -fx-background-color: #3498db !important; -fx-background-radius: 4px; -fx-background-insets: 0; }
 
 				/* Dialog */
-				.dialog-pane { -fx-background-color: #2c3e50 !important; -fx-border-color: #bdc3c7 !important; -fx-border-width: 1px !important; }
-				.dialog-pane .header-panel { -fx-background-color: #2c3e50 !important; -fx-border-color: transparent !important; }
-				.dialog-pane .content-panel, .dialog-pane .button-bar { -fx-background-color: #2c3e50 !important; }
-				.dialog-pane .label {  -fx-text-fill: #b9c0c7 !important; }
-				.dialog-pane .button { -fx-background-color: #34495e !important; -fx-text-fill: #b9c0c7 !important; -fx-border-color: #2c3e50 !important; }
-				.dialog-pane .button:hover { -fx-background-color: #3498db !important; -fx-text-fill: #b9c0c7 !important; }
+				.dialog-pane { -fx-background-color: #2c3e50; -fx-border-color: #bdc3c7; -fx-border-width: 1px; }
+				.dialog-pane .header-panel { -fx-background-color: #2c3e50; -fx-border-color: transparent; }
+				.dialog-pane .content-panel, .dialog-pane .button-bar { -fx-background-color: #2c3e50; }
+				.dialog-pane .label, .dialog-custom-icon {  -fx-text-fill: #b9c0c7; -fx-fill: #b9c0c7; }
+				.dialog-pane .button { -fx-background-color: #34495e; -fx-text-fill: #b9c0c7; -fx-border-color: #2c3e50; }
+				.dialog-pane .button:hover { -fx-background-color: #3498db; -fx-text-fill: #b9c0c7; }
 
 				/* Combo Box */
 				.combo-box { -fx-background-color: #2488cb; -fx-border-color: #3498db; -fx-text-fill: #b9c0c7 !important;  -fx-background-radius: 10px; -fx-border-radius: 10px; -fx-cursor: hand; }

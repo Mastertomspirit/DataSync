@@ -83,12 +83,12 @@ public class MatrixTerminalTheme implements AppTheme {
 				.progress-bar .bar { -fx-background-color: #006fa0; -fx-background-radius: 0; }
 
 				/* Dialog */
-				.dialog-pane { -fx-background-color: #050505 !important; -fx-border-color: #00ff00 !important; -fx-border-width: 1px !important; }
-				.dialog-pane .header-panel { -fx-background-color: #050505 !important; -fx-border-color: transparent !important; }
-				.dialog-pane .content-panel, .dialog-pane .button-bar { -fx-background-color: #050505 !important; }
-				.dialog-pane .label { -fx-text-fill: #00ff00 !important; }
-				.dialog-pane .button { -fx-background-color: #002200 !important; -fx-text-fill: #00ff00 !important; -fx-border-color: #00ff00 !important;}
-				.dialog-pane .button:hover { -fx-background-color: #00ff00 !important; -fx-text-fill: #000000 !important; }
+				.dialog-pane { -fx-background-color: #050505; -fx-border-color: #00ff00; -fx-border-width: 1px; }
+				.dialog-pane .header-panel { -fx-background-color: #050505; -fx-border-color: transparent; }
+				.dialog-pane .content-panel, .dialog-pane .button-bar { -fx-background-color: #050505; }
+				.dialog-pane .label, .dialog-custom-icon { -fx-text-fill: #00ff00;  -fx-fill: #00ff00;}
+				.dialog-pane .button { -fx-background-color: #002200; -fx-text-fill: #00ff00; -fx-border-color: #00ff00;}
+				.dialog-pane .button:hover { -fx-background-color: #00ff00; -fx-text-fill: #000000; }
 
 				/* Combo Box */
 				.combo-box {

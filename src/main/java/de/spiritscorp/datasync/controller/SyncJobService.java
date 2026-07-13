@@ -199,10 +199,10 @@ public class SyncJobService {
 
 				boolean delete = true;
 				if( !pref.isAutoDel() ) {
-					delete = dialogService.confirmUser( "Dateien löschen", "Löschen bestätigen?", "Alle gelöschten Dateien auch im Zielverzeichnis löschen?" );
+					delete = dialogService.promptYesNo( "Dateien löschen", "Löschen bestätigen?", "Alle gelöschten Dateien auch im Zielverzeichnis löschen?" );
 				}
 
-				if( pref.isAutoSync() || dialogService.confirmUser( "Dateien sichern", "Kopieren bestätigen?", "Alle neuen Dateien in  das Zielverzeichnis kopieren?" ) ) {
+				if( pref.isAutoSync() || dialogService.promptYesNo( "Dateien sichern", "Kopieren bestätigen?", "Alle neuen Dateien in  das Zielverzeichnis kopieren?" ) ) {
 					startTime = System.nanoTime();
 					success = model.backupFiles( delete, pref.isLogOn(), startDestPath, pref.isTrashbin(), pref.getTrashbinPath() );
 					backupTimeFormatted = uiLog.getEndTimeFormatted( System.nanoTime() - startTime ) + " für das Synchronisieren";
@@ -315,7 +315,7 @@ public class SyncJobService {
 			context.setStatusMessage( "Keine Dateien zum Löschen ausgewählt." );
 			return;
 		}
-		if( !dialogService.confirmUser( "Duplikate entfernen", "Löschen bestätigen?", "Alle ausgewählten Dateien wirklich löschen?" ) ) return;
+		if( !dialogService.promptYesNo( "Duplikate entfernen", "Löschen bestätigen?", "Alle ausgewählten Dateien wirklich löschen?" ) ) return;
 
 		context.setRunning( true );
 		context.setStatusMessage( "Lösche ausgewählte Duplikate..." );

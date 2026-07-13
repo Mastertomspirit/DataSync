@@ -90,6 +90,7 @@ public final class Main { // NOPMD ShortClassName
 	 */
 	public static void main( final String[] args ) {
 		parseArguments( args );
+		Locale.setDefault( Locale.GERMANY );
 		Application.launch( Gui.class, args );
 	}
 

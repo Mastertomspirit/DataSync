@@ -110,7 +110,7 @@
 		<dep_surefire_tree>1.5.1</dep_surefire_tree>
 		<dep_javafx_controls.version>26.0.1</dep_javafx_controls.version>
 		<dep_ikonli_javafx.version>12.4.0</dep_ikonli_javafx.version>
-		<dep_ikonli_materialdesign2..version>12.4.0</dep_ikonli_materialdesign2..version>
+		<dep_ikonli_materialdesign2.version>12.4.0</dep_ikonli_materialdesign2.version>
 		<dep_jakarta.json.api.version>2.1.3</dep_jakarta.json.api.version>
 		<dep_glassfish.jakarta.json.version>2.0.1</dep_glassfish.jakarta.json.version>
 		<dep_junit-jupiter>6.1.1</dep_junit-jupiter>
@@ -575,6 +575,7 @@
 							<goal>jpackage</goal>
 						</goals>
 						<configuration>
+							<verbose>true</verbose>
 							<toolhome>$‍{env.JPACKAGE_HOME}</toolhome>
 							<dest>target/${project.artifactId}/image</dest>
 							<name>${project.artifactId}</name>
@@ -979,7 +980,7 @@
 		<dependency>
 			<groupId>org.kordamp.ikonli</groupId>
 			<artifactId>ikonli-materialdesign2-pack</artifactId>
-			<version>${dep_ikonli_materialdesign2..version}</version>
+			<version>${dep_ikonli_materialdesign2.version}</version>
 		</dependency>
 		<!-- https://mvnrepository.com/artifact/org.junit.jupiter/junit-jupiter-engine -->
 		<dependency>

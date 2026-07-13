@@ -340,6 +340,7 @@ public class SyncJobService {
 				updateUIStatus( context, false, "Löschvorgang unterbrochen." );
 				Debug.printDebug( "[Controller Helper Error] Duplicate deletion aborted: %s", e.getMessage() );
 				Debug.printException( this.getClass(), e );
+				Thread.currentThread().interrupt();
 			}catch( final Exception e ) {
 				updateUIStatus( context, false, "Fehler beim Löschen: " + e.getMessage() );
 				Debug.printDebug( "[Controller Helper Error] Duplicate deletion failed: %s", e.getMessage() );

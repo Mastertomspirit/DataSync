@@ -56,6 +56,8 @@ import de.spiritscorp.datasync.theme.NordicLightTheme;
  */
 public class Gui extends Application {
 
+	/** The delay time in seconds used for displaying or fading out status and informational messages within the GUI. */
+	public static final int INFO_DELAY = 4;
 	static final String CSS_BUTTON_ICON = "button-icon";
 	private static final int ICON_SIZE = 20;
 

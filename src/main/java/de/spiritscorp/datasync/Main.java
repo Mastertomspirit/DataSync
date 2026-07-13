@@ -52,24 +52,6 @@ public final class Main { // NOPMD ShortClassName
 	 */
 	public static final String VERSION = "V 1.1.0.0-beta";
 
-	/**
-	 * The timeout limit in milliseconds for regular, worker threads
-	 * before a forced termination is triggered.
-	 */
-	public static final int EXIT_THREAD_TIMEOUT = 10_000;
-
-	/**
-	 * The timeout limit in milliseconds for asynchronous background processes
-	 * (e.g., automated file or task scans).
-	 */
-	public static final int BACKGROUND_THREAD_TIMEOUT = 20_000;
-
-	/**
-	 * The delay time in seconds used for displaying or fading out
-	 * status and informational messages within the GUI.
-	 */
-	public static final int INFO_DELAY = 4;
-
 	/** Config folder flag long */
 	public static final String CONFIG_DIR_LONG = "--config-dir";
 	/** Config folder flag short */

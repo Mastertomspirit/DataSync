@@ -31,7 +31,6 @@ import java.util.concurrent.TimeUnit;
 import javafx.application.Platform;
 import javafx.collections.ObservableList;
 
-import de.spiritscorp.datasync.Main;
 import de.spiritscorp.datasync.gui.BgView;
 import de.spiritscorp.datasync.gui.Gui;
 import de.spiritscorp.datasync.io.Debug;
@@ -59,15 +58,22 @@ public class BgController {
 	static final long INITIAL_DELAY = 1_000;
 	static final long BOOT_START_DELAY = 30_000;
 
+	/** Operating system tray integration proxy for minimizing the application frame. */
 	private final SystemTray sysTray;
+	/** The core dataset of synchronization job contexts monitored and orchestrated by this engine. */
 	private final ObservableList<SyncJobContext> jobList;
+	/** The central logger instance for tracking daemon lifecycles and background routine states. */
 	private final Logger logger;
+	/** Primary view controller handling UI flow control and state transitions. */
 	private final ViewController controller;
+	/** The visual representation of the background menu and tray interface context. */
 	private BgView bgView;
+	/** Reference to the primary graphical user interface application framework. */
 	private final Gui gui;
 
-	// Modern thread-pool architecture for accurate execution timing and disk I/O optimization
+	/** First-tier executor dedicated solely to low-overhead, periodic time-threshold heartbeat monitoring. */
 	private ScheduledExecutorService scheduler;
+	/** Second-tier decoupled thread pool isolated for high-overhead file system and disk I/O execution workloads. */
 	private ExecutorService workerQueue;
 
 	/** Test interface: Allows accelerating intervals inside JUnit execution tasks */
@@ -108,7 +114,7 @@ public class BgController {
 	 */
 	public void requestApplicationShutdown() {
 		// Disassemble concurrent tracking frameworks before global window exit procedures trigger
-		shutdownExecutors( Main.BACKGROUND_THREAD_TIMEOUT );
+		shutdownExecutors( MainViewController.BG_TIMEOUT );
 		controller.handleApplicationShutdown();
 	}
 
@@ -170,9 +176,9 @@ public class BgController {
 		final long initialDelay = (long) ( ( bootDelay ? BOOT_START_DELAY : INITIAL_DELAY ) * timeMultiplier );
 		Debug.printDebug( "[BgController] Heartbeat configured to tick every %d ms based on job preferences.", calculatedTick );
 		jobList.stream()
-				.filter( ( job ) -> job.getPreference()
+				.filter( job -> job.getPreference()
 						.isBgSync() )
-				.forEach( ( job ) -> Debug.printDebug( "[BgController] Executing background routine is activated for task: %s", job.getJobName() ) );
+				.forEach( job -> Debug.printDebug( "[BgController] Executing background routine is activated for task: %s", job.getJobName() ) );
 		// Begin tracking task list rules loops
 		this.scheduler.scheduleAtFixedRate( this::checkAndQueueJobs, initialDelay, tickInterval, TimeUnit.MILLISECONDS );
 	}
@@ -238,7 +244,7 @@ public class BgController {
 							job.setActiveWorkerThread( Thread.currentThread() );
 							Debug.printDebug( "[BgController] Executing background routine for task: %s", job.getJobName() );
 							bgModel.runBgJob();
-						}catch( final Exception exception ) {
+						}catch( final RuntimeException exception ) {
 							Debug.printDebug( "[BgController Error] Critical fault captured inside background thread execution pipeline for: %s", job.getJobName() );
 							Debug.printException( this.getClass(), exception );
 						}finally {

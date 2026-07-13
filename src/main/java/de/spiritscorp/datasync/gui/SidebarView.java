@@ -59,9 +59,9 @@ final class SidebarView extends VBox {
 	private final Gui mainGui;
 	private final ViewController controller;
 
-	private final String cssMenuIcon = "menu-icon";
-	private final String cssJobIcon = "job-icon";
-	private final String cssDrag = "drag-over-target";
+	private static final String CSS_MENU_ICON = "menu-icon";
+	private static final String CSS_JOB_ICON = "job-icon";
+	private static final String CSS_DRAG = "drag-over-target";
 
 	private boolean dragAndDropEnabled = true;
 
@@ -81,19 +81,19 @@ final class SidebarView extends VBox {
 		// Initialize application navigation switcher menu
 
 		final MenuButton hamburgerMenu = new MenuButton( "Navigation", Gui.createIcon( MaterialDesignH.HAMBURGER ) );
-		hamburgerMenu.getGraphic().getStyleClass().addAll( cssMenuIcon );
+		hamburgerMenu.getGraphic().getStyleClass().addAll( CSS_MENU_ICON );
 		hamburgerMenu.setMaxWidth( Double.MAX_VALUE );
 
 		final MenuItem taskViewItem = new MenuItem( "Aktiver Task-Monitor", Gui.createIcon( MaterialDesignF.FOLDER ) );
-		taskViewItem.getGraphic().getStyleClass().addAll( cssMenuIcon );
+		taskViewItem.getGraphic().getStyleClass().addAll( CSS_MENU_ICON );
 		taskViewItem.setOnAction( _ -> controller.handleNavigate( Gui.ViewState.MONITOR ) );
 
 		final MenuItem settingsItem = new MenuItem( "Erweiterte Parameter", Gui.createIcon( MaterialDesignS.STORE_SETTINGS ) );
-		settingsItem.getGraphic().getStyleClass().addAll( cssMenuIcon );
+		settingsItem.getGraphic().getStyleClass().addAll( CSS_MENU_ICON );
 		settingsItem.setOnAction( _ -> controller.handleNavigate( Gui.ViewState.SETTINGS ) );
 
 		final MenuItem infoItem = new MenuItem( "System-Informationen", Gui.createIcon( MaterialDesignI.INFORMATION ) );
-		infoItem.getGraphic().getStyleClass().addAll( cssMenuIcon );
+		infoItem.getGraphic().getStyleClass().addAll( CSS_MENU_ICON );
 		infoItem.setOnAction( _ -> controller.handleNavigate( Gui.ViewState.INFO ) );
 
 		hamburgerMenu.getItems().addAll( taskViewItem, settingsItem, new SeparatorMenuItem(), infoItem );
@@ -139,7 +139,7 @@ final class SidebarView extends VBox {
 					}else {
 						textProperty().bind( item.jobNameProperty() );
 						final FontIcon itemIcon = Gui.createIcon( MaterialDesignF.FOLDER );
-						itemIcon.getStyleClass().addAll( cssJobIcon );
+						itemIcon.getStyleClass().addAll( CSS_JOB_ICON );
 						setGraphic( itemIcon );
 						setTooltip( new Tooltip( item.getJobName() ) );
 					}
@@ -199,20 +199,20 @@ final class SidebarView extends VBox {
 			cell.setOnDragEntered( event -> {
 				// Apply visual feedback style when dragging an item over a valid cell
 				if( dragAndDropEnabled && !cell.isEmpty() && event.getDragboard().hasString() ) {
-					cell.getStyleClass().add( cssDrag );
+					cell.getStyleClass().add( CSS_DRAG );
 				}
 				event.consume();
 			} );
 
 			cell.setOnDragExited( event -> {
 				// Clear visual feedback style immediately when leaving the cell area
-				cell.getStyleClass().remove( cssDrag );
+				cell.getStyleClass().remove( CSS_DRAG );
 				event.consume();
 			} );
 
 			cell.setOnDragDropped( event -> {
 				// Ensure style cleanup before processing data logic
-				cell.getStyleClass().remove( cssDrag );
+				cell.getStyleClass().remove( CSS_DRAG );
 
 				if( !dragAndDropEnabled ) { return; }
 

@@ -42,6 +42,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.stage.Stage;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -50,15 +54,11 @@ import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
 import de.spiritscorp.datasync.BgTime;
-import de.spiritscorp.datasync.Main;
 import de.spiritscorp.datasync.gui.BgView;
 import de.spiritscorp.datasync.gui.Gui;
 import de.spiritscorp.datasync.io.Debug;
 import de.spiritscorp.datasync.io.Logger;
 import de.spiritscorp.datasync.io.Preference;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
-import javafx.stage.Stage;
 
 /**
  * Integration test suite for {@link BgController}.
@@ -261,7 +261,7 @@ class BgControllerIT {
 		assertFalse( realWorkerQueue.isShutdown(), "The live worker queue was pre-terminated before the interrupt test sequence began." );
 
 		// Act: Trigger an explicit user interrupt sequence (e.g., maximizing the GUI back from tray)
-		assertDoesNotThrow( () -> controller.interruptBgJob( Main.BACKGROUND_THREAD_TIMEOUT ) );
+		assertDoesNotThrow( () -> controller.interruptBgJob( MainViewController.BG_TIMEOUT ) );
 
 		// Assert: Verify the real JDK worker thread pool is dead
 		assertTrue( realWorkerQueue.isShutdown(), "The live worker executor pool failed to enter a shutdown state after an interrupt signal." );
@@ -302,7 +302,7 @@ class BgControllerIT {
 			assertFalse( workerGen.isShutdown(), "Worker queue generation " + generation + " died prematurely." );
 
 			// Dismantle this generation (simulates user maximizing the GUI or closing the context)
-			controller.interruptBgJob( Main.BACKGROUND_THREAD_TIMEOUT );
+			controller.interruptBgJob( MainViewController.BG_TIMEOUT );
 
 			// Guarantee that the native OS thread pool frames were successfully dissolved
 			assertTrue( schedulerGen.isShutdown(), "Scheduler generation " + generation + " failed to shutdown." );
@@ -313,7 +313,7 @@ class BgControllerIT {
 	/**
 	 * Factory helper to assemble operational sync jobs using real configuration models.
 	 */
-	private SyncJobContext createIntegrationJob( String name, boolean bgSync, BgTime bgTime, long lastScan ) {
+	private SyncJobContext createIntegrationJob( final String name, final boolean bgSync, final BgTime bgTime, final long lastScan ) {
 		final SyncJobContext job = mock( SyncJobContext.class );
 		final Preference pref = mock( Preference.class );
 
@@ -331,7 +331,7 @@ class BgControllerIT {
 	 *
 	 * @throws ExecutionException
 	 */
-	private void injectMockExecutors( BgController controller, double multiplier ) throws ExecutionException {
+	private void injectMockExecutors( final BgController controller, final double multiplier ) throws ExecutionException {
 		try {
 			final Method setEnvironment = BgController.class.getDeclaredMethod( "setEnvironment", double.class, BgView.class, ScheduledExecutorService.class, ExecutorService.class );
 			setEnvironment.setAccessible( true );

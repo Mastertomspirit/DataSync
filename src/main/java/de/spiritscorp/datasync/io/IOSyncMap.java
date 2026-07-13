@@ -88,19 +88,19 @@ class IOSyncMap {
 			return true;
 		}catch( final IllegalArgumentException | UnsupportedOperationException | SecurityException | IOException e ) {
 			// Block 1: IO & File System Operations (Options, Permissions, Missing Files)
-			Debug.printDebug( "[IOSyncMap Error] File system or configuration failure while opening stream: %s", e.getMessage() );
+			Debug.printDebug( "[IO Sync Map Error] File system or configuration failure while opening stream: %s", e.getMessage() );
 			Debug.printException( this.getClass(), e );
 			return false;
 
 		}catch( final JsonException exception ) {
 			// Block 2: JSON Processing (Deals with both syntax/parsing and structural creation errors)
-			Debug.printDebug( "[IOSyncMap Error] JSON processing or syntax error: %s", exception.getMessage() );
+			Debug.printDebug( "[IO Sync Map Error] JSON processing or syntax error: %s", exception.getMessage() );
 			Debug.printException( this.getClass(), exception );
 			return false;
 
 		}catch( final IllegalStateException exception ) {
 			// Block 3: Reader State Management (Reader already closed or multi-call violation)
-			Debug.printDebug( "[IOSyncMap Error] Parser state conflict: %s", exception.getMessage() );
+			Debug.printDebug( "[IO Sync Map Error] Parser state conflict: %s", exception.getMessage() );
 			Debug.printException( this.getClass(), exception );
 			return false;
 		}
@@ -124,7 +124,24 @@ class IOSyncMap {
 			jsonWriter.write( jsonObject );
 			jsonWriter.close();
 		}catch( final IOException exception ) {
-			Debug.printDebug( "[IOSyncMap Error] File system or configuration failure while writing file: %s", exception.getMessage() );
+			Debug.printDebug( "[IO Sync Map Error] File system or configuration failure while writing file: %s", exception.getMessage() );
+			Debug.printException( this.getClass(), exception );
+		}
+	}
+
+	/**
+	 * Deletes the persisted file synchronization snapshot from disk.
+	 * Removes the tracking dataset file if it exists, effectively clearing the persistence
+	 * baseline and forcing a full scan or re-initialization upon the next execution.
+	 */
+	void deleteSyncMap() {
+		try {
+			final boolean deleted = Files.deleteIfExists( jobSyncMapPath );
+			if( deleted ) {
+				Debug.printDebug( "[IO Sync Map] Successfully deleted sync map file: %s", jobSyncMapPath );
+			}
+		}catch( final IOException exception ) {
+			Debug.printDebug( "[IO Sync Map Error] File system failure while deleting file: %s", exception.getMessage() );
 			Debug.printException( this.getClass(), exception );
 		}
 	}

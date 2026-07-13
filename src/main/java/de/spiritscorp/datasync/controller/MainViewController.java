@@ -27,7 +27,6 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.TextInputDialog;
 
-import de.spiritscorp.datasync.Main;
 import de.spiritscorp.datasync.gui.DialogService;
 import de.spiritscorp.datasync.gui.Gui;
 import de.spiritscorp.datasync.gui.NotifyStatus;
@@ -50,14 +49,19 @@ import de.spiritscorp.datasync.theme.AppTheme;
  */
 public class MainViewController implements ViewController {
 
+	/** The timeout limit in milliseconds for asynchronous background processes (e.g., automated file or task scans). */
+	public static final int BG_TIMEOUT = 20_000;
+	/** The timeout limit in milliseconds for regular, worker threads before a forced termination is triggered. */
+	public static final int EXIT_TIMEOUT = 10_000;
+
 	/** The primary user interface orchestration shell managing view states, layouts, and volatile notifications. */
 	private final Gui gui;
 	/** The core service layer processing execution requests and lifecycle validations for synchronization tasks. */
 	private final SyncJobService helper;
 	/** The central preference manager coordinating serialization, persistence, and registration of global and job-specific profiles. */
 	private final PreferenceManager manager;
-	/** The active execution controller overseeing scheduled background worker threads and daemon interval routines. */
-	private BgController activeBgController;
+	/** The execution controller overseeing scheduled background worker threads and daemon interval routines. */
+	private BgController bgController;
 
 	/**
 	 * Allocates a new controller instance tied directly to the display engine layer hook.
@@ -93,7 +97,7 @@ public class MainViewController implements ViewController {
 			// This block executes automatically if Windows/Linux sends a SIGTERM or shutdown signal
 			Debug.printDebug( "[Exit] Host operating system shutdown signal intercepted via native runtime hook." );
 			// Enforce rapid execution with small timeouts since the OS will forcefully kill us shortly
-			executeCoreShutdownSequence( false );
+			executeShutdown( false );
 			Debug.printDebug( "[Exit] BYE, BYE" );
 		}, "DataSync-OS-Shutdown-Hook-Thread" ) );
 		Debug.printDebug( "[Info] Native OS runtime shutdown hook successfully registered." );
@@ -114,14 +118,14 @@ public class MainViewController implements ViewController {
 			Platform.exit();
 			// Execute executeCoreShutdownSequence in the System.exit() hook
 			Debug.printDebug( "[Exit] Manual graceful teardown completed. Evicting core JVM runtime context loop." );
-			System.exit( 0 );
+			System.exit( 0 ); // NOPMD Kill all
 		}
 	}
 
 	@Override
 	public void runInBackground( final boolean firstStart ) {
-		activeBgController = new BgController( gui, this, gui.getJobList(), new Logger() );
-		activeBgController.startBgJob( firstStart );
+		bgController = new BgController( gui, this, gui.getJobList(), new Logger() );
+		bgController.startBgJob( firstStart );
 	}
 
 	@Override
@@ -147,7 +151,7 @@ public class MainViewController implements ViewController {
 	public void handleCreateNewJob() {
 		final String name = "Sync Job " + ( gui.getJobList().size() + 1 );
 		gui.getJobList().add( new SyncJobContext( name, manager.createProfile( name ) ) );
-		gui.showStatusNotification( name + " wurde erstellt und gespeichert", NotifyStatus.SUCCESS, Main.INFO_DELAY );
+		gui.showStatusNotification( name + " wurde erstellt und gespeichert", NotifyStatus.SUCCESS, Gui.INFO_DELAY );
 	}
 
 	@Override
@@ -176,12 +180,12 @@ public class MainViewController implements ViewController {
 	@Override
 	public void handleDuplicateJob( final SyncJobContext job ) {
 		if( job != null ) {
-			String newName = job.getJobName() + " (Kopie)";
-			Preference pref = job.getPreference();
+			final String newName = job.getJobName() + " (Kopie)";
+			final Preference pref = job.getPreference();
 			gui.getJobList().addLast( new SyncJobContext( newName, manager.setNewProfile( newName, pref ) ) );
-			gui.showStatusNotification( newName + " wurde erstellt und gespeichert", NotifyStatus.SUCCESS, Main.INFO_DELAY );
+			gui.showStatusNotification( newName + " wurde erstellt und gespeichert", NotifyStatus.SUCCESS, Gui.INFO_DELAY );
 		}else {
-			gui.showStatusNotification( "Fehler: Job ist unbekannt", NotifyStatus.ERROR, Main.INFO_DELAY );
+			gui.showStatusNotification( "Fehler: Job ist unbekannt", NotifyStatus.ERROR, Gui.INFO_DELAY );
 		}
 	}
 
@@ -212,7 +216,7 @@ public class MainViewController implements ViewController {
 
 	@Override
 	public void handleDragJob( final int newIdx, final int draggedIdx ) {
-		SyncJobContext item = gui.getJobList().remove( draggedIdx );
+		final SyncJobContext item = gui.getJobList().remove( draggedIdx );
 		if( item != null ) {
 			gui.getJobList().add( newIdx, item );
 			manager.moveProfile( newIdx, draggedIdx, item.getPreference() );
@@ -222,7 +226,7 @@ public class MainViewController implements ViewController {
 	@Override
 	public void handleExecuteTask( final SyncJobContext job ) {
 		if( job != null ) {
-			switch( job.getSelectedMode() ) {
+			switch( job.getSelectedMode() ) { // NOPMD default is here ok
 				case SYNCHRONIZE -> helper.startSynchronize( job );
 				case DUBLICATE_SCAN -> helper.startDuplicateScan( job );
 				case DEEP_SCAN, FLAT_SCAN -> helper.startBackup( job );
@@ -233,21 +237,20 @@ public class MainViewController implements ViewController {
 
 	@Override
 	public void handleStopTask( final SyncJobContext job ) {
-		job.cancelRunningTask( Main.EXIT_THREAD_TIMEOUT );
+		job.cancelRunningTask( EXIT_TIMEOUT );
 	}
 
 	@Override
 	public void handleSaveSettings( final AppTheme targetTheme ) {
-
 		gui.changeTheme( targetTheme );
 		gui.setViewState( Gui.ViewState.SETTINGS );
 
 		// Persist structural configuration states securely to disk
 		if( manager.saveAllPreferences() ) {
-			gui.showStatusNotification( "Settings successfully persisted to the configuration registry.", NotifyStatus.SUCCESS, Main.INFO_DELAY );
+			gui.showStatusNotification( "Settings successfully persisted to the configuration registry.", NotifyStatus.SUCCESS, Gui.INFO_DELAY );
 			Debug.printDebug( "[Settings] Configuration profile assets successfully serialized to disk." );
 		}else {
-			gui.showStatusNotification( "Error: Failed to write configuration payload to 'conf.json'.", NotifyStatus.ERROR, Main.INFO_DELAY );
+			gui.showStatusNotification( "Error: Failed to write configuration payload to 'conf.json'.", NotifyStatus.ERROR, Gui.INFO_DELAY );
 			Debug.printDebug( "[Settings Error] Critical: Failed to persist configuration profile assets." );
 		}
 	}
@@ -256,17 +259,17 @@ public class MainViewController implements ViewController {
 	 * Orchestrates the application teardown sequence by gracefully processing or aborting
 	 * active tasks based on the execution context boundaries.
 	 *
-	 * @param dynamicGracePeriod If true, allocates an extended time buffer per thread;
-	 *                           if false (OS shutdown), enforces tight, rapid deadlines.
+	 * @param gracePeriod If true, allocates an extended time buffer per thread;
+	 *                    if false (OS shutdown), enforces tight, rapid deadlines.
 	 */
-	private void executeCoreShutdownSequence( final boolean dynamicGracePeriod ) {
-		final long timeoutPerThreadMs = dynamicGracePeriod ? Main.BACKGROUND_THREAD_TIMEOUT : Main.EXIT_THREAD_TIMEOUT;
-		Debug.printDebug( "[Exit] Internal system teardown invoked. Dynamic grace mode: %b -> %d ms", dynamicGracePeriod, timeoutPerThreadMs );
+	private void executeShutdown( final boolean gracePeriod ) {
+		final long timeout = gracePeriod ? BG_TIMEOUT : EXIT_TIMEOUT;
+		Debug.printDebug( "[Exit] Internal system teardown invoked. Dynamic grace mode: %b -> %d ms", gracePeriod, timeout );
 		// Delegate termination orchestration directly to the individual task contexts securely
 		for( final SyncJobContext job : gui.getJobList() ) {
-			job.cancelRunningTask( timeoutPerThreadMs );
+			job.cancelRunningTask( timeout );
 		}
-		if( !gui.isShowing() && activeBgController != null ) activeBgController.interruptBgJob( timeoutPerThreadMs );
+		if( !gui.isShowing() && bgController != null ) bgController.interruptBgJob( timeout );
 		Debug.printDebug( "[Exit] Core teardown protocol finalized. Flushing runtime buffers." );
 	}
 
@@ -284,11 +287,13 @@ public class MainViewController implements ViewController {
 		final ObservableList<SyncJobContext> jobList = FXCollections.observableArrayList();
 
 		if( manager.loadAllPreferences() ) {
-			for( final Preference entry : manager.getLoadedProfiles() ) {
-				final SyncJobContext ctx = new SyncJobContext( entry.getJobName(), entry );
-				ctx.setSelectedMode( entry.getScanMode().getDescription() );
-				jobList.add( ctx );
-			}
+			manager.getLoadedProfiles().stream()
+					.map( entry -> {
+						final SyncJobContext ctx = new SyncJobContext( entry.getJobName(), entry );
+						ctx.setSelectedMode( entry.getScanMode().getDescription() );
+						return ctx;
+					} )
+					.forEach( jobList::add );
 		}else {
 			jobList.add( new SyncJobContext( "NAS Dokumenten-Spiegel", manager.createProfile( "NAS Dokus" ) ) );
 			jobList.add( new SyncJobContext( "Lokales Code-Workspace Backup", manager.createProfile( "WorkspaceRepo" ) ) );

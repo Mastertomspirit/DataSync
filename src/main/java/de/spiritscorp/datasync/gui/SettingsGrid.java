@@ -38,7 +38,6 @@ import javafx.stage.Stage;
 import org.kordamp.ikonli.materialdesign2.MaterialDesignD;
 
 import de.spiritscorp.datasync.BgTime;
-import de.spiritscorp.datasync.Main;
 import de.spiritscorp.datasync.ScanType;
 import de.spiritscorp.datasync.controller.SyncJobContext;
 import de.spiritscorp.datasync.controller.ViewController;
@@ -242,10 +241,10 @@ class SettingsGrid {
 
 			// Structural sanity checklist before executing persistent data dump
 			if( scanType == ScanType.DUBLICATE_SCAN && pref.getSourcePaths().isEmpty() ) {
-				workspaceView.displayTemporaryStatus( "Fehlender Scan Pfad! Einstellungen nicht gespeichert!", NotifyStatus.WARNING, Main.INFO_DELAY );
+				workspaceView.displayTemporaryStatus( "Fehlender Scan Pfad! Einstellungen nicht gespeichert!", NotifyStatus.WARNING, Gui.INFO_DELAY );
 				return;
 			}else if( pref.getSourcePaths().isEmpty() && pref.getDestPaths().isEmpty() ) {
-				workspaceView.displayTemporaryStatus( "Fehlende Pfad! Einstellungen nicht gespeichert!", NotifyStatus.WARNING, Main.INFO_DELAY );
+				workspaceView.displayTemporaryStatus( "Fehlende Pfad! Einstellungen nicht gespeichert!", NotifyStatus.WARNING, Gui.INFO_DELAY );
 				return;
 			}
 

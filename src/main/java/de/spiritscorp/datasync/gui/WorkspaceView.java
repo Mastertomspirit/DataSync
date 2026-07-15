@@ -25,12 +25,14 @@ import java.util.List;
 
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
+import javafx.beans.binding.Bindings;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
+import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
@@ -287,6 +289,9 @@ final class WorkspaceView extends VBox {
 		statusLabel.textProperty().bind( job.statusMessageProperty() );
 		consoleTextArea.textProperty().bind( job.logOutputProperty() );
 		duplicateTable.setItems( job.getDuplicateFiles() );
+
+		progressBar.progressProperty().unbind();
+		progressBar.progressProperty().bind( Bindings.when( job.runningProperty() ).then( ProgressIndicator.INDETERMINATE_PROGRESS ).otherwise( 0.0 ) );
 
 		cancelButton.disableProperty().unbind();
 		actionButton.disableProperty().unbind();

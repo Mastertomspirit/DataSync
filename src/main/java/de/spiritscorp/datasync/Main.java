@@ -51,23 +51,6 @@ public final class Main { // NOPMD ShortClassName
 	 */
 	public static final String VERSION = "V1.1.0.0-beta";
 
-	/** Config folder flag long */
-	public static final String CONFIG_DIR_LONG = "--config-dir";
-	/** Config folder flag short */
-	public static final String CONFIG_DIR_SHORT = "-c";
-	/** Boot delay flag long */
-	public static final String BOOT_DELAY_LONG = "--boot-delay";
-	/** Boot Delay flag short */
-	public static final String BOOT_DELAY_SHORT = "-b";
-	/** Debug flag long */
-	public static final String DEBUG_LONG = "--debug";
-	/** Debug flag short */
-	public static final String DEBUG_SHORT = "-d";
-	/** Debug to file flag long */
-	public static final String DEBUG_TO_FILE_LONG = "--debug-to-file";
-	/** Debug to file flag short */
-	public static final String DEBUG_TO_FILE_SHORT = "-f";
-
 	/** Debug mode */
 	private static boolean debug;
 	/** Boot delay mode */
@@ -172,24 +155,15 @@ public final class Main { // NOPMD ShortClassName
 	 */
 	private static void evaluateArgumentFlags( final String[] args, final int currentIndex, final PreferenceManager manager ) {
 		final String arg = args[currentIndex].trim();
-		final String generalArg = arg.toLowerCase( Locale.ROOT );
-		switch( generalArg ) {
-			// Modern multi-labels: replaces the logical OR (||) chains
-			case BOOT_DELAY_LONG, BOOT_DELAY_SHORT ->
-				firstStart = true;
-
-			case DEBUG_LONG, DEBUG_SHORT ->
-				debug = true;
-
-			case DEBUG_TO_FILE_LONG, DEBUG_TO_FILE_SHORT -> {
+		final CLIFlags flag = CLIFlags.fromArgument( arg );
+		switch( flag ) {
+			case CONFIG_DIR -> handleConfigDirectoryArgument( args, currentIndex, manager );
+			case BOOT_DELAY -> firstStart = true;
+			case DEBUG -> debug = true;
+			case DEBUG_TO_FILE -> {
 				toFile = true;
 				debug = true;
 			}
-
-			// Pattern Matching with a 'when' guard to handle the .startsWith() logic
-			case final String genArg when genArg.startsWith( CONFIG_DIR_LONG ) || genArg.startsWith( CONFIG_DIR_SHORT ) ->
-				handleConfigDirectoryArgument( args, currentIndex, manager );
-
 			default -> {
 				// No match found, skip silently
 			}

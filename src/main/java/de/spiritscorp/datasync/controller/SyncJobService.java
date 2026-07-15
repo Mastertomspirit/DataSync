@@ -34,6 +34,7 @@ import java.util.Map;
 
 import javafx.application.Platform;
 
+import de.spiritscorp.datasync.CLIFlags;
 import de.spiritscorp.datasync.Main;
 import de.spiritscorp.datasync.gui.DialogService;
 import de.spiritscorp.datasync.io.Debug;
@@ -377,8 +378,8 @@ public class SyncJobService {
 				if( set ) {
 					// No literal interior quote escapes required; ProcessBuilder insulates whitespaces
 					final String dataPayload = ( exePath == null )
-							? String.format( "%s\\javaw.exe -Xmx200m -jar %s %s %s", javaPath, datei, Main.BOOT_DELAY_LONG, flags )
-							: String.format( "%s %s %s", exePath, Main.BOOT_DELAY_LONG, flags );
+							? String.format( "%s\\javaw.exe -Xmx200m -jar %s %s %s", javaPath, datei, CLIFlags.BOOT_DELAY.getLongFlag(), flags )
+							: String.format( "%s %s %s", exePath, CLIFlags.BOOT_DELAY.getLongFlag(), flags );
 
 					final ProcessBuilder pb = new ProcessBuilder( "reg", "add", regCmd, "/v", "DataSync", "/t", "REG_SZ", "/d", dataPayload, "/f" );
 					pb.start();
@@ -396,8 +397,8 @@ public class SyncJobService {
 			try {
 				if( set ) {
 					final String cronPayload = ( exePath == null )
-							? String.format( "@reboot %s/java -jar %s %s %s", javaPath, fullPath, Main.BOOT_DELAY_LONG, flags )
-							: String.format( "@reboot %s %s %s", exePath, Main.BOOT_DELAY_LONG, flags );
+							? String.format( "@reboot %s/java -jar %s %s %s", javaPath, fullPath, CLIFlags.BOOT_DELAY.getLongFlag(), flags )
+							: String.format( "@reboot %s %s %s", exePath, CLIFlags.BOOT_DELAY.getLongFlag(), flags );
 
 					// Feed crontab structural inputs directly via process input stream pipelining
 					final ProcessBuilder pb = new ProcessBuilder( crontab, "-" );
@@ -429,11 +430,10 @@ public class SyncJobService {
 		final StringBuilder stringBuilder = new StringBuilder();
 		final PreferenceManager manager = PreferenceManager.getInstance();
 		if( Main.isDebugToFile() ) {
-			stringBuilder.append( " " + Main.DEBUG_TO_FILE_LONG );
+			stringBuilder.append( String.format( " %s", CLIFlags.DEBUG_TO_FILE.getLongFlag() ) );
 		}
 		if( manager.isCustomConfigDir() ) {
-			stringBuilder.append( " " + Main.CONFIG_DIR_LONG );
-			stringBuilder.append( " " + manager.getConfigPath().getParent().toString() );
+			stringBuilder.append( String.format( " %s %s", CLIFlags.CONFIG_DIR.getLongFlag(), manager.getConfigPath().getParent().toString() ) );
 		}
 		return stringBuilder.toString();
 	}

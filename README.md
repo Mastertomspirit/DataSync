@@ -8,7 +8,7 @@
 
 DataSync is an enterprise-grade, highly parallelized file synchronization, backup, and duplicate analysis application engineered on top of a modern, fully modular Java platform. Operating natively within the system architecture, DataSync runs quietly inside the OS system tray to manage complex, multi-source storage Topologies concurrently. By utilizing transaction-safe file operations, the application guarantees zero data corruption during unexpected halts, ensuring your files remain structurally sound at all times.
 
-> **Important Compatibility Note (Version 1.1.0.0-alpha):** This release introduces a fundamental overhaul of the persistent configuration storage layout. Because of these deep structural mutations, the core storage layer **is not backward compatible with legacy versions (e.g., v1.0.0.0)**. Upon initial initialization, the application's configuration parser automatically detects mismatched or legacy pre-alpha schemas and seamlessly sanitizes the environment back to safe system defaults without interrupting the runtime execution.
+> **Important Compatibility Note (Version 1.1.0.0-alpha):** This release introduces a fundamental overhaul of the persistent configuration storage layout. Because of these deep structural mutations, the core storage layer **is not backward compatible with legacy versions (e.g., v0.9.6.0)**. Upon initial initialization, the application's configuration parser automatically detects mismatched or legacy pre-alpha schemas and seamlessly sanitizes the environment back to safe system defaults without interrupting the runtime execution.
 
 ---
 
@@ -66,7 +66,7 @@ The application lifecycle can be dynamically re-routed during execution initiali
 To balance raw execution speed against absolute cryptographic data integrity across different storage mediums (such as local NVMe arrays versus high-latency network NAS shares), DataSync provides four distinct operational execution modes:
 
 ### Synchronize (Standard Sync)
-Provides direct, real-time synchronization between targeted directory sectors. Its operational scope regarding structural directory pruning and depth limitations adapts dynamically to the profile's specialized UI constraints.
+Provides automated, scheduled synchronization between targeted directory structures, operating at configurable intervals with a minimum frequency of one minute. Its operational scope regarding structural directory pruning and depth limitations adapts dynamically to the profile's specialized UI constraints.
 
 ### Flat Scan (Metadata Backup)
 An ultra-fast, IO-efficient delta computation engine designed for frequent backups. The system checks filesystem metadata snapshots instantly, evaluating changes based on file size boundaries, absolute file paths, creation epochs, and modification timestamps. This delivers rapid sync speeds without taxing storage controllers.

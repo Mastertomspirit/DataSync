@@ -126,7 +126,7 @@ class SettingsGrid {
 		taskModeComboBox.getItems().addAll( ScanType.getAllDescriptions() );
 
 		// Bind selection bidirectional to preserve model state shifts immediately
-		job.selectedModeProperty().set( pref.getScanMode() != null ? pref.getScanMode().getDescription() : ScanType.FLAT_SCAN.getDescription() ); // NOPMD LawOfDemeter
+		job.setSelectedMode( pref.getScanMode() != null ? pref.getScanMode().getDescription() : ScanType.FLAT_SCAN.getDescription() ); // NOPMD LawOfDemeter
 		taskModeComboBox.valueProperty().bindBidirectional( job.selectedModeProperty() );
 		taskModeComboBox.setPrefWidth( 260 );
 

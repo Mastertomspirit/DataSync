@@ -1,4 +1,5 @@
 package de.spiritscorp.datasync;
+
 /*
 	Data Sync
 		Application to synchronize your data
@@ -43,14 +44,12 @@ import de.spiritscorp.datasync.io.PreferenceManager;
  *
  * @author Tom Spirit
  */
-@SuppressWarnings( { "PMD.LongVariable" } )
 public final class Main { // NOPMD ShortClassName
 
 	/**
-	 * The current version of the application in semantic format,
-	 * including the development stage (e.g., alpha).
+	 * The current version of the application in semantic format, including the development stage.
 	 */
-	public static final String VERSION = "V 1.1.0.0-beta";
+	public static final String VERSION = "V1.1.0.0-beta";
 
 	/** Config folder flag long */
 	public static final String CONFIG_DIR_LONG = "--config-dir";
@@ -82,13 +81,13 @@ public final class Main { // NOPMD ShortClassName
 	 * Application entry point. Orchestrates the initial boot sequence by parsing
 	 * command-line options and bootstrapping the underlying JavaFX application subsystem.
 	 * <p>
-	 * This method delegates argument parsing to {@link #parseArguments(String[])} before
-	 * handing over control to the JavaFX application lifecycle via {@link Application#launch(Class, String...)}.
+	 * This method delegates argument parsing to {@link #parseArguments(String [] args)} before
+	 * handing over control to the JavaFX application lifecycle via {@link Application#launch(Class, String [] )}.
 	 * </p>
 	 *
 	 * @param args Runtime command-line execution flags and configuration parameters.
 	 */
-	public static void main( final String[] args ) {
+	public static void main( final String... args ) {
 		parseArguments( args );
 		Locale.setDefault( Locale.GERMANY );
 		Application.launch( Gui.class, args );

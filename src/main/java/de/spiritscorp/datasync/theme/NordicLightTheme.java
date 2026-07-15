@@ -128,6 +128,9 @@ public class NordicLightTheme implements AppTheme {
 				/* Directory rendering */
 				.dir-title-label { -fx-font-size: 14px; -fx-font-weight: bold; }
 				.multi-src-label { -fx-font-weight: bold; }
+				.multi-src-list, .multi-src-list .list-cell { -fx-background-color: white; -fx-border-color: #e0e0e0; -fx-border-width: 0 0 1px 0; }
+				.multi-src-list .list-cell:hover { -fx-background-color: #f5f6fa; }
+				.multi-src-list .list-cell:selected {  -fx-background-color: #88c0d0; -fx-text-fill: #2e44a4 !important; -fx-font-weight: bold; }
 
 				/*Special button hover */
 				.cancel-button:hover { -fx-background-color: #7f8c8d;  -fx-text-fill: #d6e0fa;  -fx-icon-color: #d6e0fa; }

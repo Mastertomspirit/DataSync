@@ -190,7 +190,7 @@ class SettingsGrid {
 		// Disable interval settings if the background processing flag is unchecked
 		bgTimeComboBox.disableProperty().bind( bgSyncCheck.selectedProperty().not() );
 
-		final VBox optionsBox = new VBox( 12, paramsTitleLabel, subDirCheck, trashbinCheck, autoDelCheck, autoSyncCheck, logOnCheck, bgSyncCheck, new HBox( 8, bgTimeLabel, bgTimeComboBox ) );
+		final VBox optionsBox = new VBox( 12, paramsTitleLabel, subDirCheck, trashbinCheck, autoDelCheck, autoSyncCheck, logOnCheck, bgSyncCheck, new HBox( 105, bgTimeLabel, bgTimeComboBox ) );
 		settingsGrid.add( optionsBox, 0, 2, 2, 1 );
 
 		// ---------------------------------------------------------------------
@@ -225,7 +225,7 @@ class SettingsGrid {
 		} );
 		themeComboBox.getSelectionModel().select( PreferenceManager.getInstance().getTheme() );
 
-		final VBox globalBox = new VBox( 10, globalTitleLabel, globalAutostartCheck, new HBox( 8, themeLabel, themeComboBox ) );
+		final VBox globalBox = new VBox( 10, globalTitleLabel, globalAutostartCheck, new HBox( 75, themeLabel, themeComboBox ) );
 		applyModeRestrictions( pref.getScanMode(), pref );
 		settingsGrid.add( globalBox, 0, 3, 2, 1 );
 
@@ -268,7 +268,7 @@ class SettingsGrid {
 
 		final HBox buttonRow = new HBox( saveButton );
 		buttonRow.setAlignment( Pos.CENTER_RIGHT );
-		settingsGrid.add( buttonRow, 1, 4 );
+		settingsGrid.add( buttonRow, 3, 4 );
 
 		return settingsGrid;
 	}

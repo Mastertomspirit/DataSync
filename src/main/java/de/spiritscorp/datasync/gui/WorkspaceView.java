@@ -217,16 +217,16 @@ final class WorkspaceView extends VBox {
 	void refreshView( final Gui.ViewState state, final SyncJobContext job ) {
 
 		centerViewport.getChildren().clear();
+		contextInfoLabel.setTooltip( null );
 
 		if( state == Gui.ViewState.INFO ) {
 			wrkspcHeaderLabel.setText( "About" );
-			contextInfoLabel.setTooltip( new Tooltip( "" ) );
 			contextInfoLabel.setText( "Backup Software" );
 			controlToolbar.setVisible( false );
 			return;
 		}else if( job == null ) { return; }
 
-		String finalTip = "";
+		final String finalTip;
 		if( state == Gui.ViewState.MONITOR ) {
 			wrkspcHeaderLabel.setText( "Task-Monitor: " + job.getJobName() );
 			controlToolbar.setVisible( true );
@@ -254,13 +254,13 @@ final class WorkspaceView extends VBox {
 				contextInfoLabel.setText( String.format( "Modus: %s  |  Quelle: %s  |  Ziel: %s", job.getSelectedMode().getDescription(), src, dest ) );
 				centerViewport.getChildren().add( consoleViewNode );
 			}
+			contextInfoLabel.setTooltip( new Tooltip( finalTip ) );
 		}else if( state == Gui.ViewState.SETTINGS ) {
 			wrkspcHeaderLabel.setText( "Einstellungen für: " + job.getJobName() );
 			contextInfoLabel.setText( "Konfiguration der task-spezifischen Ablaufparameter, Dateiattribute und Verzeichnisstrukturen." );
 			controlToolbar.setVisible( false );
 			displayCustomViewNode( settingsGrid.buildSettingsGridTab( this, job, mainGui.getAvailableThemes() ) );
 		}
-		contextInfoLabel.setTooltip( new Tooltip( finalTip ) );
 	}
 
 	/**

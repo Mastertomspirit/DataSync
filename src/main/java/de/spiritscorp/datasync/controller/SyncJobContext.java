@@ -24,6 +24,8 @@ import java.nio.file.Path;
 
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.ReadOnlyBooleanProperty;
+import javafx.beans.property.ReadOnlyStringProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
@@ -145,13 +147,13 @@ public class SyncJobContext {
 		this.jobName.set( newTaskName );
 	}
 
-	public StringProperty jobNameProperty() {
+	public ReadOnlyStringProperty jobNameProperty() {
 		return jobName;
 	}
 
 	public boolean isRunning() { return running.get(); }
 
-	public BooleanProperty runningProperty() {
+	public ReadOnlyBooleanProperty runningProperty() {
 		return running;
 	}
 
@@ -161,7 +163,7 @@ public class SyncJobContext {
 
 	public String getStatusMessage() { return statusMessage.get(); }
 
-	public StringProperty statusMessageProperty() {
+	public ReadOnlyStringProperty statusMessageProperty() {
 		return statusMessage;
 	}
 
@@ -171,7 +173,7 @@ public class SyncJobContext {
 
 	public String getLogOutput() { return logOutput.get(); }
 
-	public StringProperty logOutputProperty() {
+	public ReadOnlyStringProperty logOutputProperty() {
 		return logOutput;
 	}
 
@@ -208,7 +210,7 @@ public class SyncJobContext {
 			this.path.set( path.toString() );
 		}
 
-		public BooleanProperty selectedProperty() {
+		public ReadOnlyBooleanProperty selectedProperty() {
 			return selected;
 		}
 
@@ -218,19 +220,19 @@ public class SyncJobContext {
 			this.selected.set( val );
 		}
 
-		public StringProperty fileNameProperty() {
+		public ReadOnlyStringProperty fileNameProperty() {
 			return fileName;
 		}
 
-		public StringProperty sizeProperty() {
+		public ReadOnlyStringProperty sizeProperty() {
 			return size;
 		}
 
-		public StringProperty hashProperty() {
+		public ReadOnlyStringProperty hashProperty() {
 			return hash;
 		}
 
-		public StringProperty pathProperty() {
+		public ReadOnlyStringProperty pathProperty() {
 			return path;
 		}
 

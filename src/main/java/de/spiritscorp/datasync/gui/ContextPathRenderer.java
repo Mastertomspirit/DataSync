@@ -71,7 +71,7 @@ class ContextPathRenderer {
 	/**
 	 * The preferred layout width in pixels allocated for descriptive structural labels.
 	 */
-	private static final int LABEL_WIDTH = 100;
+	private static final int LABEL_WIDTH = 120;
 	/**
 	 * The preferred layout width in pixels allocated for path display text input fields.
 	 */
@@ -152,7 +152,7 @@ class ContextPathRenderer {
 		label.setPrefWidth( LABEL_WIDTH );
 		destGrid.add( label, 0, 0 );
 		destGrid.add( new HBox( 8, srcTextField, srcBtn ), 1, 0 );
-		return new VBox( V_GAP, new Separator(), destGrid );
+		return new VBox( V_GAP, destGrid );
 	}
 
 	/**
@@ -180,6 +180,7 @@ class ContextPathRenderer {
 		}
 
 		final ListView<String> pathsListView = new ListView<>( actualSourcePaths );
+		pathsListView.getStyleClass().addAll( "multi-src-list" );
 		pathsListView.setPrefHeight( PATH_LIST_HEIGHT );
 		pathsListView.setPrefWidth( PATH_LIST_WIDTH );
 

@@ -21,9 +21,9 @@ package de.spiritscorp.datasync.gui;
  */
 
 public enum NotifyStatus {
-	SUCCESS( "status-success"),
-	ERROR( "status-error"),
-	WARNING( "status-warning");
+	SUCCESS( "status-success" ),
+	ERROR( "status-error" ),
+	WARNING( "status-warning" );
 
 	private final String cssClass;
 

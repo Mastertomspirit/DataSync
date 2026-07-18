@@ -49,9 +49,9 @@ import de.spiritscorp.datasync.controller.SyncJobContext;
 import de.spiritscorp.datasync.controller.ViewController;
 
 /**
- * Sidebar Navigation panel hosting the main execution links,
- * managed tasks instances, and dynamic manipulation actions via context menus.
- * * @author Tom Spirit
+ * Sidebar Navigation panel hosting the main execution links, managed tasks instances, and dynamic manipulation actions via context menus.
+ *
+ * @author Tom Spirit
  */
 final class SidebarView extends VBox {
 
@@ -127,21 +127,27 @@ final class SidebarView extends VBox {
 	 * Builds and styles custom Cell rendering including interactive management items.
 	 */
 	private void setupCellFactory() {
-		sidebarListView.setCellFactory( lv -> {
+		sidebarListView.setCellFactory( _ -> {
+			@SuppressWarnings( { "PMD.CommentRequired" } )
 			final ListCell<SyncJobContext> cell = new ListCell<>() {
+				private final FontIcon itemIcon = Gui.createIcon( MaterialDesignF.FOLDER );
+				private final Tooltip toolTip = new Tooltip();
+
 				@Override
 				protected void updateItem( final SyncJobContext item, final boolean empty ) {
 					super.updateItem( item, empty );
 					textProperty().unbind();
+					toolTip.textProperty().unbind();
 					if( empty || item == null ) {
 						setText( "" );
 						setGraphic( null );
+						setTooltip( null );
 					}else {
 						textProperty().bind( item.jobNameProperty() );
-						final FontIcon itemIcon = Gui.createIcon( MaterialDesignF.FOLDER );
 						itemIcon.getStyleClass().addAll( CSS_JOB_ICON );
 						setGraphic( itemIcon );
-						setTooltip( new Tooltip( item.getJobName() ) );
+						toolTip.textProperty().bind( item.jobNameProperty() );
+						setTooltip( toolTip );
 					}
 				}
 			};
@@ -240,7 +246,7 @@ final class SidebarView extends VBox {
 			return cell;
 		} );
 
-		sidebarListView.getSelectionModel().selectedItemProperty().addListener( ( obs, oldVal, newVal ) -> {
+		sidebarListView.getSelectionModel().selectedItemProperty().addListener( ( _, oldVal, newVal ) -> {
 			if( newVal != null && !newVal.equals( oldVal ) ) mainGui.setCurrentActiveJob( newVal );
 		} );
 	}

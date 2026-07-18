@@ -158,7 +158,11 @@ public class SyncJobContext {
 	}
 
 	void setRunning( final boolean value ) {
-		this.running.set( value );
+		if( Platform.isFxApplicationThread() ) {
+			this.running.set( value );
+		}else {
+			Platform.runLater( () -> this.running.set( value ) );
+		}
 	}
 
 	public String getStatusMessage() { return statusMessage.get(); }

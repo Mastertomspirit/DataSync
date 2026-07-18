@@ -38,7 +38,7 @@ import de.spiritscorp.datasync.model.FileAttributes;
  * @author Tom Spirit
  */
 @SuppressWarnings( "PMD.LongVariable" )
-public class UiLogFormatter {
+class LogFormatter {
 
 	// --- Conversion Constants for Byte Sizes ---
 	/** The number of bytes required to reach a Gibibyte threshold. */
@@ -73,8 +73,7 @@ public class UiLogFormatter {
 	private static final int DISPLAY_LIMIT_HALF_DIVIDER = 2;
 
 	/**
-	 * Converts a raw number of bytes into a human-readable string representation
-	 * using binary prefixes (KiB, MiB, GiB).
+	 * Converts a raw number of bytes into a human-readable string representation using binary prefixes (KiB, MiB, GiB).
 	 *
 	 * @param bytes the number of bytes to format
 	 * @return a formatted string indicating the size with appropriate units
@@ -94,24 +93,28 @@ public class UiLogFormatter {
 	}
 
 	/**
-	 * Formats a nanosecond duration into a human-readable runtime string
-	 * partitioned into hours, minutes, and seconds.
+	 * Formats a nanosecond duration into a human-readable runtime string partitioned into hours, minutes, and seconds.
 	 *
 	 * @param endTimeNano the elapsed duration in nanoseconds
 	 * @return a localized string visualizing the total runtime
 	 */
-	String getEndTimeFormatted( final long endTimeNano ) {
+	String getTimeFormatted( final long endTimeNano ) {
 		final double endTimeSec = endTimeNano / NANOSECONDS_PER_SECOND;
+
+		// Einheiten sauber aufteilen
+		final long totalSeconds = (long) endTimeSec;
+		final long hours = totalSeconds / SECONDS_PER_ONE_HOUR;
+		final long minutes = totalSeconds % SECONDS_PER_ONE_HOUR / SECONDS_PER_MINUTE;
+		final double seconds = endTimeSec % SECONDS_PER_MINUTE;
+
 		if( endTimeSec >= SECONDS_PER_TWO_HOURS ) {
-			return String.format( "%d Stunden %d Minuten %.3f Sekunden Laufzeit", ( (int) endTimeSec ) / SECONDS_PER_ONE_HOUR, ( (int) endTimeSec ) % SECONDS_PER_MINUTE,
-					endTimeSec % SECONDS_PER_MINUTE );
+			return String.format( "%d Stunden %d Minuten %.3f Sekunden", hours, minutes, seconds );
 		}else if( endTimeSec >= SECONDS_PER_ONE_HOUR ) {
-			return String.format( "%d Stunde %d Minuten %.3f Sekunden Laufzeit", ( (int) endTimeSec ) / SECONDS_PER_ONE_HOUR, ( (int) endTimeSec ) % SECONDS_PER_MINUTE,
-					endTimeSec % SECONDS_PER_MINUTE );
+			return String.format( "%d Stunde %d Minuten %.3f Sekunden", hours, minutes, seconds );
 		}else if( endTimeSec >= SECONDS_PER_MINUTE ) {
-			return String.format( "%d Minuten %.3f Sekunden Laufzeit", ( (int) endTimeSec ) / SECONDS_PER_MINUTE, endTimeSec % SECONDS_PER_MINUTE );
+			return String.format( "%d Minuten %.3f Sekunden", minutes, seconds );
 		}else {
-			return String.format( "%.3f Sekunden Laufzeit", endTimeSec );
+			return String.format( "%.3f Sekunden", endTimeSec );
 		}
 	}
 

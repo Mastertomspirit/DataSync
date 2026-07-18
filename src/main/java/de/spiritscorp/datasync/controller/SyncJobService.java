@@ -60,17 +60,17 @@ public class SyncJobService {
 	/**
 	 * Formatter utility responsible for converting raw sync metrics into human-readable UI logs.
 	 */
-	private final UiLogFormatter uiLog;
+	private final LogFormatter logFormatter;
 
 	/**
 	 * Constructs a new {@code SyncJobService} with the required UI and logging dependencies.
 	 *
 	 * @param dialogService the service provider for user interaction dialogs
-	 * @param uiLog         the formatter instance used to compile text summaries for the UI
+	 * @param logFormatter  the formatter instance used to compile text summaries for the UI
 	 */
-	public SyncJobService( final DialogService dialogService, final UiLogFormatter uiLog ) {
+	public SyncJobService( final DialogService dialogService, final LogFormatter logFormatter ) {
 		this.dialogService = dialogService;
-		this.uiLog = uiLog;
+		this.logFormatter = logFormatter;
 	}
 
 	/**
@@ -112,18 +112,18 @@ public class SyncJobService {
 				if( Thread.currentThread().isInterrupted() ) throw new InterruptedException();
 
 				final ArrayList<Map<Path, FileAttributes>> result = model.getSyncFiles( pref.getSyncMap(), startSourcePath, startDestPath );
-				final String scanTimeFormatted = uiLog.getEndTimeFormatted( System.nanoTime() - startTime ) + " für das Scannen";
+				final String scanTimeFormatted = logFormatter.getTimeFormatted( System.nanoTime() - startTime ) + " Laufzeit für das Scannen";
 
 				if( Thread.currentThread().isInterrupted() ) throw new InterruptedException();
 
-				appendLogData( context, uiLog.formatMaps( pref.getScanMode(), result.get( 0 ), result.get( 1 ), result.get( 2 ) ) );
+				appendLogData( context, logFormatter.formatMaps( pref.getScanMode(), result.get( 0 ), result.get( 1 ), result.get( 2 ) ) );
 				appendLogData( context, String.format( "Quelldateien: %d Stück und Zieldateien: %d Stück", stats[0], stats[1] ) );
-				appendLogData( context, String.format( "Größe aller Quelldateien: %s | Größe aller Zieldateien: %s", uiLog.getReadableBytes( stats[2] ), uiLog.getReadableBytes( stats[3] ) ) );
-				appendLogData( context, String.format( "Fehlerhafter Zugriff: %d", failMap.size() ) );
-
+				appendLogData( context, String.format( "Zu löschende Dateien: %d", failMap.size() ) );
+				appendLogData( context,
+						String.format( "Größe aller Quelldateien: %s | Größe aller Zieldateien: %s", logFormatter.getReadableBytes( stats[2] ), logFormatter.getReadableBytes( stats[3] ) ) );
 				startTime = System.nanoTime();
 				final boolean success = model.syncFiles( context, result, pref.getSyncMap(), startSourcePath, startDestPath, false );
-				final String syncTimeFormatted = uiLog.getEndTimeFormatted( System.nanoTime() - startTime ) + " für das Synchronisieren";
+				final String syncTimeFormatted = logFormatter.getTimeFormatted( System.nanoTime() - startTime ) + " Laufzeit für das Synchronisieren";
 
 				if( success ) {
 					pref.saveLastScanTime();
@@ -185,14 +185,15 @@ public class SyncJobService {
 
 				failMap.putAll( model.scanSyncFiles( pref.getSourcePaths(), pref.getDestPaths(), stats, pref.getScanMode(), pref.isSubDir(), pref.isTrashbin() ) );
 				model.compareEqualsFiles();
-				final String scanTimeFormatted = uiLog.getEndTimeFormatted( System.nanoTime() - startTime ) + " für das Scannen";
+				final String scanTimeFormatted = logFormatter.getTimeFormatted( System.nanoTime() - startTime ) + " Laufzeit für das Scannen";
 				Debug.printDebug( "[Controller Helper]  sourceMap size = %d, destMap size = %d, failtures = %d", stats[0], stats[1], failMap.size() );
 
 				if( Thread.currentThread().isInterrupted() ) throw new InterruptedException();
 
-				appendLogData( context, uiLog.formatMaps( pref.getScanMode(), sourceMap, destMap, failMap ) );
+				appendLogData( context, logFormatter.formatMaps( pref.getScanMode(), sourceMap, destMap, failMap ) );
 				appendLogData( context, String.format( "Quelldateien: %d Stück und Zieldateien: %d Stück", stats[0], stats[1] ) );
-				appendLogData( context, String.format( "Größe aller Quelldateien: %s | Größe aller Zieldateien: %s", uiLog.getReadableBytes( stats[2] ), uiLog.getReadableBytes( stats[3] ) ) );
+				appendLogData( context,
+						String.format( "Größe aller Quelldateien: %s | Größe aller Zieldateien: %s", logFormatter.getReadableBytes( stats[2] ), logFormatter.getReadableBytes( stats[3] ) ) );
 				appendLogData( context, String.format( "Fehlerhafter Zugriff: %d", failMap.size() ) );
 
 				boolean success = false;
@@ -206,7 +207,7 @@ public class SyncJobService {
 				if( pref.isAutoSync() || dialogService.promptYesNo( "Dateien sichern", "Kopieren bestätigen?", "Alle neuen Dateien in  das Zielverzeichnis kopieren?" ) ) {
 					startTime = System.nanoTime();
 					success = model.backupFiles( delete, pref.isLogOn(), startDestPath, pref.isTrashbin(), pref.getTrashbinPath() );
-					backupTimeFormatted = uiLog.getEndTimeFormatted( System.nanoTime() - startTime ) + " für das Synchronisieren";
+					backupTimeFormatted = logFormatter.getTimeFormatted( System.nanoTime() - startTime ) + " Laufzeit für das Synchronisieren";
 				}
 //				TODO output at manual abort
 				if( success ) {
@@ -261,7 +262,7 @@ public class SyncJobService {
 			final long startTime = System.nanoTime();
 			try {
 				final Map<Path, FileAttributes> duplicateMap = model.scanDublicates( pref.getSourcePaths(), stats );
-				final String scanTimeFormatted = uiLog.getEndTimeFormatted( System.nanoTime() - startTime );
+				final String scanTimeFormatted = logFormatter.getTimeFormatted( System.nanoTime() - startTime ) + "Laufzeit ";
 
 				if( Thread.currentThread().isInterrupted() ) throw new InterruptedException( "Manual abort ..." );
 
@@ -271,7 +272,7 @@ public class SyncJobService {
 						preparedRows.add( new SyncJobContext.FileRow(
 								entry.getKey(),
 								entry.getValue(),
-								uiLog.getReadableBytes( entry.getValue().getSize() ) ) );
+								logFormatter.getReadableBytes( entry.getValue().getSize() ) ) );
 					}
 				}
 

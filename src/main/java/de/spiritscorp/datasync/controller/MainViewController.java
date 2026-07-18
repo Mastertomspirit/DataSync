@@ -82,7 +82,7 @@ public class MainViewController implements ViewController {
 	MainViewController( final Gui gui, final DialogService dialogService ) {
 		this(
 				gui,
-				new SyncJobService( dialogService, new UiLogFormatter() ),
+				new SyncJobService( dialogService, new LogFormatter() ),
 				PreferenceManager.getInstance(),
 				dialogService );
 		loadInitialJobList();
@@ -114,6 +114,7 @@ public class MainViewController implements ViewController {
 			// Enforce rapid execution with small timeouts since the OS will forcefully kill us shortly
 			executeShutdown( false );
 			Debug.printDebug( "[Exit] BYE, BYE" );
+			System.out.flush();
 		}, "DataSync-OS-Shutdown-Hook-Thread" ) );
 		Debug.printDebug( "[Info] Native OS runtime shutdown hook successfully registered." );
 	}
@@ -172,7 +173,7 @@ public class MainViewController implements ViewController {
 			if( !newName.isBlank() && !newName.equals( oldName ) && manager.getProfile( newName ) == null ) {
 				manager.renameProfile( oldName, newName, job.getPreference() );
 				job.setJobName( newName );
-				gui.showStatusNotification( oldName + " wurde ersetzt und gespeichert durch" + newName, NotifyStatus.SUCCESS, Gui.INFO_DELAY );
+				gui.showStatusNotification( oldName + " wurde ersetzt und gespeichert durch " + newName, NotifyStatus.SUCCESS, Gui.INFO_DELAY );
 			}else {
 				gui.showStatusNotification( oldName + " wurde nicht ersetzt", NotifyStatus.WARNING, Gui.INFO_DELAY );
 			}

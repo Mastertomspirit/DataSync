@@ -190,7 +190,7 @@
 					<execution>
 						<phase>validate</phase>
 						<goals>
-							<goal>checkstyle</goal>
+							<goal>check</goal>
 						</goals>
 					</execution>
 				</executions>
@@ -576,7 +576,7 @@
 						</goals>
 						<configuration>
 							<verbose>true</verbose>
-							<toolhome>$‍{env.JPACKAGE_HOME}</toolhome>
+							<toolhome>${env.JPACKAGE_HOME}</toolhome>
 							<dest>target/${project.artifactId}/image</dest>
 							<name>${project.artifactId}</name>
 							<type>IMAGE</type>
@@ -587,9 +587,10 @@
 							<vendor>${app.owner}</vendor>
 							<icon>${jpackage.icon}</icon>
 							<module>de.spiritscorp.datasync/de.spiritscorp.datasync.Main</module>
-							<javaoptions>-Dfile.encoding=UTF-8 -Xms32m -Xmx4096m</javaoptions>
-							<javaoptions> -Dapp.instance.name=${project.artifactId}_v${project.version}</javaoptions>
-							<javaoptions>--enable-native-access=javafx.graphics</javaoptions>
+							<javaoptions>-Dfile.encoding=UTF-8 \
+							-Xms32m -Xmx4096m \
+							-Dapp.instance.name=${project.artifactId}_v${project.version} \
+							--enable-native-access=javafx.graphics</javaoptions>
 						</configuration>
 					</execution>
 				</executions>

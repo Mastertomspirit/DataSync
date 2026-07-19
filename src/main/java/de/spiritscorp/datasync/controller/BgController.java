@@ -23,6 +23,9 @@ package de.spiritscorp.datasync.controller;
 import java.awt.AWTException;
 import java.awt.SystemTray;
 import java.awt.TrayIcon;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.nio.file.Path;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -52,6 +55,7 @@ import de.spiritscorp.datasync.model.Model;
  * <p>
  *
  * @author Tom Spirit
+ * @version 2.1.0
  */
 public class BgController {
 
@@ -237,8 +241,10 @@ public class BgController {
 				final long targetInterval = (long) ( pref.getBgTime().getTime() * timeMultiplier );
 				Debug.printDebug( "[Bg Controller] time since last check (%s): %s", job.getJobName(),
 						logFormatter.getTimeFormatted( ( System.currentTimeMillis() - pref.getLastScanTime() ) * 1_000_000 ) );
-
-				if( timeDelta > targetInterval ) {
+				Path destPath = pref.getDestPaths().getFirst();
+				if( !Files.exists( destPath, LinkOption.NOFOLLOW_LINKS ) ) {
+					Debug.printDebug( "[Bg Controller] Destination Path is offline: %s", destPath.toString() );
+				}else if( timeDelta > targetInterval ) {
 					Debug.printDebug( "[Bg Controller] Polling threshold triggered for task: %s. Queueing worker task.", job.getJobName() );
 					job.setRunning( true );
 					// Dispatch into the dedicated loop queue lane (prevents hardware disk I/O thrashing)
@@ -277,11 +283,11 @@ public class BgController {
 	 * zero resource leaks.
 	 * <p>
 	 *
-	 * @param timeoutPerThreadMs The maximum synchronization epoch in milliseconds granted to active
-	 *                           I/O operations to complete task evaluation loops before
-	 *                           the lifecycle boundary is forcibly closed.
+	 * @param timeout The maximum synchronization epoch in milliseconds granted to active
+	 *                I/O operations to complete task evaluation loops before
+	 *                the lifecycle boundary is forcibly closed.
 	 */
-	private void shutdownExecutors( final long timeoutPerThreadMs ) {
+	private void shutdownExecutors( final long timeout ) {
 		Debug.printDebug( "[Bg Controller] Dissolving executor pools and cleaning up task contexts." );
 
 		if( scheduler != null ) {
@@ -292,7 +298,7 @@ public class BgController {
 			// Drops instant interrupt signals down to the thread executing the active copy sequence
 			workerQueue.shutdownNow();
 			try {
-				if( !workerQueue.awaitTermination( timeoutPerThreadMs, TimeUnit.MILLISECONDS ) ) {
+				if( !workerQueue.awaitTermination( timeout, TimeUnit.MILLISECONDS ) ) {
 					Debug.printDebug( "[Bg Controller] Worker queue termination delayed. Enforcing lifecycle exit." );
 				}
 			}catch( InterruptedException _ ) {

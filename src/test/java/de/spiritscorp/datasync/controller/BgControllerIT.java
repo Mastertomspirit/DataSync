@@ -36,6 +36,9 @@ import java.awt.TrayIcon;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -69,7 +72,7 @@ import de.spiritscorp.datasync.io.Preference;
  * </p>
  *
  * @author Tom Spirit
- * @version 1.0.0
+ * @version 1.1.0
  * @see BgController
  */
 //@DisplayName( "BgController Integration Test Suite" )
@@ -132,7 +135,7 @@ class BgControllerIT {
 		if( controller != null ) {
 			try {
 				controller.requestApplicationShutdown();
-			}catch( final Exception ignored ) {
+			}catch( final Exception _ ) {
 				// Prevent teardown faults from masking compilation errors
 			}
 		}
@@ -151,9 +154,13 @@ class BgControllerIT {
 	@DisplayName( "01: End-to-End Execution - Live scheduler loop triggers overdue job and transitions states" )
 	void testEndToEndSchedulerTriggersJob() throws Exception {
 		// Arrange: Create an overdue task using an accelerated execution multiplier
-		final long overdueTimestamp = System.currentTimeMillis() - BgTime.MIN_30.getTime();
+		final long overdueTimestamp = System.currentTimeMillis() - BgTime.HOURLY.getTime();
 		final SyncJobContext liveJob = createIntegrationJob( "Live-Integration-Task", true, BgTime.MIN_30, overdueTimestamp );
 		final CountDownLatch jobStartedLatch = new CountDownLatch( 1 );
+
+		controller = new BgController( mockGui, mockViewController, integrationJobList, mockLogger );
+		// Accelerate time bounds via reflection: Scale interval down dramatically for rapid ticking
+		injectMockExecutors( controller, 0.0001 );
 
 		// Intercept the execution hook on the live job to signal our test thread when it running state changes
 		doAnswer( invocation -> {
@@ -165,16 +172,13 @@ class BgControllerIT {
 		} ).when( liveJob ).setRunning( anyBoolean() );
 		integrationJobList.add( liveJob );
 
-		controller = new BgController( mockGui, mockViewController, integrationJobList, mockLogger );
-		// Accelerate time bounds via reflection: Scale interval down dramatically for rapid ticking
-		injectMockExecutors( controller, 0.0001 );
-
 		// Act: Start the engine
 		controller.startBgJob( false );
 
 		// Assert: Verify that the background thread engine actually processed the job within a safe timeout
-		final boolean executedSuccessfully = jobStartedLatch.await( 2000, TimeUnit.MILLISECONDS );
+		final boolean executedSuccessfully = jobStartedLatch.await( 1000, TimeUnit.MILLISECONDS );
 		assertTrue( executedSuccessfully, "The asynchronous integration pipeline failed to execute the task queue loop." );
+
 	}
 
 	/**
@@ -317,6 +321,7 @@ class BgControllerIT {
 		final SyncJobContext job = mock( SyncJobContext.class );
 		final Preference pref = mock( Preference.class );
 
+		when( pref.getDestPaths() ).thenReturn( new ArrayList<>( List.of( Path.of( "." ) ) ) );
 		when( job.getJobName() ).thenReturn( name );
 		when( job.getPreference() ).thenReturn( pref );
 		when( pref.isBgSync() ).thenReturn( bgSync );
@@ -335,7 +340,7 @@ class BgControllerIT {
 		try {
 			final Method setEnvironment = BgController.class.getDeclaredMethod( "setEnvironment", double.class, BgView.class, ScheduledExecutorService.class, ExecutorService.class );
 			setEnvironment.setAccessible( true );
-			setEnvironment.invoke( controller, multiplier, mockBgView, null, null );
+			setEnvironment.invoke( controller, multiplier, mockBgView, null, mock( ExecutorService.class ) );
 		}catch( IllegalAccessException | NoSuchMethodException | SecurityException e ) {
 			throw new ExecutionException( "Failed to inject architectural test values via reflection.", e );
 		}catch( final InvocationTargetException e ) {

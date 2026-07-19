@@ -93,12 +93,12 @@ class ContextPathRenderer {
 	 * Dynamically morphs and populates the layout components inside a target container
 	 * mapped to the contextual rules of the active {@link ScanType}.
 	 *
-	 * @param type         The operational scanning mode defining which layout parts are required
 	 * @param container    The target UI container to be cleared and rebuilt with the generated nodes
 	 * @param pref         The operational data model context carrying active synchronization properties
 	 * @param primaryStage The application-level window stage acting as the parent for modal dialogue screens
 	 */
-	void renderContextPaths( final ScanType type, final VBox container, final Preference pref, final Stage primaryStage ) {
+	void renderContextPaths( final VBox container, final Preference pref, final Stage primaryStage ) {
+		final ScanType type = pref.getScanMode();
 		// Clear previous components to prepare for dynamic layout generation
 		container.getChildren().clear();
 
@@ -142,13 +142,13 @@ class ContextPathRenderer {
 		final Button srcBtn = new Button( "Durchsuchen..." );
 		srcBtn.setOnAction( _ -> {
 			final File initialSrc = getInitialPath( pref.getSourcePaths() );
-			final File dirPath = chooseDirectory( initialSrc, "Quellverzeichnis für " + pref.getScanMode().getDescription(), primaryStage );
+			final File dirPath = chooseDirectory( initialSrc, "Arbeitsverzeichnis A für " + pref.getScanMode().getDescription(), primaryStage );
 			if( dirPath != null ) {
 				srcTextField.setText( dirPath.getAbsolutePath() );
 				pref.setSourcePaths( new ArrayList<>( List.of( dirPath.toPath() ) ) );
 			}
 		} );
-		final Label label = new Label( "Quellverzeichnis:" );
+		final Label label = new Label( "Arbeitsverzeichnis A:" );
 		label.setPrefWidth( LABEL_WIDTH );
 		destGrid.add( label, 0, 0 );
 		destGrid.add( new HBox( 8, srcTextField, srcBtn ), 1, 0 );
@@ -216,6 +216,7 @@ class ContextPathRenderer {
 	 * @return A configured {@link VBox} layout component ready for application visualization
 	 */
 	private VBox getDestBox( final Preference pref, final Stage primaryStage ) {
+		final String directoryName = pref.getScanMode() == ScanType.SYNCHRONIZE ? "Arbeitsverzeichnis B" : "Zielverzeichnis";
 		final GridPane destGrid = new GridPane();
 		destGrid.setHgap( H_GAP );
 		final String initialString = getInitialPath( pref.getDestPaths() ).toString();
@@ -224,13 +225,13 @@ class ContextPathRenderer {
 		final Button destBtn = new Button( "Durchsuchen..." );
 		destBtn.setOnAction( _ -> {
 			final File initialDest = getInitialPath( pref.getDestPaths() );
-			final File dirPath = chooseDirectory( initialDest, "Zielverzeichnis für " + pref.getScanMode().getDescription(), primaryStage );
+			final File dirPath = chooseDirectory( initialDest, directoryName + " für " + pref.getScanMode().getDescription(), primaryStage );
 			if( dirPath != null ) {
 				destField.setText( dirPath.getAbsolutePath() );
 				pref.setDestPaths( new ArrayList<>( List.of( dirPath.toPath() ) ) );
 			}
 		} );
-		final Label label = new Label( "Zielverzeichnis:" );
+		final Label label = new Label( directoryName + ":" );
 		label.setPrefWidth( LABEL_WIDTH );
 		destGrid.add( label, 0, 0 );
 		destGrid.add( new HBox( 8, destField, destBtn ), 1, 0 );

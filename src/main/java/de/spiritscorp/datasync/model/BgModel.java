@@ -84,9 +84,9 @@ public class BgModel {
 				Debug.printDebug( "[Bg Model] Synchronization list ready" );
 
 				Debug.printDebug( "[Bg Model] Process files start" );
-				if( !result.get( 0 ).isEmpty() ) handler.copyFiles( result.get( 0 ), false, startDestPath );
-				if( !result.get( 1 ).isEmpty() ) handler.copyFiles( result.get( 1 ), false, startSourcePath );
-				if( !result.get( 2 ).isEmpty() ) handler.deleteFiles( result.get( 2 ), false, false, null );
+				if( !result.get( 0 ).isEmpty() ) handler.copyFiles( result.get( 0 ), logOn, startDestPath );
+				if( !result.get( 1 ).isEmpty() ) handler.copyFiles( result.get( 1 ), logOn, startSourcePath );
+				if( !result.get( 2 ).isEmpty() ) handler.deleteFiles( result.get( 2 ), logOn, false, null );
 
 				sourceMap.clear();
 				destMap.clear();

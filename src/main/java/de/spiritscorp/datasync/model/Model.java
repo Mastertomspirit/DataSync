@@ -213,9 +213,10 @@ public class Model {
 	 */
 	public boolean syncFiles( final SyncJobContext ctx, final ArrayList<Map<Path, FileAttributes>> result, final Map<Path, FileAttributes> syncMap, final Path sourcePath, final Path destPath,
 			final boolean testOn ) {
-		if( !result.get( 0 ).isEmpty() ) handler.copyFiles( result.get( 0 ), false, destPath );
-		if( !result.get( 1 ).isEmpty() ) handler.copyFiles( result.get( 1 ), false, sourcePath );
-		if( !result.get( 2 ).isEmpty() ) handler.deleteFiles( result.get( 2 ), false, false, null );
+		final boolean logOn = ctx.getPreference().isLogOn();
+		if( !result.get( 0 ).isEmpty() ) handler.copyFiles( result.get( 0 ), logOn, destPath );
+		if( !result.get( 1 ).isEmpty() ) handler.copyFiles( result.get( 1 ), logOn, sourcePath );
+		if( !result.get( 2 ).isEmpty() ) handler.deleteFiles( result.get( 2 ), logOn, false, null );
 
 		sourceMap.clear();
 		destMap.clear();

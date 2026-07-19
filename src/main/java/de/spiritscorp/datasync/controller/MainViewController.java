@@ -106,6 +106,7 @@ public class MainViewController implements ViewController {
 		this.manager = manager;
 	}
 
+	@SuppressWarnings( { "java:S106" } )
 	@Override
 	public void registerNativeShutdownHook() {
 		Runtime.getRuntime().addShutdownHook( new Thread( () -> {
@@ -115,6 +116,7 @@ public class MainViewController implements ViewController {
 			executeShutdown( false );
 			Debug.printDebug( "[Exit] BYE, BYE" );
 			System.out.flush();
+			System.err.flush();
 		}, "DataSync-OS-Shutdown-Hook-Thread" ) );
 		Debug.printDebug( "[Info] Native OS runtime shutdown hook successfully registered." );
 	}
@@ -244,10 +246,10 @@ public class MainViewController implements ViewController {
 
 		// Persist structural configuration states securely to disk
 		if( manager.saveAllPreferences() ) {
-			gui.showStatusNotification( "Settings successfully persisted to the configuration registry.", NotifyStatus.SUCCESS, Gui.INFO_DELAY );
+			gui.showStatusNotification( "Die Einstellungen wurden erfolgreich in der Konfiguration gespeichert.", NotifyStatus.SUCCESS, Gui.INFO_DELAY );
 			Debug.printDebug( "[Settings] Configuration profile assets successfully serialized to disk." );
 		}else {
-			gui.showStatusNotification( "Error: Failed to write configuration payload to 'conf.json'.", NotifyStatus.ERROR, Gui.INFO_DELAY );
+			gui.showStatusNotification( "Fehler: Die Konfigurationsdaten konnten nicht in 'conf.json' geschrieben werden.", NotifyStatus.ERROR, Gui.INFO_DELAY );
 			Debug.printDebug( "[Settings Error] Critical: Failed to persist configuration profile assets." );
 		}
 	}

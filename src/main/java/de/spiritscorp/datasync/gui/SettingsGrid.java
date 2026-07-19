@@ -55,7 +55,7 @@ import de.spiritscorp.datasync.theme.AppTheme;
  * </p>
  *
  * @author Tom Spirit
- * @since 1.0.0
+ * @since 1.1.0
  */
 @SuppressWarnings( { "PMD.LongVariable", "PMD.NcssCount" } )
 class SettingsGrid {
@@ -89,10 +89,10 @@ class SettingsGrid {
 		this.controller = controller;
 		this.primaryStage = primaryStage;
 		this.renderer = renderer;
-		this.subDirCheck = new CheckBox( "Unterordner einbeziehen (SubDir)" );
-		this.trashbinCheck = new CheckBox( "Papierkorb verwenden (Trashbin)" );
-		this.autoDelCheck = new CheckBox( "Automatisches Löschen erlauben (AutoDel)" );
-		this.autoSyncCheck = new CheckBox( "Automatisches kopieren erlauben (AutoSync)" );
+		this.subDirCheck = new CheckBox( "Unterordner einbeziehen" );
+		this.trashbinCheck = new CheckBox( "Papierkorb verwenden" );
+		this.autoDelCheck = new CheckBox( "Automatisches Löschen erlauben" );
+		this.autoSyncCheck = new CheckBox( "Automatisches kopieren erlauben" );
 		this.bgSyncCheck = new CheckBox( "Hintergrund-Synchronisation aktiv" );
 	}
 
@@ -141,10 +141,11 @@ class SettingsGrid {
 
 		// Establish listener to dynamically rebuild path boxes on operational changes
 		taskModeComboBox.valueProperty().addListener( ( _, _, n ) -> {
-			renderer.renderContextPaths( ScanType.get( n ), dynamicPathsContainer, pref, primaryStage );
-			applyModeRestrictions( ScanType.get( n ), pref );
+			pref.setScanMode( ScanType.get( n ) );
+			renderer.renderContextPaths( dynamicPathsContainer, pref, primaryStage );
+			applyModeRestrictions( pref );
 		} );
-		renderer.renderContextPaths( job.getSelectedMode(), dynamicPathsContainer, pref, primaryStage );
+		renderer.renderContextPaths( dynamicPathsContainer, pref, primaryStage );
 
 		// ---------------------------------------------------------------------
 		// SECTION 3: Task Parameter Flags Options
@@ -159,9 +160,11 @@ class SettingsGrid {
 				Deaktiviert: Erstellt für jeden Quellpfad einen eigenen Hauptordner im Zielverzeichnis, um die Quellen sauber voneinander zu trennen.
 				""";
 		subDirCheck.setTooltip( new Tooltip( subDirText ) );
+		subDirCheck.setOnAction( _ -> pref.setSubDir( subDirCheck.isSelected() ) );
 
 		trashbinCheck.setSelected( pref.isTrashbin() );
 		trashbinCheck.setTooltip( new Tooltip( "Verschiebt modifizierte/gelöschte Dateien temporär in Sicherungsstrukturen" ) );
+		trashbinCheck.setOnAction( _ -> pref.setTrashbin( trashbinCheck.isSelected() ) );
 
 		autoDelCheck.setSelected( pref.isAutoDel() );
 		final String autoDelText = """
@@ -169,13 +172,16 @@ class SettingsGrid {
 				( Nötig für das hintergrund Backup )
 				""";
 		autoDelCheck.setTooltip( new Tooltip( autoDelText ) );
+		autoDelCheck.setOnAction( _ -> pref.setAutoDel( autoDelCheck.isSelected() ) );
 
 		autoSyncCheck.setSelected( pref.isAutoSync() );
 		autoSyncCheck.setTooltip( new Tooltip( "Erlaubt dem System, nach einem Scan alle nötigen Dateien zu kopieren." ) );
+		autoSyncCheck.setOnAction( _ -> pref.setAutoSync( autoSyncCheck.isSelected() ) );
 
-		final CheckBox logOnCheck = new CheckBox( "Protokollierung aktivieren (LogOn)" );
+		final CheckBox logOnCheck = new CheckBox( "Protokollierung aktivieren" );
 		logOnCheck.setSelected( pref.isLogOn() );
 		logOnCheck.setTooltip( new Tooltip( "Schreibt detaillierte Transaktionsprotokolle in das System-Logverzeichnis" ) );
+		logOnCheck.setOnAction( _ -> pref.setLogOn( logOnCheck.isSelected() ) );
 
 		bgSyncCheck.setSelected( pref.isBgSync() );
 		bgSyncCheck.setTooltip( new Tooltip( "Setzt den Autostart und aktiviert die Hintergrundsyncronisierung im nachfolgenden Intervall" ) );
@@ -199,7 +205,7 @@ class SettingsGrid {
 		final Label globalTitleLabel = new Label( "Globale System-Konfiguration" );
 		globalTitleLabel.getStyleClass().addAll( "global-title-label" );
 
-		final CheckBox globalAutostartCheck = new CheckBox( "DataSync beim Systemstart minimiert laden (Autostart OS)" );
+		final CheckBox globalAutostartCheck = new CheckBox( "DataSync beim Systemstart minimiert laden" );
 		globalAutostartCheck.setSelected( PreferenceManager.getInstance().isGlobalAutoStart() ); // Bind status fallback trace
 		globalAutostartCheck.setOnAction( _ -> controller.handleAutostart( globalAutostartCheck.isSelected() ) );
 
@@ -226,7 +232,7 @@ class SettingsGrid {
 		themeComboBox.getSelectionModel().select( PreferenceManager.getInstance().getTheme() );
 
 		final VBox globalBox = new VBox( 10, globalTitleLabel, globalAutostartCheck, new HBox( 75, themeLabel, themeComboBox ) );
-		applyModeRestrictions( pref.getScanMode(), pref );
+		applyModeRestrictions( pref );
 		settingsGrid.add( globalBox, 0, 3, 2, 1 );
 
 		// ---------------------------------------------------------------------
@@ -253,14 +259,8 @@ class SettingsGrid {
 
 			// Commit isolated job specific parameter values
 			final Preference jobPref = job.getPreference();
-			jobPref.setSubDir( subDirCheck.isSelected() );
-			jobPref.setTrashbin( trashbinCheck.isSelected() );
-			jobPref.setAutoDel( autoDelCheck.isSelected() );
-			jobPref.setLogOn( logOnCheck.isSelected() );
 			jobPref.setBgSync( bgSyncCheck.isSelected() );
 			jobPref.setBgTime( BgTime.get( bgTimeComboBox.getValue() ) );
-			jobPref.setAutoSync( autoSyncCheck.isSelected() );
-			jobPref.setScanMode( scanType );
 
 			// Delegate layout update processing onwards to core view thread orchestrator
 			controller.handleSaveSettings( themeComboBox.getValue() );
@@ -277,12 +277,10 @@ class SettingsGrid {
 	 * Evaluates and modifies the accessibility and selection states of option checkboxes
 	 * according to the active functional {@link ScanType} guidelines.
 	 *
-	 * @param type The target operational mode currently active in the UI combo selection
 	 * @param pref The backing config configuration holding safe fallback default values
 	 */
-	private void applyModeRestrictions( final ScanType type, final Preference pref ) {
-		// Always ensure trashbin remains modifiable and matches user specs
-		trashbinCheck.setSelected( pref.isTrashbin() );
+	private void applyModeRestrictions( final Preference pref ) {
+		final ScanType type = pref.getScanMode();
 //CHECKSTYLE:OFF
 		switch( type ) {
 			case DUBLICATE_SCAN -> {
@@ -298,20 +296,26 @@ class SettingsGrid {
 
 				bgSyncCheck.setDisable( true );
 				bgSyncCheck.setSelected( false );
+
+				trashbinCheck.setDisable( true );
+				trashbinCheck.setSelected( false );
 			}
 			case SYNCHRONIZE -> {
 				// Access block only - keep native property settings representation alive
-				subDirCheck.setDisable( true );
-				subDirCheck.setSelected( pref.isSubDir() );
-
 				autoDelCheck.setDisable( false );
 				autoDelCheck.setSelected( pref.isAutoDel() );
 
-				autoSyncCheck.setDisable( true );
-				autoSyncCheck.setSelected( pref.isAutoSync() );
-
 				bgSyncCheck.setDisable( false );
 				bgSyncCheck.setSelected( pref.isBgSync() );
+
+				subDirCheck.setDisable( true );
+				subDirCheck.setSelected( false );
+
+				autoSyncCheck.setDisable( true );
+				autoSyncCheck.setSelected( true );
+
+				trashbinCheck.setDisable( true );
+				trashbinCheck.setSelected( false );
 			}
 			case FLAT_SCAN, DEEP_SCAN -> {
 				// Full evaluation processing release - reload tracking references safely
@@ -326,6 +330,9 @@ class SettingsGrid {
 
 				bgSyncCheck.setDisable( false );
 				bgSyncCheck.setSelected( pref.isBgSync() );
+
+				trashbinCheck.setDisable( false );
+				trashbinCheck.setSelected( pref.isTrashbin() );
 			}
 		}
 		// CHECKSTYLE:ON

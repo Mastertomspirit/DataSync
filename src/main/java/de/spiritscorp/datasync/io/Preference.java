@@ -47,6 +47,7 @@ import de.spiritscorp.datasync.model.Model;
  * Isolated parameters state tracker mapped to a dedicated profile workspace scope.
  *
  * @author Tom Spirit
+ * @version 2.0.0
  */
 public final class Preference {
 
@@ -77,7 +78,7 @@ public final class Preference {
 		syncMap = Model.createMap();
 		destPaths = new ArrayList<>( List.of( PreferenceManager.DATASYNC_HOME ) );
 		sourcePaths = new ArrayList<>( List.of( PreferenceManager.DATASYNC_HOME ) );
-		trashbinPath = destPaths.get( 0 ).resolve( TRASHBIN_STRING );
+		trashbinPath = destPaths.getFirst().resolve( TRASHBIN_STRING );
 
 		final String safeName = jobName.replaceAll( "[^a-zA-Z0-9-_]", "_" );
 		this.ioSyncMap = new IOSyncMap( safeName );
@@ -234,7 +235,7 @@ public final class Preference {
 				StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING ) ) {
 			writer.write( String.valueOf( System.currentTimeMillis() ) );
 		}catch( final IOException exception ) {
-			Debug.printDebug( "[Preference Error] IO write failed at '%s' message: %s", jobScanTimePath, exception.getMessage() );
+			Debug.printDebug( "[Preference Error] IO write failed at '%s' message: %s", jobScanTimePath.toString(), exception.getMessage() );
 			Debug.printException( this.getClass(), exception );
 		}
 	}
@@ -250,12 +251,53 @@ public final class Preference {
 			final String line = reader.readLine();
 			return ( line != null ) ? Long.parseLong( line.trim() ) : 0;
 		}catch( final IOException | NumberFormatException exception ) {
-			Debug.printDebug( "[Preference Error] IO read failed at '%s' message: %s", jobScanTimePath, exception.getMessage() );
+			Debug.printDebug( "[Preference Error] IO read failed at '%s' message: %s", jobScanTimePath.toString(), exception.getMessage() );
 			Debug.printException( this.getClass(), exception );
 			return 0;
 		}
 	}
 
+	/**
+	 * Removes the profile by deleting its associated persistent data, including
+	 * both the last scan time file and the synchronization map.
+	 * <p>
+	 * This method ensures that both deletion operations are attempted, regardless
+	 * of whether the first operation succeeded.
+	 *
+	 * @return {@code true} if both the last scan file and the synchronization map
+	 *         were successfully removed (or did not exist); {@code false} if either
+	 *         operation encountered an error.
+	 */
+	public boolean removeProfile() {
+		final boolean rmScanFile = removeLastScanFile();
+		final boolean rmSyncFile = ioSyncMap.deleteSyncMap();
+		return rmScanFile && rmSyncFile;
+	}
+
+	/**
+	 * Deletes the file tracking the last scan time from disk if it exists.
+	 *
+	 * @return {@code true} if the file was successfully deleted or did not exist;
+	 *         {@code false} if an I/O error occurred during deletion.
+	 */
+	private boolean removeLastScanFile() {
+		try {
+			if( Files.deleteIfExists( jobScanTimePath ) ) {
+				Debug.printDebug( "[Preferenced] Successfully deleted last scan time file: %s", jobScanTimePath.getFileName().toString() );
+			}
+			return true;
+		}catch( IOException exception ) {
+			Debug.printDebug( "[Preference Error] IO remove last scan file failed at '%s' message: %s", jobScanTimePath, exception.getMessage() );
+			Debug.printException( this.getClass(), exception );
+			return false;
+		}
+	}
+
+	/**
+	 * Persists the current state of the synchronization map to storage.
+	 * <p>
+	 * Actual I/O operations are delegated to the underlying {@code ioSyncMap} handler.
+	 */
 	public void writeSyncMap() {
 		ioSyncMap.writeSyncMap( syncMap );
 	}
@@ -263,13 +305,17 @@ public final class Preference {
 	// --- Setters and Getters ---
 	public String getJobName() { return jobName; }
 
-	void setJobNameFromManager( final String newName ) { this.jobName = newName; }
+	void setJobNameFromManager( final String newName ) {
+		this.ioSyncMap.deleteSyncMap();
+		removeLastScanFile();
+		this.jobName = newName;
+	}
 
 	public ArrayList<Path> getSourcePaths() { return sourcePaths; }
 
 	public void setSourcePaths( final ArrayList<Path> sourcePaths ) {
 		this.sourcePaths = sourcePaths;
-		ioSyncMap.deleteSyncMap();
+		this.ioSyncMap.deleteSyncMap();
 	}
 
 	public void setSourcePath( final Path sourcePath ) {

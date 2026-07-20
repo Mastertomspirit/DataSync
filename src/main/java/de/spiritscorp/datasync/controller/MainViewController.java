@@ -162,7 +162,7 @@ public class MainViewController implements ViewController {
 	@Override
 	public void handleCreateNewJob() {
 		final String name = "Sync Job " + ( gui.getJobList().size() + 1 );
-		gui.getJobList().add( new SyncJobContext( name, manager.createProfile( name ) ) );
+		gui.getJobList().add( new SyncJobContext( name, manager.createProfile( name, true ) ) );
 		gui.showStatusNotification( name + " wurde erstellt und gespeichert", NotifyStatus.SUCCESS, Gui.INFO_DELAY );
 	}
 
@@ -294,8 +294,8 @@ public class MainViewController implements ViewController {
 					} )
 					.forEach( jobList::add );
 		}else {
-			jobList.add( new SyncJobContext( "NAS Dokumenten-Spiegel", manager.createProfile( "NAS Dokus" ) ) );
-			jobList.add( new SyncJobContext( "Lokales Code-Workspace Backup", manager.createProfile( "WorkspaceRepo" ) ) );
+			jobList.add( new SyncJobContext( "NAS Dokumente", manager.createProfile( "NAS  Dokumente", false ) ) );
+			jobList.add( new SyncJobContext( "Lokales Workspace Backup", manager.createProfile( "Lokales Workspace Backup", false ) ) );
 		}
 		gui.setInitialJobConfigurations( jobList );
 	}

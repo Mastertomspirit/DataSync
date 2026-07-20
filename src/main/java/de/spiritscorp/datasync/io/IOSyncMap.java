@@ -131,18 +131,23 @@ class IOSyncMap {
 
 	/**
 	 * Deletes the persisted file synchronization snapshot from disk.
+	 * <p>
 	 * Removes the tracking dataset file if it exists, effectively clearing the persistence
 	 * baseline and forcing a full scan or re-initialization upon the next execution.
+	 *
+	 * @return {@code true} if the file was successfully deleted or did not exist;
+	 *         {@code false} if a file system failure occurred.
 	 */
-	void deleteSyncMap() {
+	boolean deleteSyncMap() {
 		try {
-			final boolean deleted = Files.deleteIfExists( jobSyncMapPath );
-			if( deleted ) {
-				Debug.printDebug( "[IO Sync Map] Successfully deleted sync map file: %s", jobSyncMapPath );
+			if( Files.deleteIfExists( jobSyncMapPath ) ) {
+				Debug.printDebug( "[IO Sync Map] Successfully deleted sync map file: %s", jobSyncMapPath.getFileName().toString() );
 			}
+			return true;
 		}catch( final IOException exception ) {
 			Debug.printDebug( "[IO Sync Map Error] File system failure while deleting file: %s", exception.getMessage() );
 			Debug.printException( this.getClass(), exception );
+			return false;
 		}
 	}
 

@@ -145,14 +145,15 @@ public final class PreferenceManager {
 	 * @param jobName Unique target workspace identifier.
 	 * @return The new configuration instance, or null if the configuration allready exists.
 	 */
-	public Preference createProfile( final String jobName ) {
+	public Preference createProfile( final String jobName, final boolean withSave ) {
 		try {
 			if( profileLock.tryLock( LOCK_TIME, TimeUnit.SECONDS ) ) {
 				try {
 					if( getProfile( jobName ) == null ) {
 						final Preference pref = Preference.createSinglePreference( jobName );
 						loadedProfiles.add( pref );
-						if( saveAllPreferences() ) return pref;
+						if( withSave || saveAllPreferences() )
+							return pref;
 					}
 				}finally {
 					profileLock.unlock();
@@ -293,6 +294,7 @@ public final class PreferenceManager {
 				try {
 					Preference pref = getProfile( jobName );
 					if( pref != null ) {
+						pref.removeProfile();
 						loadedProfiles.remove( pref );
 						return saveAllPreferences();
 					}

@@ -61,7 +61,7 @@ class Logrotater {
 		try {
 			long actualSize = Files.size( baseLogPath );
 			if( actualSize < maxFileSize ) { return; }
-			Debug.printDebug( "[Logrotater] Rotation starting at file size: %.2f Mb", actualSize / ( 1024 * 1024 ) );
+			Debug.printDebug( "[Logrotater] Rotation starting at file size: %.2f Mb", ( (float) actualSize ) / ( 1024 * 1024 ) );
 
 			// Cascade existing backups downwards (e.g., log.4 -> log.5)
 			for( int i = maxBackupIndex - 1; i >= 1; i-- ) {
@@ -79,7 +79,7 @@ class Logrotater {
 			Debug.printDebug( "[Logrotater] Rotate file %s -> %s ", baseLogPath.toString(), firstBackup.toString() );
 			Debug.printDebug( "[Logrotater] Finished successfully " );
 		}catch( final IOException exception ) {
-			Debug.printDebug( "[Logrotater Error] Execution of log rotation failed at -> %s with message -> %s", baseLogPath, exception.getMessage() );
+			Debug.printDebug( "[Logrotater Error] Execution of log rotation failed at -> %s with message -> %s", baseLogPath.toString(), exception.getMessage() );
 			Debug.printException( this.getClass(), exception );
 		}
 	}

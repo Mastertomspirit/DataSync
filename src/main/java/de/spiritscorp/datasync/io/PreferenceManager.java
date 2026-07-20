@@ -42,6 +42,7 @@ import jakarta.json.JsonReader;
 import jakarta.json.JsonWriter;
 import jakarta.json.JsonWriterFactory;
 import jakarta.json.stream.JsonGenerator;
+import jakarta.json.stream.JsonParsingException;
 
 import de.spiritscorp.datasync.theme.AppTheme;
 import de.spiritscorp.datasync.theme.DarkSlateTheme;
@@ -51,67 +52,49 @@ import de.spiritscorp.datasync.theme.DarkSlateTheme;
  * Coordinates multi-profile I/O read/write operations for independent replication synchronization tasks
  * and global application states. Implements the Singleton pattern to ensure centralized state control.
  *
+ * @author Tom Spirit
+ * @version 1.0.1
  */
 public final class PreferenceManager {
 
-	/**
-	 * Root directory for application data storage.
-	 */
+	/** Root directory for application data storage. */
 	static final Path DATASYNC_HOME = Paths.get( System.getProperty( "user.home" ), "DataSync" );
-	/**
-	 * Root directory for application data storage.
-	 */
+	/** Root directory for application data storage. */
 	private Path rootPath = DATASYNC_HOME;
-	/**
-	 * Path to the JSON configuration file containing profiles and global settings.
-	 */
+	/** Path to the JSON configuration file containing profiles and global settings. */
 	private Path configPath = rootPath.resolve( "conf.json" );
-	/**
-	 * Path to the standard JSON log file.
-	 */
+	/** Path to the standard JSON log file. */
 	private Path logPath = rootPath.resolve( "log.json" );
-	/**
-	 * Path to the standard debug log text file.
-	 */
+	/** Path to the standard debug log text file. */
 	private Path debugPath = rootPath.resolve( "debug.log" );
-	/**
-	 * Path to the error log text file.
-	 */
+	/** Path to the error log text file. */
 	private Path errorPath = rootPath.resolve( "debug.err" );
 
-	/**
-	 * Timeout duration in seconds for acquiring the profile lock.
-	 */
+	/** Timeout duration in seconds for acquiring the profile lock. */
 	private static final long LOCK_TIME = 1;
 
-	/**
-	 * Thread-safe map storing the loaded automation profiles indexed by their job name.
-	 */
+	/** Thread-safe map storing the loaded automation profiles indexed by their job name. */
 	private final List<Preference> loadedProfiles = new ArrayList<>();
 
-	/**
-	 * The global Singleton instance of the PreferenceManager.
-	 */
+	/** The global Singleton instance of the PreferenceManager. */
 	private static final PreferenceManager INSTANCE = new PreferenceManager();
 
-	/**
-	 * Lock to ensure thread-safe operations on profile configurations.
-	 */
+	/** Lock to ensure thread-safe operations on profile configurations. */
 	private final ReentrantLock profileLock = new ReentrantLock();
 
-	/**
-	 * Global flag indicating if application launch on systemboot.
-	 */
+	/** Global flag indicating if application launch on systemboot. */
 	private boolean globalAutoStart;
 
-	/**
-	 * The currently active visual theme of the application.
-	 */
-	private AppTheme theme;
+	/** The currently active visual theme of the application. */
+	private AppTheme theme = new DarkSlateTheme();
 
-	/**
-	 * Enforces non-instantiability outside the Singleton lifecycle context.
-	 */
+	/** The maximum file size threshold in bytes before a log file triggers rotation. Defaults to 5,000,000 bytes (5 MB). */
+	private long maxLogSize = 5_000_000L;
+
+	/** The maximum number of historical backup log files to retain. Defaults to 5. */
+	private int maxLogCount = 5;
+
+	/** Enforces non-instantiability outside the Singleton lifecycle context. */
 	private PreferenceManager() {
 	}
 
@@ -353,6 +336,8 @@ public final class PreferenceManager {
 					final JsonObject globalDoc = Json.createObjectBuilder()
 							.add( "autoStart", globalAutoStart )
 							.add( "theme", theme.getClass().getName() )
+							.add( "maxLogSize", maxLogSize )
+							.add( "maxLogCount", maxLogCount )
 							.build();
 					rootBuilder.add( "globalSettings", globalDoc );
 
@@ -394,28 +379,25 @@ public final class PreferenceManager {
 	public boolean loadAllPreferences() {
 		try {
 			if( profileLock.tryLock( LOCK_TIME, TimeUnit.SECONDS ) ) {
-				try {
+				try( JsonReader reader = Json.createReader( Files.newInputStream( configPath ) ) ) {
+					final JsonObject rootObj = reader.readObject();
+					if( rootObj.isEmpty() ) return false;
 
-					try( JsonReader reader = Json.createReader( Files.newInputStream( configPath ) ) ) {
-						final JsonObject rootObj = reader.readObject();
-						if( rootObj.isEmpty() ) return false;
-
-						// Extract global runtime parameters
-						if( !extractGlobal( rootObj ) ) {
-							Debug.printDebug( "[Warn] load globals incompleted" );
-						}
-						loadedProfiles.clear();
-
-						// Extract distinct automation tasks profiles
-						if( !extractProfiles( rootObj ) ) {
-							Debug.printDebug( "[Warn] load profiles incompleted" );
-						}
-						return true;
-					}catch( final ClassCastException | IOException exception ) {
-						Debug.printDebug( "[Error] Critical: Failed to load profiles. Reason: %s", exception.getMessage() );
-						Debug.printException( this.getClass(), exception );
-						return false;
+					// Extract global runtime parameters
+					if( !extractGlobal( rootObj ) ) {
+						Debug.printDebug( "[Warn] load globals incompleted" );
 					}
+					loadedProfiles.clear();
+
+					// Extract distinct automation tasks profiles
+					if( !extractProfiles( rootObj ) ) {
+						Debug.printDebug( "[Warn] load profiles incompleted" );
+					}
+					return true;
+				}catch( final JsonParsingException | ClassCastException | IOException exception ) {
+					Debug.printDebug( "[Error] Critical: Failed to load profiles. Reason: %s", exception.getMessage() );
+					Debug.printException( this.getClass(), exception );
+					return false;
 				}finally {
 					profileLock.unlock();
 				}
@@ -433,6 +415,14 @@ public final class PreferenceManager {
 			final JsonObject globalDoc = rootObj.getJsonObject( "globalSettings" );
 			if( globalDoc == null ) return false;
 			this.globalAutoStart = globalDoc.getBoolean( "autoStart", false );
+			this.maxLogCount = globalDoc.getInt( "maxLogCount", 5 );
+			if( globalDoc.containsKey( "maxLogSize" ) ) {
+				try {
+					this.maxLogSize = globalDoc.getJsonNumber( "maxLogSize" ).longValueExact();
+				}catch( final ClassCastException | JsonParsingException | ArithmeticException exception ) {
+					Debug.printException( getClass(), exception );
+				}
+			}
 			if( globalDoc.containsKey( "theme" ) ) {
 				final String className = globalDoc.getString( "theme" );
 				try {
@@ -448,7 +438,6 @@ public final class PreferenceManager {
 				Debug.printDebug( "[Warn] No value for instantiate theme class. Falling back to default." );
 			}
 		}
-		this.theme = new DarkSlateTheme();
 		return false;
 	}
 
@@ -546,4 +535,17 @@ public final class PreferenceManager {
 	 */
 	public Path getRootPath() { return rootPath; }
 
+	/**
+	 * Returns the maximum size threshold in bytes before a log file is rotated.
+	 *
+	 * @return the maximum log file size in bytes
+	 */
+	public long getMaxLogSize() { return maxLogSize; }
+
+	/**
+	 * Returns the maximum number of historical backup log files to retain.
+	 *
+	 * @return the maximum allowed number of backup files
+	 */
+	public int getMaxLogCount() { return maxLogCount; }
 }

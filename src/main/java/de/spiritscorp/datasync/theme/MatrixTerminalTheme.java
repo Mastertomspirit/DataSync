@@ -29,7 +29,7 @@ import javafx.scene.Scene;
 public class MatrixTerminalTheme implements AppTheme {
 	@Override
 	public void apply( final Scene scene ) {
-		scene.getRoot().setStyle( "-fx-font-size: 14; -fx-font-family: 'Consolas', 'Courier New', monospace; -fx-background-color: #050505; -fx-text-fill: #00ff00;" );
+		scene.getRoot().setStyle( "-fx-font-size: 13; -fx-font-family: 'Consolas', 'Courier New', monospace; -fx-background-color: #050505; -fx-text-fill: #00ff00;" );
 		final String css = """
 				/* Extended JavaFX Controls */
 				.tooltip { -fx-background-color: #002200 !important; -fx-text-fill: #00ff00 !important; -fx-font-weight: normal !important; }

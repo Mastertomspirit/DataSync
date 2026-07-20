@@ -118,7 +118,7 @@ public class SyncJobService {
 
 				appendLogData( context, logFormatter.formatMaps( pref.getScanMode(), result.get( 0 ), result.get( 1 ), result.get( 2 ) ) );
 				appendLogData( context, String.format( "Quelldateien: %d Stück und Zieldateien: %d Stück", stats[0], stats[1] ) );
-				appendLogData( context, String.format( "Zu löschende Dateien: %d", failMap.size() ) );
+				appendLogData( context, String.format( "Zu löschende Dateien: %d", result.get( 2 ).size() ) );
 				appendLogData( context,
 						String.format( "Größe aller Quelldateien: %s | Größe aller Zieldateien: %s", logFormatter.getReadableBytes( stats[2] ), logFormatter.getReadableBytes( stats[3] ) ) );
 				startTime = System.nanoTime();

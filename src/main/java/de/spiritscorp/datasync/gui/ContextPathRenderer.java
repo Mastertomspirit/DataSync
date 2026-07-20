@@ -71,7 +71,7 @@ class ContextPathRenderer {
 	/**
 	 * The preferred layout width in pixels allocated for descriptive structural labels.
 	 */
-	private static final int LABEL_WIDTH = 120;
+	private static final int LABEL_WIDTH = 170;
 	/**
 	 * The preferred layout width in pixels allocated for path display text input fields.
 	 */
@@ -79,7 +79,7 @@ class ContextPathRenderer {
 	/**
 	 * The preferred layout width in pixels allocated for the multi-source directory selection list view.
 	 */
-	private static final int PATH_LIST_WIDTH = 400;
+	private static final int PATH_LIST_WIDTH = 600;
 	/**
 	 * The preferred layout height in pixels allocated for the multi-source directory selection list view.
 	 */

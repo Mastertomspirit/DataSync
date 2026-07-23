@@ -20,6 +20,7 @@ package de.spiritscorp.datasync.model;
  * 		along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
@@ -40,6 +41,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
@@ -118,14 +120,19 @@ class ModelTest {
 			Files.createFile( entry.getKey() );
 		}
 
-		assertTrue( model.backupFiles( true, false, TEST_PATH.resolve( "dest" ), false, null ), "Die listen sind nicht leer" );
-		final List<Path> listSource = getFileNamesInDirectory( TEST_PATH.resolve( "source" ) );
-		final List<Path> listDest = getFileNamesInDirectory( TEST_PATH.resolve( "dest" ) );
+		final List<Path> listSource = new ArrayList<>();
+		final List<Path> listDest = new ArrayList<>();
 
-		assertEquals( 2, listSource.size(), "source Ordner, anzahl passt nicht" );
-		assertEquals( 2, listDest.size(), "dest Ordner, anzahl passt nicht" );
-		assertEquals( destFiles[0].getFileName(), listDest.get( 0 ).getFileName(), "FileName passt nicht überein" );
-		assertEquals( destFiles[1].getFileName(), listDest.get( 1 ).getFileName(), "FileName passt nicht überein" );
+		assertAll(
+				() -> {
+					assertTrue( model.backupFiles( true, false, TEST_PATH.resolve( "dest" ), false, null ), "Die listen sind nicht leer" );
+					listSource.addAll( getFileNamesInDirectory( TEST_PATH.resolve( "source" ) ) );
+					listDest.addAll( getFileNamesInDirectory( TEST_PATH.resolve( "dest" ) ) );
+				},
+				() -> assertEquals( 2, listSource.size(), "source Ordner, anzahl passt nicht" ),
+				() -> assertEquals( 2, listDest.size(), "dest Ordner, anzahl passt nicht" ),
+				() -> assertEquals( destFiles[0].getFileName(), listDest.get( 0 ).getFileName(), "FileName passt nicht überein" ),
+				() -> assertEquals( destFiles[1].getFileName(), listDest.get( 1 ).getFileName(), "FileName passt nicht überein" ) );
 	}
 
 	/**
@@ -144,10 +151,21 @@ class ModelTest {
 			Files.createDirectories( entry.getKey().getParent() );
 			Files.createFile( entry.getKey() );
 		}
-		assertTrue( model.syncFiles( ctx, expectedList, syncMap, TEST_PATH.resolve( "source" ), TEST_PATH.resolve( "dest" ), true ), "Die listen sind nicht leer" );
-		final List<Path> destList = getFileNamesInDirectory( TEST_PATH.resolve( "dest" ) );
-		final List<Path> sourceList = getFileNamesInDirectory( TEST_PATH.resolve( "source" ) );
-		assertEquals( destList, sourceList, "Quelle und Ziel passen nicht überein" );
+
+		// Dynamic assetion collector
+		final List<Executable> assertions = new ArrayList<>();
+		final List<Path> destList = new ArrayList<>();
+		final List<Path> sourceList = new ArrayList<>();
+
+		assertions.add( () -> {
+			assertTrue( model.syncFiles( ctx, expectedList, syncMap, TEST_PATH.resolve( "source" ), TEST_PATH.resolve( "dest" ), true ), "Die listen sind nicht leer" );
+			destList.addAll( getFileNamesInDirectory( TEST_PATH.resolve( "dest" ) ) );
+			sourceList.addAll( getFileNamesInDirectory( TEST_PATH.resolve( "source" ) ) );
+		} );
+
+		assertions.add( () -> assertEquals( destList, sourceList, "Quelle und Ziel passen nicht überein" ) );
+
+		assertAll( assertions );
 	}
 
 	/**
@@ -167,13 +185,20 @@ class ModelTest {
 			Files.createFile( entry.getKey() );
 		}
 		final ArrayList<Map<Path, FileAttributes>> result = model.getSyncFiles( syncMap, TEST_PATH.resolve( "source" ), TEST_PATH.resolve( "dest" ) );
+
+		// Dynamic assetion collector
+		final List<Executable> assertions = new ArrayList<>();
+
 		for( int i = 0; i < expectedLists.size(); i++ ) {
-			assertEquals( expectedLists.get( i ).size(), result.get( i ).size(), "Die Größe der Liste passt nicht!" );
-			for( final Path path : expectedLists.get( i ).keySet() ) {
-				assertTrue( result.get( i ).containsKey( path ), "Key stimmt nicht!" );
-				assertTrue( result.get( i ).containsValue( expectedLists.get( i ).get( path ) ), "Werte stimmen nicht" );
+			final Map<Path, FileAttributes> expectedMap = expectedLists.get( i );
+			final Map<Path, FileAttributes> resultMap = result.get( i );
+			assertions.add( () -> assertEquals( expectedMap.size(), resultMap.size(), "Die Größe der Liste passt nicht!" ) );
+			for( final Path path : expectedMap.keySet() ) {
+				assertions.add( () -> assertTrue( resultMap.containsKey( path ), "Key stimmt nicht!" ) );
+				assertions.add( () -> assertTrue( resultMap.containsValue( expectedMap.get( path ) ), "Werte stimmen nicht" ) );
 			}
 		}
+		assertAll( assertions );
 	}
 
 	/**

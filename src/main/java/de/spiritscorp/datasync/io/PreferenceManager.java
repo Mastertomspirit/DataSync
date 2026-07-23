@@ -131,7 +131,7 @@ public final class PreferenceManager {
 					profileLock.unlock();
 				}
 			}else {
-				Debug.printError( "[Error] initGlobalRootConfigPath() -> Profiles are allready locked" );
+				Debug.printError( "[Pref Manager Error] initGlobalRootConfigPath() -> Profiles are allready locked" );
 			}
 		}catch( InterruptedException _ ) {
 			Thread.currentThread().interrupt();
@@ -152,14 +152,14 @@ public final class PreferenceManager {
 					if( getProfile( jobName ) == null ) {
 						final Preference pref = Preference.createSinglePreference( jobName );
 						loadedProfiles.add( pref );
-						if( withSave || saveAllPreferences() )
+						if( !withSave || saveAllPreferences() )
 							return pref;
 					}
 				}finally {
 					profileLock.unlock();
 				}
 			}else {
-				Debug.printError( "[Error] createProfiles() -> Profiles are allready locked" );
+				Debug.printError( "[Pref Manager Error] createProfiles() -> Profiles are allready locked" );
 			}
 		}catch( InterruptedException _ ) {
 			Thread.currentThread().interrupt();
@@ -206,7 +206,7 @@ public final class PreferenceManager {
 					profileLock.unlock();
 				}
 			}else {
-				Debug.printError( "[Error] setNewProfile() -> Profiles are allready locked" );
+				Debug.printError( "[Pref Manager Error] setNewProfile() -> Profiles are allready locked" );
 			}
 		}catch( InterruptedException _ ) {
 			// Restore interrupted status if the thread was interrupted while waiting for the lock
@@ -239,7 +239,7 @@ public final class PreferenceManager {
 					profileLock.unlock();
 				}
 			}else {
-				Debug.printError( "[Error] setProfile() -> Profiles are allready locked" );
+				Debug.printError( "[Pref Manager Error] setProfile() -> Profiles are allready locked" );
 			}
 		}catch( InterruptedException _ ) {
 			// Restore interrupted status if the thread was interrupted while waiting for the lock
@@ -272,7 +272,7 @@ public final class PreferenceManager {
 					profileLock.unlock();
 				}
 			}else {
-				Debug.printError( "[Error] renameProfile() -> Profiles are allready locked" );
+				Debug.printError( "[Pref Manager Error] renameProfile() -> Profiles are allready locked" );
 			}
 		}catch( InterruptedException _ ) {
 			// Restore interrupted status if the thread was interrupted while waiting for the lock
@@ -302,7 +302,7 @@ public final class PreferenceManager {
 					profileLock.unlock();
 				}
 			}else {
-				Debug.printError( "[Error] removeProfile() -> Profiles are allready locked" );
+				Debug.printError( "[Pref Manager Error] removeProfile() -> Profiles are allready locked" );
 			}
 		}catch( InterruptedException _ ) {
 			Thread.currentThread().interrupt();
@@ -357,14 +357,14 @@ public final class PreferenceManager {
 						return true;
 					}
 				}catch( final IOException exception ) {
-					Debug.printDebug( "[Error] Critical: Failed to serialize active memory states to 'conf.json'. Reason: %s", exception.getMessage() );
+					Debug.printDebug( "[Pref Manager Error] Critical: Failed to serialize active memory states to 'conf.json'. Reason: %s", exception.getMessage() );
 					Debug.printException( this.getClass(), exception );
 					return false;
 				}finally {
 					profileLock.unlock();
 				}
 			}else {
-				Debug.printError( "[Error] removeProfile() -> Profiles are allready locked" );
+				Debug.printError( "[Pref Manager Error] removeProfile() -> Profiles are allready locked" );
 			}
 		}catch( InterruptedException _ ) {
 			Thread.currentThread().interrupt();
@@ -379,37 +379,42 @@ public final class PreferenceManager {
 	 * @return true if filesystem parsing completed entirely; false if tracking token was absent or corrupt.
 	 */
 	public boolean loadAllPreferences() {
+		if( !Files.exists( configPath, LinkOption.NOFOLLOW_LINKS ) ) {
+			Debug.printDebug( "[Pref Manager Warn] Config file not available. Save to create it." );
+			return false;
+		}
 		try {
-			if( profileLock.tryLock( LOCK_TIME, TimeUnit.SECONDS ) ) {
-				try( JsonReader reader = Json.createReader( Files.newInputStream( configPath ) ) ) {
-					final JsonObject rootObj = reader.readObject();
-					if( rootObj.isEmpty() ) return false;
-
-					// Extract global runtime parameters
-					if( !extractGlobal( rootObj ) ) {
-						Debug.printDebug( "[Warn] load globals incompleted" );
-					}
-					loadedProfiles.clear();
-
-					// Extract distinct automation tasks profiles
-					if( !extractProfiles( rootObj ) ) {
-						Debug.printDebug( "[Warn] load profiles incompleted" );
-					}
-					return true;
-				}catch( final JsonParsingException | ClassCastException | IOException exception ) {
-					Debug.printDebug( "[Error] Critical: Failed to load profiles. Reason: %s", exception.getMessage() );
-					Debug.printException( this.getClass(), exception );
-					return false;
-				}finally {
-					profileLock.unlock();
-				}
-			}else {
-				Debug.printError( "[Error] loadAllPreferences() -> Profiles are allready locked" );
+			if( !profileLock.tryLock( LOCK_TIME, TimeUnit.SECONDS ) ) {
+				Debug.printError( "[Pref Manager Error] Profiles are allready locked" );
+				return false;
 			}
 		}catch( InterruptedException _ ) {
 			Thread.currentThread().interrupt();
+			return false;
 		}
-		return false;
+
+		try( JsonReader reader = Json.createReader( Files.newInputStream( configPath ) ) ) {
+			final JsonObject rootObj = reader.readObject();
+			if( rootObj.isEmpty() ) return false;
+
+			// Extract global runtime parameters
+			if( !extractGlobal( rootObj ) ) {
+				Debug.printDebug( "[Pref Manager Warn] load globals incompleted" );
+			}
+			loadedProfiles.clear();
+
+			// Extract distinct automation tasks profiles
+			if( !extractProfiles( rootObj ) ) {
+				Debug.printDebug( "[Pref Manager Warn] load profiles incompleted" );
+			}
+			return true;
+		}catch( final JsonParsingException | ClassCastException | IOException exception ) {
+			Debug.printDebug( "[Error] Critical: Failed to load profiles. Reason: %s", exception.getMessage() );
+			Debug.printException( this.getClass(), exception );
+			return false;
+		}finally {
+			profileLock.unlock();
+		}
 	}
 
 	private boolean extractGlobal( final JsonObject rootObj ) {
@@ -437,7 +442,7 @@ public final class PreferenceManager {
 					Debug.printException( getClass(), exception );
 				}
 			}else {
-				Debug.printDebug( "[Warn] No value for instantiate theme class. Falling back to default." );
+				Debug.printDebug( "[Pref Manager Warn] No value for instantiate theme class. Falling back to default." );
 			}
 		}
 		return false;
@@ -452,7 +457,7 @@ public final class PreferenceManager {
 				pref.deserialize( jobData );
 				loadedProfiles.add( pref );
 			}catch( final ConfigException exception ) {
-				Debug.printDebug( "[Error] Critical: Failed to load job profile '%s'. Skipping entry. Reason: %s", jobName, exception.getMessage() );
+				Debug.printDebug( "[Pref Manager Error] Critical: Failed to load job profile '%s'. Skipping entry. Reason: %s", jobName, exception.getMessage() );
 				Debug.printException( this.getClass(), exception );
 				return false;
 			}

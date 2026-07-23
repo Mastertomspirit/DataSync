@@ -23,6 +23,9 @@ package de.spiritscorp.datasync.controller;
 import java.awt.AWTException;
 import java.awt.SystemTray;
 import java.awt.TrayIcon;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.nio.file.Path;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -31,11 +34,11 @@ import java.util.concurrent.TimeUnit;
 import javafx.application.Platform;
 import javafx.collections.ObservableList;
 
-import de.spiritscorp.datasync.Main;
 import de.spiritscorp.datasync.gui.BgView;
 import de.spiritscorp.datasync.gui.Gui;
 import de.spiritscorp.datasync.io.Debug;
 import de.spiritscorp.datasync.io.Logger;
+import de.spiritscorp.datasync.io.Preference;
 import de.spiritscorp.datasync.model.BgModel;
 import de.spiritscorp.datasync.model.Model;
 
@@ -52,24 +55,36 @@ import de.spiritscorp.datasync.model.Model;
  * <p>
  *
  * @author Tom Spirit
+ * @version 2.1.0
  */
 public class BgController {
 
-	static final long INITIAL_DELAY = 1000;
-	static final long BOOT_START_DELAY = 30000;
+	/** Default initial delay in milliseconds before the background scheduler activates. */
+	static final long INITIAL_DELAY = 15L * 1_000;
+	/** Extended delay in milliseconds applied during system boot execution to prevent early resource contention. */
+	static final long BOOT_START_DELAY = 10L * 60 * 1_000;
 
+	/** Operating system tray integration proxy for minimizing the application frame. */
 	private final SystemTray sysTray;
+	/** The core dataset of synchronization job contexts monitored and orchestrated by this engine. */
 	private final ObservableList<SyncJobContext> jobList;
+	/** The central logger instance for tracking daemon lifecycles and background routine states. */
 	private final Logger logger;
+	/** Primary view controller handling UI flow control and state transitions. */
 	private final ViewController controller;
+	/** The visual representation of the background menu and tray interface context. */
 	private BgView bgView;
+	/** Reference to the primary graphical user interface application framework. */
 	private final Gui gui;
+	/** Formatter utility responsible for converting raw sync metrics into human-readable UI logs. */
+	private final LogFormatter logFormatter;
 
-	// Modern thread-pool architecture for accurate execution timing and disk I/O optimization
+	/** First-tier executor dedicated solely to low-overhead, periodic time-threshold heartbeat monitoring. */
 	private ScheduledExecutorService scheduler;
+	/** Second-tier decoupled thread pool isolated for high-overhead file system and disk I/O execution workloads. */
 	private ExecutorService workerQueue;
 
-	// Test interface: Allows accelerating intervals inside JUnit execution tasks
+	/** Test interface: Allows accelerating intervals inside JUnit execution tasks */
 	private double timeMultiplier = 1.0;
 
 	/**
@@ -90,6 +105,7 @@ public class BgController {
 		this.controller = controller;
 		this.jobList = jobList;
 		this.logger = logger;
+		this.logFormatter = new LogFormatter();
 		this.sysTray = SystemTray.isSupported() ? SystemTray.getSystemTray() : null;
 		setEnvironment( timeMultiplier, new BgView( this ), Executors.newSingleThreadScheduledExecutor(), Executors.newSingleThreadExecutor() );
 	}
@@ -107,7 +123,7 @@ public class BgController {
 	 */
 	public void requestApplicationShutdown() {
 		// Disassemble concurrent tracking frameworks before global window exit procedures trigger
-		shutdownExecutors( Main.BACKGROUND_THREAD_TIMEOUT );
+		shutdownExecutors( MainViewController.BG_TIMEOUT );
 		controller.handleApplicationShutdown();
 	}
 
@@ -120,17 +136,17 @@ public class BgController {
 	 * active thread pool frames.
 	 * <p>
 	 *
-	 * @param timeoutPerThreadMs The maximum allocation window in milliseconds granted to active
-	 *                           worker threads to complete processing cycles before a hard
-	 *                           interruption signal is enforced.
+	 * @param timeout The maximum allocation window in milliseconds granted to active
+	 *                worker threads to complete processing cycles before a hard
+	 *                interruption signal is enforced.
 	 * @see #shutdownExecutors(long)
 	 */
-	public void interruptBgJob( final long timeoutPerThreadMs ) {
+	public void interruptBgJob( final long timeout ) {
 		if( Platform.isFxApplicationThread() ) {
 			gui.getWindowStage().show();
 		}
-		shutdownExecutors( timeoutPerThreadMs );
-		Debug.printDebug( "[BgController] Background routine interrupted" );
+		shutdownExecutors( timeout );
+		Debug.printDebug( "[Bg Controller] Background routine interrupted" );
 	}
 
 	/**
@@ -153,25 +169,25 @@ public class BgController {
 		if( sysTray != null && bgView.getTrayIcon() != null ) {
 			try {
 				sysTray.add( bgView.getTrayIcon() );
-			}catch( final AWTException e ) {
-				Debug.printError( "[BgController] Failed to register TrayIcon context." );
-				Debug.printException( getClass(), e );
+			}catch( final AWTException exception ) {
+				Debug.printError( "[Bg Controller] Failed to register TrayIcon context." );
+				Debug.printException( getClass(), exception );
 				gui.getWindowStage().show();
 				return;
 			}
 		}
 
-		Debug.printDebug( "[BgController] Multi-Job Background-Daemon initialization started." );
+		Debug.printDebug( "[Bg Controller] Multi-Job Background-Daemon initialization started." );
 
 		// Dynamically determine the optimal check interval based on active jobs
 		final long calculatedTick = determineOptimalCheckTime();
 		final long tickInterval = (long) ( calculatedTick * timeMultiplier );
 		final long initialDelay = (long) ( ( bootDelay ? BOOT_START_DELAY : INITIAL_DELAY ) * timeMultiplier );
-		Debug.printDebug( "[BgController] Heartbeat configured to tick every %d ms based on job preferences.", calculatedTick );
+		Debug.printDebug( "[Bg Controller] Heartbeat configured to tick every %d ms based on job preferences.", calculatedTick );
 		jobList.stream()
-				.filter( ( job ) -> job.getPreference()
+				.filter( job -> job.getPreference()
 						.isBgSync() )
-				.forEach( ( job ) -> Debug.printDebug( "[BgController] Executing background routine is activated for task: %s", job.getJobName() ) );
+				.forEach( job -> Debug.printDebug( "[Bg Controller] Executing background routine is activated for task: %s", job.getJobName() ) );
 		// Begin tracking task list rules loops
 		this.scheduler.scheduleAtFixedRate( this::checkAndQueueJobs, initialDelay, tickInterval, TimeUnit.MILLISECONDS );
 	}
@@ -181,11 +197,11 @@ public class BgController {
 	 * Falls back to a default interval (10 sec) if no matching jobs are active.
 	 */
 	private long determineOptimalCheckTime() {
-		long minCheckTime = 10000; // Default fallback: 10 seconds
+		long minCheckTime = 10_000; // Default fallback: 10 seconds
 		boolean foundActiveJob = false;
 
 		for( final SyncJobContext job : jobList ) {
-			final var pref = job.getPreference();
+			final Preference pref = job.getPreference();
 			if( pref != null && pref.isBgSync() && pref.getBgTime() != null ) {
 				final long currentCheck = pref.getBgTime().getCheckTime();
 				if( !foundActiveJob || currentCheck < minCheckTime ) {
@@ -218,15 +234,18 @@ public class BgController {
 			// Skip tasks if they are actively running or already waiting inside the execution queue lane
 			if( job.isRunning() ) continue;
 
-			final var pref = job.getPreference();
+			final Preference pref = job.getPreference();
 			// Only process if background execution is explicitly requested for this task context
 			if( pref != null && pref.isBgSync() ) {
 				final long timeDelta = System.currentTimeMillis() - pref.getLastScanTime();
 				final long targetInterval = (long) ( pref.getBgTime().getTime() * timeMultiplier );
-				Debug.printDebug( "[BgController] time since last check: %d", System.currentTimeMillis() - pref.getLastScanTime() );
-
-				if( timeDelta > targetInterval ) {
-					Debug.printDebug( "[BgController] Polling threshold triggered for task: %s. Queueing worker task.", job.getJobName() );
+				Debug.printDebug( "[Bg Controller] time since last check (%s): %s", job.getJobName(),
+						logFormatter.getTimeFormatted( ( System.currentTimeMillis() - pref.getLastScanTime() ) * 1_000_000 ) );
+				Path destPath = pref.getDestPaths().getFirst();
+				if( !Files.exists( destPath, LinkOption.NOFOLLOW_LINKS ) ) {
+					Debug.printDebug( "[Bg Controller] Destination Path is offline: %s", destPath.toString() );
+				}else if( timeDelta > targetInterval ) {
+					Debug.printDebug( "[Bg Controller] Polling threshold triggered for task: %s. Queueing worker task.", job.getJobName() );
 					job.setRunning( true );
 					// Dispatch into the dedicated loop queue lane (prevents hardware disk I/O thrashing)
 					workerQueue.execute( () -> {
@@ -235,15 +254,15 @@ public class BgController {
 
 							// Map active thread to the context token to let external shutdown requests throw interrupts
 							job.setActiveWorkerThread( Thread.currentThread() );
-							Debug.printDebug( "[BgController] Executing background routine for task: %s", job.getJobName() );
+							Debug.printDebug( "[Bg Controller] Executing background routine for task: %s", job.getJobName() );
 							bgModel.runBgJob();
-						}catch( final Exception exception ) {
-							Debug.printDebug( "[BgController Error] Critical fault captured inside background thread execution pipeline for: %s", job.getJobName() );
+						}catch( final RuntimeException exception ) {
+							Debug.printDebug( "[Bg Controller Error] Critical fault captured inside background thread execution pipeline for: %s", job.getJobName() );
 							Debug.printException( this.getClass(), exception );
 						}finally {
 							job.setRunning( false );
 							job.setActiveWorkerThread( null );
-							Debug.printDebug( "[BgController] Finished executing background routine for task: %s", job.getJobName() );
+							Debug.printDebug( "[Bg Controller] Finished executing background routine for task: %s", job.getJobName() );
 						}
 					} );
 				}
@@ -264,12 +283,12 @@ public class BgController {
 	 * zero resource leaks.
 	 * <p>
 	 *
-	 * @param timeoutPerThreadMs The maximum synchronization epoch in milliseconds granted to active
-	 *                           I/O operations to complete task evaluation loops before
-	 *                           the lifecycle boundary is forcibly closed.
+	 * @param timeout The maximum synchronization epoch in milliseconds granted to active
+	 *                I/O operations to complete task evaluation loops before
+	 *                the lifecycle boundary is forcibly closed.
 	 */
-	private void shutdownExecutors( final long timeoutPerThreadMs ) {
-		Debug.printDebug( "[BgController] Dissolving executor pools and cleaning up task contexts." );
+	private void shutdownExecutors( final long timeout ) {
+		Debug.printDebug( "[Bg Controller] Dissolving executor pools and cleaning up task contexts." );
 
 		if( scheduler != null ) {
 			scheduler.shutdownNow();
@@ -279,8 +298,8 @@ public class BgController {
 			// Drops instant interrupt signals down to the thread executing the active copy sequence
 			workerQueue.shutdownNow();
 			try {
-				if( !workerQueue.awaitTermination( timeoutPerThreadMs, TimeUnit.MILLISECONDS ) ) {
-					Debug.printDebug( "[BgController] Worker queue termination delayed. Enforcing lifecycle exit." );
+				if( !workerQueue.awaitTermination( timeout, TimeUnit.MILLISECONDS ) ) {
+					Debug.printDebug( "[Bg Controller] Worker queue termination delayed. Enforcing lifecycle exit." );
 				}
 			}catch( InterruptedException _ ) {
 				Thread.currentThread().interrupt();
@@ -298,7 +317,7 @@ public class BgController {
 			sysTray.remove( bgView.getTrayIcon() );
 		}
 
-		Debug.printDebug( "[BgController] Background-Daemon terminated cleanly." );
+		Debug.printDebug( "[Bg Controller] Background-Daemon terminated cleanly." );
 	}
 
 	/**

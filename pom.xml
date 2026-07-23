@@ -4,12 +4,12 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>de.spiritscorp</groupId>
 	<artifactId>datasync</artifactId>
-	<version>1.1.0.0-alpha</version>
+	<version>1.1.0.0-beta</version>
 	<name>Data Sync</name>
 	<description>
 	    DataSync is a high-performance, multi-threaded file synchronization and data management solution designed for robust asset alignment and backup automation. 
 	    Engineered with concurrency in mind, it features intelligent background job scheduling, advanced duplicate detection mechanisms, and high-efficiency scanning. 
-	    With integrated structured JSON logging, DataSync provides enterprise-grade observability and seamless integration into automated server monitoring stacks.
+	    With integrated structured JSON logging, DataSync provides enterprise-grade observability.
 	</description>
 	<inceptionYear>2022</inceptionYear>
 	<url>https://github.com/Mastertomspirit/DataSync</url>
@@ -22,6 +22,7 @@
 			<roles>
 				<role>${app.developer.role.lead}</role>
 				<role>${app.developer.role.arch}</role>
+				<role>${app.developer.role.ui}</role>
 			</roles>
 		</developer>
 		<developer>
@@ -79,12 +80,12 @@
 
 		<!-- Plugin versions -->
 		<pl_git_commit_id>10.0.0</pl_git_commit_id>
-		<pl_license>5.0.0</pl_license>
+		<pl_license>5.1.1</pl_license>
 		<pl_formatter>2.29.0</pl_formatter>
 		<pl_properties.version>1.3.0</pl_properties.version>
 		<pl_antrun.version>3.2.0</pl_antrun.version>
 		<pl_compiler.version>3.15.0</pl_compiler.version>
-		<pl_jar.version>3.5.0</pl_jar.version>
+		<pl_jar.version>3.5.1</pl_jar.version>
 		<pl_shade.version>3.6.2</pl_shade.version>
 		<pl_surefire.version>3.6.0-M1</pl_surefire.version>
 		<pl_dependency.version>3.11.0</pl_dependency.version>
@@ -96,7 +97,7 @@
 		<pl_assembly.version>3.8.0</pl_assembly.version>
 		<pl_jxr.version>3.6.0</pl_jxr.version>
 		<pl_checkstyle.version>3.6.0</pl_checkstyle.version>
-		<pl_checkstyle_puppycrawl.version>13.7.0</pl_checkstyle_puppycrawl.version>
+		<pl_checkstyle_puppycrawl.version>13.8.0</pl_checkstyle_puppycrawl.version>
 		<pl_pmd.version>3.28.0</pl_pmd.version>
 		<pl_release>3.3.1</pl_release>
 		<pl_source>3.4.0</pl_source>
@@ -107,15 +108,16 @@
 
 		<!-- Dependency versions -->
 		<dep_surefire_tree>1.5.1</dep_surefire_tree>
-		<dep_javafx_controls.version>26.0.1</dep_javafx_controls.version>
+		<dep_javafx_controls.version>26.0.2</dep_javafx_controls.version>
 		<dep_ikonli_javafx.version>12.4.0</dep_ikonli_javafx.version>
-		<dep_ikonli_materialdesign2..version>12.4.0</dep_ikonli_materialdesign2..version>
+		<dep_ikonli_materialdesign2.version>12.4.0</dep_ikonli_materialdesign2.version>
 		<dep_jakarta.json.api.version>2.1.3</dep_jakarta.json.api.version>
 		<dep_glassfish.jakarta.json.version>2.0.1</dep_glassfish.jakarta.json.version>
-		<dep_junit-jupiter>6.1.1</dep_junit-jupiter>
-		<dep_junit-platform>6.1.1</dep_junit-platform>
+		<dep_junit-jupiter>6.1.2</dep_junit-jupiter>
+		<dep_junit-platform>6.1.2</dep_junit-platform>
 		<dep_mockito>5.23.0</dep_mockito>
 		<dep_bytebuddy>1.18.11</dep_bytebuddy>
+		<dep_jimfs.version>1.3.1</dep_jimfs.version>
 	</properties>
 
 	<build>
@@ -188,7 +190,7 @@
 					<execution>
 						<phase>validate</phase>
 						<goals>
-							<goal>checkstyle</goal>
+							<goal>check</goal>
 						</goals>
 					</execution>
 				</executions>
@@ -310,6 +312,7 @@
 	        <roles>
 				<role>${app.developer.role.lead}</role>
 			    <role>${app.developer.role.arch}</role>
+				<role>${app.developer.role.ui}</role>
 	        </roles>
 	    </developer>
 	</developers>
@@ -452,11 +455,7 @@
 					</dependency>
 				</dependencies>
 				<configuration>
-					<argLine>
-						-XX:+EnableDynamicAgentLoading
-						-Xshare:off 
-						--enable-native-access=javafx.graphics
-					</argLine>
+					<argLine> -XX:+EnableDynamicAgentLoading -Xshare:off --enable-native-access=javafx.graphics </argLine>
 					<useModulePath>true</useModulePath>
 					<reportFormat>plain</reportFormat>
 					<consoleOutputReporter>
@@ -487,11 +486,7 @@
 					<systemPropertyVariables>
 						<surefire.dump>false</surefire.dump>
 					</systemPropertyVariables>
-					<argLine>
-						-XX:+EnableDynamicAgentLoading
-						-Xshare:off
-						--enable-native-access=javafx.graphics
-					</argLine>
+					<argLine> -XX:+EnableDynamicAgentLoading -Xshare:off --enable-native-access=javafx.graphics </argLine>
 					<useModulePath>true</useModulePath>
 					<reportFormat>plain</reportFormat>
 					<consoleOutputReporter>
@@ -580,7 +575,8 @@
 							<goal>jpackage</goal>
 						</goals>
 						<configuration>
-							<toolhome>$‍{env.JPACKAGE_HOME}</toolhome>
+							<verbose>true</verbose>
+							<toolhome>${env.JPACKAGE_HOME}</toolhome>
 							<dest>target/${project.artifactId}/image</dest>
 							<name>${project.artifactId}</name>
 							<type>IMAGE</type>
@@ -591,9 +587,10 @@
 							<vendor>${app.owner}</vendor>
 							<icon>${jpackage.icon}</icon>
 							<module>de.spiritscorp.datasync/de.spiritscorp.datasync.Main</module>
-							<javaoptions>-Dfile.encoding=UTF-8 -Xms32m -Xmx4096m</javaoptions>
-							<javaoptions> -Dapp.instance.name=${project.artifactId}_v${project.version}</javaoptions>
-							<javaoptions>--enable-native-access=javafx.graphics</javaoptions>
+							<javaoptions>-Dfile.encoding=UTF-8 \
+							-Xms32m -Xmx4096m \
+							-Dapp.instance.name=${project.artifactId}_v${project.version} \
+							--enable-native-access=javafx.graphics</javaoptions>
 						</configuration>
 					</execution>
 				</executions>
@@ -984,7 +981,7 @@
 		<dependency>
 			<groupId>org.kordamp.ikonli</groupId>
 			<artifactId>ikonli-materialdesign2-pack</artifactId>
-			<version>${dep_ikonli_materialdesign2..version}</version>
+			<version>${dep_ikonli_materialdesign2.version}</version>
 		</dependency>
 		<!-- https://mvnrepository.com/artifact/org.junit.jupiter/junit-jupiter-engine -->
 		<dependency>
@@ -1012,6 +1009,13 @@
 			<groupId>net.bytebuddy</groupId>
 			<artifactId>byte-buddy-agent</artifactId>
 			<version>${dep_bytebuddy}</version>
+			<scope>test</scope>
+		</dependency>
+		<!-- Source: https://mvnrepository.com/artifact/com.google.jimfs/jimfs -->
+		<dependency>
+			<groupId>com.google.jimfs</groupId>
+			<artifactId>jimfs</artifactId>
+			<version>${dep_jimfs.version}</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>

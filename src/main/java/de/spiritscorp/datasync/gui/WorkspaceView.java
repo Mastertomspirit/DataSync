@@ -20,93 +20,82 @@ package de.spiritscorp.datasync.gui;
  * 		along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import java.io.File;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
+import javafx.beans.binding.Bindings;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Node;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.ProgressBar;
+import javafx.scene.control.ProgressIndicator;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.Tooltip;
+import javafx.scene.control.cell.CheckBoxTableCell;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
+import javafx.util.Duration;
 
 import org.kordamp.ikonli.materialdesign2.MaterialDesignD;
 import org.kordamp.ikonli.materialdesign2.MaterialDesignP;
 import org.kordamp.ikonli.materialdesign2.MaterialDesignS;
 
-import de.spiritscorp.datasync.BgTime;
-import de.spiritscorp.datasync.Main;
 import de.spiritscorp.datasync.ScanType;
 import de.spiritscorp.datasync.controller.SyncJobContext;
 import de.spiritscorp.datasync.controller.ViewController;
 import de.spiritscorp.datasync.io.Preference;
-import de.spiritscorp.datasync.io.PreferenceManager;
-import de.spiritscorp.datasync.theme.AppTheme;
-import javafx.animation.KeyFrame;
-import javafx.animation.Timeline;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
-import javafx.scene.Node;
-import javafx.scene.control.Button;
-import javafx.scene.control.CheckBox;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.Label;
-import javafx.scene.control.ListCell;
-import javafx.scene.control.ListView;
-import javafx.scene.control.ProgressBar;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.control.Separator;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
-import javafx.scene.control.TextArea;
-import javafx.scene.control.TextField;
-import javafx.scene.control.Tooltip;
-import javafx.scene.control.cell.CheckBoxTableCell;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.StackPane;
-import javafx.scene.layout.VBox;
-import javafx.stage.DirectoryChooser;
-import javafx.util.Duration;
 
 /**
  * Display workspace panel hosting the interactive operational consoles,
  * data lists, detailed execution metadata bars and the dynamic target settings configurations grid.
- * * @author Tom Spirit
+ *
+ * @author Tom Spirit
  */
-public final class WorkspaceView extends VBox {
+final class WorkspaceView extends VBox {
 
+	/** The central user interface anchor context managing stage overlays. */
 	private final Gui mainGui;
+	/** The action routing controller handling state transitions and business logic. */
 	private final ViewController controller;
-	private final Label workspaceHeaderLabel;
+	/** The configuration layout coordinator assembling parameter option controls. */
+	private final SettingsGrid settingsGrid;
+	/** The visual heading label indicating the active workspace scope. */
+	private final Label wrkspcHeaderLabel;
+	/** The contextual metadata label displaying active task descriptions. */
 	private final Label contextInfoLabel;
+	/** The top layout container holding execution toolbar action elements. */
 	private final HBox controlToolbar;
+	/** The primary content viewport switching between execution outputs. */
 	private final StackPane centerViewport;
 
+	/** The scrollable container framing the text-based console output. */
 	private final ScrollPane consoleViewNode;
+	/** The textual log stream output region rendering live terminal logs. */
 	private final TextArea consoleTextArea;
+	/** The structural layout pane wrapping the duplicate file assessment grid. */
 	private final VBox duplicateViewNode;
+	/** The tabular data viewer presenting matching duplicate path records. */
 	private TableView<SyncJobContext.FileRow> duplicateTable;
 
+	/** The execution trigger button initiating chosen synchronization flows. */
 	private final Button actionButton;
+	/** The termination trigger button requesting active task cancellations. */
 	private final Button cancelButton;
+	/** The destructive cleanup button executing selected file pruning routines. */
 	private Button deleteButton;
+	/** The quantitative progress bar tracking transaction completion ratios. */
 	private final ProgressBar progressBar;
+	/** The status message label summarizing system operations in real-time. */
 	private final Label statusLabel;
-
-	public enum NotifyStatus {
-		SUCESS( "status-success"),
-		ERROR( "status-error"),
-		WARNING( "status-warning");
-
-		private final String cssClass;
-
-		NotifyStatus( String cssClass ) {
-			this.cssClass = cssClass;
-		}
-
-		String getCssClass() { return cssClass; }
-	}
 
 	/**
 	 * Prepares layouts and maps operations targets onto implementation controller.
@@ -114,34 +103,54 @@ public final class WorkspaceView extends VBox {
 	 * @param mainGui    Configuration context core coordinator link.
 	 * @param controller Strategy abstraction dealing with interface state management mutations.
 	 */
-	public WorkspaceView( Gui mainGui, ViewController controller ) {
+	WorkspaceView( final Gui mainGui, final ViewController controller ) {
+		this(
+				mainGui,
+				controller,
+				new SettingsGrid( controller, mainGui.getWindowStage(), new ContextPathRenderer() ) );
+	}
+
+	/**
+	 * For TESTING
+	 * <br>
+	 * Prepares layouts and maps operations targets onto implementation controller.
+	 *
+	 * @param mainGui      Configuration context core coordinator link.
+	 * @param controller   Strategy abstraction dealing with interface state management mutations.
+	 * @param settingsGrid The layout factory engine responsible for parameter control rendering.
+	 */
+	WorkspaceView( final Gui mainGui, final ViewController controller, final SettingsGrid settingsGrid ) {
+		super();
 		this.mainGui = mainGui;
 		this.controller = controller;
+		this.settingsGrid = settingsGrid;
 		this.setPadding( new Insets( 24 ) );
 		this.setSpacing( 12 );
 
-		workspaceHeaderLabel = new Label( "Kein Task aktiv" );
-		workspaceHeaderLabel.setStyle( "-fx-font-size: 22px; -fx-font-weight: bold;" );
+		wrkspcHeaderLabel = new Label( "Kein Task aktiv" );
+		wrkspcHeaderLabel.getStyleClass().addAll( "workspace-header-label" );
 
 		// Subtitle dynamic information bar containing directories context mapping
 		contextInfoLabel = new Label( "" );
-		contextInfoLabel.setStyle( "-fx-font-size: 13px; -fx-font-style: italic; -fx-padding: 0 0 8px 0;" );
+		contextInfoLabel.getStyleClass().addAll( "context-info-label" );
 
 		controlToolbar = new HBox( 12 );
 		controlToolbar.setAlignment( Pos.CENTER_LEFT );
 
 		actionButton = new Button( "Ausführen", Gui.createIcon( MaterialDesignP.PLAY ) );
-		actionButton.setStyle( "-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10px 20px;" );
+		actionButton.getGraphic().getStyleClass().addAll( Gui.CSS_BUTTON_ICON );
+		actionButton.getStyleClass().addAll( "action-button" );
 		actionButton.setTooltip( new Tooltip( "Starte Job" ) );
 		cancelButton = new Button( "Abbrechen", Gui.createIcon( MaterialDesignS.STOP ) );
-		cancelButton.setStyle( "-fx-background-color: #95a5a6; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10px 16px;" );
+		cancelButton.getGraphic().getStyleClass().addAll( Gui.CSS_BUTTON_ICON );
+		cancelButton.getStyleClass().addAll( "cancel-button" );
 		cancelButton.setTooltip( new Tooltip( "Stoppe Job" ) );
 
 		controlToolbar.getChildren().addAll( actionButton, cancelButton );
 
 		consoleTextArea = new TextArea();
 		consoleTextArea.setEditable( false );
-		consoleTextArea.setStyle( " -fx-font-family: 'Consolas', monospace; -fx-font-size: 12px;" );
+		consoleTextArea.getStyleClass().addAll( "console-text-area" );
 		consoleViewNode = new ScrollPane( consoleTextArea );
 		consoleViewNode.setFitToWidth( true );
 		consoleViewNode.setFitToHeight( true );
@@ -157,7 +166,7 @@ public final class WorkspaceView extends VBox {
 		statusLabel.setTooltip( new Tooltip( "Aktueller Status" ) );
 		statusFooter.getChildren().addAll( progressBar, statusLabel );
 
-		this.getChildren().addAll( workspaceHeaderLabel, contextInfoLabel, controlToolbar, centerViewport, statusFooter );
+		this.getChildren().addAll( wrkspcHeaderLabel, contextInfoLabel, controlToolbar, centerViewport, statusFooter );
 		setVgrow( centerViewport, Priority.ALWAYS );
 	}
 
@@ -172,7 +181,7 @@ public final class WorkspaceView extends VBox {
 		final TableColumn<SyncJobContext.FileRow, Boolean> selCol = new TableColumn<>( "Auswahl" );
 		selCol.setCellValueFactory( d -> d.getValue().selectedProperty() );
 		selCol.setCellFactory( CheckBoxTableCell.forTableColumn( selCol ) );
-		selCol.setPrefWidth( 50 );
+		selCol.setPrefWidth( 100 );
 
 		final TableColumn<SyncJobContext.FileRow, String> nameCol = new TableColumn<>( "Dateiname" );
 		nameCol.setCellValueFactory( d -> d.getValue().fileNameProperty() );
@@ -192,7 +201,8 @@ public final class WorkspaceView extends VBox {
 
 		duplicateTable.getColumns().addAll( List.of( selCol, nameCol, sizeCol, hashCol, pathCol ) );
 		deleteButton = new Button( "Duplikate löschen", Gui.createIcon( MaterialDesignD.DELETE ) );
-		deleteButton.setStyle( "-fx-background-color: #e74c3c; -fx-text-fill: white;" );
+		deleteButton.getGraphic().getStyleClass().addAll( Gui.CSS_BUTTON_ICON );
+		deleteButton.getStyleClass().addAll( "delete-button" );
 		deleteButton.setTooltip( new Tooltip( "Ausgewählte Dateien werden gelöscht" ) );
 
 		final VBox frame = new VBox( 8, duplicateTable, deleteButton );
@@ -202,44 +212,65 @@ public final class WorkspaceView extends VBox {
 
 	/**
 	 * Redraws visible frame items based on routing navigation instructions and current job payload state.
-	 * * @param state The target navigation ViewState.
 	 *
-	 * @param job The selected target sync context model instance.
+	 * @param state The target navigation ViewState.
+	 * @param job   The selected target sync context model instance.
 	 */
-	public void refreshView( final Gui.ViewState state, final SyncJobContext job ) {
-		if( job == null ) return;
+	void refreshView( final Gui.ViewState state, final SyncJobContext job ) {
 
 		centerViewport.getChildren().clear();
+		contextInfoLabel.setTooltip( null );
 
+		if( state == Gui.ViewState.INFO ) {
+			wrkspcHeaderLabel.setText( "About" );
+			contextInfoLabel.setText( "Backup Software" );
+			controlToolbar.setVisible( false );
+			return;
+		}else if( job == null ) { return; }
+
+		final String finalTip;
 		if( state == Gui.ViewState.MONITOR ) {
-			workspaceHeaderLabel.setText( "Task-Monitor: " + job.getJobName() );
+			wrkspcHeaderLabel.setText( "Task-Monitor: " + job.getJobName() );
 			controlToolbar.setVisible( true );
 
 			// Build informative context metadata bar metrics string
-			final Preference p = job.getPreference();
-			final String src = p.getSourcePath() != null ? Arrays.toString( p.getSourcePath().toArray() ) : "Keine Quelle";
-			final String dest = p.getDestPath() != null && !p.getDestPath().isEmpty() ? p.getDestPath().toString() : "Kein Ziel";
+			final Preference pref = job.getPreference();
+			final String src = pref.getSourcePaths() != null ? Arrays.toString( pref.getSourcePaths().toArray() ) : "Keine Quelle";
+			final String dest = pref.getDestPaths() != null && !pref.getDestPaths().isEmpty() ? pref.getDestPaths().toString() : "Kein Ziel";
+			final String srcTip = src.replace( '[', ' ' ).replace( ']', ' ' ).replace( ',', '\n' );
 
-			if( ScanType.DUBLICATE_SCAN.equals( job.getSelectedMode() ) ) {
-				contextInfoLabel.setText( String.format( "Modus: %s  |  Ziel: %s", job.getSelectedMode().getDescription(), src ) );
+			if( ScanType.DUBLICATE_SCAN == job.getSelectedMode() ) {
+				finalTip = String.format( """
+						Quelle:
+						%s
+						""", srcTip );
+				contextInfoLabel.setText( String.format( "Modus: %s  |  Verzeichnisse: %s", job.getSelectedMode().getDescription(), src ) );
 				centerViewport.getChildren().add( duplicateViewNode );
 			}else {
+				finalTip = String.format( """
+						Quelle:
+						%s
+						Ziel:
+						%s
+						""", srcTip, dest.replace( '[', ' ' ).replace( ']', ' ' ) );
 				contextInfoLabel.setText( String.format( "Modus: %s  |  Quelle: %s  |  Ziel: %s", job.getSelectedMode().getDescription(), src, dest ) );
 				centerViewport.getChildren().add( consoleViewNode );
 			}
+			contextInfoLabel.setTooltip( new Tooltip( finalTip ) );
 		}else if( state == Gui.ViewState.SETTINGS ) {
-			workspaceHeaderLabel.setText( "Einstellungen für: " + job.getJobName() );
+			wrkspcHeaderLabel.setText( "Einstellungen für: " + job.getJobName() );
 			contextInfoLabel.setText( "Konfiguration der task-spezifischen Ablaufparameter, Dateiattribute und Verzeichnisstrukturen." );
 			controlToolbar.setVisible( false );
-			displayCustomViewNode( buildSettingsGridTab( job ) );
+			displayCustomViewNode( settingsGrid.buildSettingsGridTab( this, job, mainGui.getAvailableThemes() ) );
 		}
 	}
 
 	/**
 	 * Swaps out current content layouts for custom visual configurations nodes.
-	 * * @param content Visual layout UI node element.
+	 *
+	 * @param content Visual layout UI node element.
 	 */
-	public void displayCustomViewNode( Node content ) {
+	void displayCustomViewNode( final Node content ) {
 		centerViewport.getChildren().clear();
 		final ScrollPane scroll = new ScrollPane( content );
 		scroll.setFitToWidth( true );
@@ -249,14 +280,18 @@ public final class WorkspaceView extends VBox {
 
 	/**
 	 * Rebinds background parameters changes metrics values directly onto visual output listeners text nodes.
-	 * * @param job Selected pipeline source.
+	 *
+	 * @param job Selected pipeline source.
 	 */
-	public void bindJob( SyncJobContext job ) {
+	void bindJob( final SyncJobContext job ) {
 		statusLabel.textProperty().unbind();
 		consoleTextArea.textProperty().unbind();
 		statusLabel.textProperty().bind( job.statusMessageProperty() );
 		consoleTextArea.textProperty().bind( job.logOutputProperty() );
 		duplicateTable.setItems( job.getDuplicateFiles() );
+
+		progressBar.progressProperty().unbind();
+		progressBar.progressProperty().bind( Bindings.when( job.runningProperty() ).then( ProgressIndicator.INDETERMINATE_PROGRESS ).otherwise( 0.0 ) );
 
 		cancelButton.disableProperty().unbind();
 		actionButton.disableProperty().unbind();
@@ -277,26 +312,26 @@ public final class WorkspaceView extends VBox {
 	 * @param cssNotifyStatus The status for the notification..
 	 * @param durationSec     The visibility duration in seconds before auto-reverting.
 	 */
-	void displayTemporaryStatus( String message, NotifyStatus cssNotifyStatus, int durationSec ) {
-		final String originalContextText = "Konfiguration der task-spezifischen Ablaufparameter, Dateiattribute und Verzeichnisstrukturen.";
+	void displayTemporaryStatus( final String message, final NotifyStatus cssNotifyStatus, final int durationSec ) {
+		final String origContextText = contextInfoLabel.getText();
 		final String originalStyle = contextInfoLabel.getStyle();
 		// 1. Clean up any existing status style classes to prevent collision states
 		contextInfoLabel.getStyleClass().removeAll( "status-success", "status-error", "status-warning" );
 
 		// 2. Programmatic structural fallback: Set a default color via inline styles
 		// This acts as a safety net if the active CSS theme completely lacks the targeted class definition.
-		// CHECKSTYLE:OFF
+		// CHECKSTYLE:OFF its ok without a default
 		switch( cssNotifyStatus ) {
-			case SUCESS -> {
-				contextInfoLabel.setStyle( "-fx-text-fill: #22aa22  !important; -fx-font-weight: bold;" );
+			case SUCCESS -> {
+				contextInfoLabel.setStyle( "-fx-text-fill: #22aa22; -fx-font-weight: bold;" );
 				contextInfoLabel.setText( "✔ " + message );
 			}
 			case ERROR -> {
-				contextInfoLabel.setStyle( "-fx-text-fill: #ff3333  !important; -fx-font-weight: bold;" );
+				contextInfoLabel.setStyle( "-fx-text-fill: #ff3333; -fx-font-weight: bold;" );
 				contextInfoLabel.setText( "❌ " + message );
 			}
 			case WARNING -> {
-				contextInfoLabel.setStyle( "-fx-text-fill: #ffaa00  !important; -fx-font-weight: bold;" );
+				contextInfoLabel.setStyle( "-fx-text-fill: #ffaa00; -fx-font-weight: bold;" );
 				contextInfoLabel.setText( "⚠ " + message );
 			}
 		}
@@ -304,282 +339,18 @@ public final class WorkspaceView extends VBox {
 
 		// 3. Inject the theme's class rule.
 		// If the theme defines this class, the stylesheet will cleanly override our inline fallback style.
-		contextInfoLabel.getStyleClass().add( cssNotifyStatus.getCssClass() );
+		contextInfoLabel.getStyleClass().addFirst( cssNotifyStatus.getCssClass() );
 
 		// Initialize asynchronous fade-out/revert timer
 		final Timeline fallbackTimeline = new Timeline( new KeyFrame(
 				Duration.seconds( durationSec ),
 				_ -> {
-					contextInfoLabel.setText( originalContextText );
+					contextInfoLabel.setText( origContextText );
 					contextInfoLabel.getStyleClass().remove( cssNotifyStatus.getCssClass() );
 					contextInfoLabel.setStyle( originalStyle );
 				} ) );
 
 		fallbackTimeline.setCycleCount( 1 );
 		fallbackTimeline.play();
-	}
-
-	/**
-	 * Assembles all parameter configurations fields structured nicely within grid metrics elements.
-	 */
-	private Node buildSettingsGridTab( SyncJobContext job ) {
-		final Preference pref = job.getPreference();
-		final GridPane grid = new GridPane();
-		grid.setHgap( 24 );
-		grid.setVgap( 16 );
-		grid.setPadding( new Insets( 10 ) );
-
-		// --- Section 1: Execution Mode Selection ---
-		final Label modeTitle = new Label( "Ausführungsmodus:" );
-		modeTitle.setStyle( "-fx-font-weight: bold;" );
-		final ComboBox<String> taskModeComboBox = new ComboBox<>();
-		taskModeComboBox.setTooltip( new Tooltip( "Listet die möglichen Betriebsmodis auf" ) );
-		taskModeComboBox.getItems().addAll( ScanType.getAllDescriptions() );
-		job.selectedModeProperty().set( pref.getScanMode() != null ? pref.getScanMode().getDescription() : ScanType.FLAT_SCAN.getDescription() );
-		taskModeComboBox.valueProperty().bindBidirectional( job.selectedModeProperty() );
-		taskModeComboBox.setPrefWidth( 260 );
-		grid.add( modeTitle, 0, 0 );
-		grid.add( taskModeComboBox, 1, 0 );
-
-		// --- Section 2: Context Paths Configurations Box ---
-		final VBox dynamicPathsContainer = new VBox( 12 );
-		grid.add( dynamicPathsContainer, 0, 1, 2, 1 );
-
-		final PathContext pathCtx = new PathContext();
-		if( pref.getSourcePath() != null ) {
-			pathCtx.sources.addAll( pref.getSourcePath() );
-		}
-		if( pref.getDestPath() != null ) {
-			pathCtx.destinations.addAll( pref.getDestPath() );
-		}
-
-		taskModeComboBox.valueProperty().addListener( ( obs, o, n ) -> renderContextPaths( ScanType.get( n ), dynamicPathsContainer, pref, pathCtx ) );
-		renderContextPaths( job.getSelectedMode(), dynamicPathsContainer, pref, pathCtx );
-
-		// --- Section 3: Task Parameter Flags Options ---
-		final Label paramsTitle = new Label( "Erweiterte Ablaufparameter" );
-		paramsTitle.setStyle( "-fx-font-size: 14px; -fx-font-weight: bold;" );
-
-		final CheckBox subDirCheck = new CheckBox( "Unterordner einbeziehen (SubDir)" );
-		subDirCheck.setSelected( pref.isSubDir() );
-		final String subDirText = """
-				Aktiviert: Kopiert nur die nackten Dateien und Unterordner DIREKT in das Zielverzeichnis
-				(ideal, um mehrere Quellen in einem einzigen Zielordner zusammenzuführen).
-				Deaktiviert: Erstellt für jeden Quellpfad einen eigenen Hauptordner im Zielverzeichnis, um die Quellen sauber voneinander zu trennen.
-				""";
-		subDirCheck.setTooltip( new Tooltip( subDirText ) );
-		final CheckBox trashbinCheck = new CheckBox( "Papierkorb verwenden (Trashbin)" );
-		trashbinCheck.setSelected( pref.isTrashbin() );
-		trashbinCheck.setTooltip( new Tooltip( "Verschiebt modifizierte/gelöschte Dateien temporär in Sicherungsstrukturen" ) );
-		final CheckBox autoDelCheck = new CheckBox( "Automatisches Löschen erlauben (AutoDel)" );
-		autoDelCheck.setSelected( pref.isAutoDel() );
-		autoDelCheck.setTooltip( new Tooltip( "Erlaubt dem System, verwaiste Dateien im Zielordner restlos zu bereinigen" ) );
-		final CheckBox autoSyncCheck = new CheckBox( "Automatisches kopieren erlauben (AutoSync)" );
-		autoSyncCheck.setSelected( pref.isAutoSync() );
-		autoSyncCheck.setTooltip( new Tooltip( "Erlaubt dem System, nach einem Scan alle nötigen Dateien zu kopieren." ) );
-		final CheckBox logOnCheck = new CheckBox( "Protokollierung aktivieren (LogOn)" );
-		logOnCheck.setSelected( pref.isLogOn() );
-		logOnCheck.setTooltip( new Tooltip( "Schreibt detaillierte Transaktionsprotokolle in das System-Logverzeichnis" ) );
-		final CheckBox bgSyncCheck = new CheckBox( "Hintergrund-Synchronisation aktiv" );
-		bgSyncCheck.setSelected( pref.isBgSync() );
-		bgSyncCheck.setTooltip( new Tooltip( "Setzt den Autostart und aktiviert die Hintergrundsyncronisierung im nachfolgenden Intervall" ) );
-
-		final Label bgTimeLabel = new Label( "Hintergrund Scan-Intervall:" );
-		final ComboBox<String> bgTimeComboBox = new ComboBox<>();
-		bgTimeComboBox.setTooltip( new Tooltip( "Listet die möglichen Job Intervalle auf" ) );
-		bgTimeComboBox.getItems().addAll( BgTime.getNames() );
-		bgTimeComboBox.getSelectionModel().select( pref.getBgTime() != null ? pref.getBgTime().getName() : BgTime.MIN_30.getName() );
-		bgTimeComboBox.disableProperty().bind( bgSyncCheck.selectedProperty().not() );
-
-		final VBox optionsBox = new VBox( 12, paramsTitle, subDirCheck, trashbinCheck, autoDelCheck, autoSyncCheck, logOnCheck, bgSyncCheck, new HBox( 8, bgTimeLabel, bgTimeComboBox ) );
-		grid.add( optionsBox, 0, 2, 2, 1 );
-
-		// --- Section 4: Global Parameters Stack ---
-		final Label globalTitle = new Label( "Globale System-Konfiguration" );
-		globalTitle.setStyle( "-fx-font-size: 14px; -fx-font-weight: bold;" );
-
-		final CheckBox globalAutostartCheck = new CheckBox( "DataSync beim Systemstart minimiert laden (Autostart OS)" );
-		globalAutostartCheck.setSelected( PreferenceManager.getInstance().isGlobalAutoStart() ); // Bind status fallback trace
-
-		// NEW: Theme Changer Layout Elements Configuration
-		final Label themeLabel = new Label( "Visuelles Anwendungs-Theme:" );
-		final ComboBox<AppTheme> themeComboBox = new ComboBox<>( mainGui.getAvailableThemes() );
-		themeComboBox.setTooltip( new Tooltip( "Listet alle möglichen Themes auf" ) );
-		// Custom cell rendering to display the specific Strategy names cleanly
-		themeComboBox.setCellFactory( _ -> new ListCell<>() {
-			@Override
-			protected void updateItem( AppTheme item, boolean empty ) {
-				super.updateItem( item, empty );
-				setText( empty || item == null ? "" : item.getName() );
-			}
-		} );
-		themeComboBox.setButtonCell( new ListCell<>() {
-			@Override
-			protected void updateItem( AppTheme item, boolean empty ) {
-				super.updateItem( item, empty );
-				setText( empty || item == null ? "" : item.getName() );
-			}
-		} );
-		themeComboBox.getSelectionModel().select( mainGui.getCurrentTheme() );
-
-		final VBox globalBox = new VBox( 10, globalTitle, globalAutostartCheck, new HBox( 8, themeLabel, themeComboBox ) );
-		grid.add( globalBox, 0, 3, 2, 1 );
-
-		// --- Commit Action Triggers ---
-		final Button saveButton = new Button( "Einstellungen speichern", Gui.createIcon( MaterialDesignD.DISC ) );
-		saveButton.setStyle( "-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10px 24px;" );
-		saveButton.setTooltip( new Tooltip( "Übernimmt alle geänderten Zustandsparameter permanent in die JSON-Konfigurationsdatei" ) );
-		saveButton.setOnAction( _ -> {
-			PreferenceManager.getInstance().setGlobalAutoStart( globalAutostartCheck.isSelected() );
-			PreferenceManager.getInstance().setTheme( themeComboBox.getValue() );
-			final Preference jobPref = job.getPreference();
-			final ScanType scanType = ScanType.get( taskModeComboBox.getValue() );
-			jobPref.setSubDir( subDirCheck.isSelected() );
-			jobPref.setTrashbin( trashbinCheck.isSelected() );
-			jobPref.setAutoDel( autoDelCheck.isSelected() );
-			jobPref.setLogOn( logOnCheck.isSelected() );
-			jobPref.setBgSync( bgSyncCheck.isSelected() );
-			jobPref.setBgTime( BgTime.get( bgTimeComboBox.getValue() ) );
-			jobPref.setAutoSync( autoSyncCheck.isSelected() );
-			jobPref.setScanMode( scanType );
-
-			jobPref.setSourcePath( new ArrayList<>( pathCtx.sources ) );
-			jobPref.setDestPath( new ArrayList<>( pathCtx.destinations ) );
-
-			if( scanType == ScanType.DUBLICATE_SCAN && !pathCtx.sources.isEmpty() ) {
-				jobPref.setStartSourcePath( pathCtx.sources.get( 0 ) );
-				jobPref.setStartDestPath( Paths.get( "" ) );
-			}else if( !pathCtx.sources.isEmpty() && !pathCtx.destinations.isEmpty() ) {
-				jobPref.setStartSourcePath( pathCtx.sources.get( 0 ) );
-				jobPref.setStartDestPath( pathCtx.destinations.get( 0 ) );
-			}else {
-				displayTemporaryStatus( "Fehlender Pfad! Einstellungen nicht gespeichert!", NotifyStatus.WARNING, Main.INFO_DELAY );
-				return;
-			}
-			controller.handleSaveSettings( job.getPreference(), themeComboBox.getValue() );
-		} );
-
-		final HBox buttonRow = new HBox( saveButton );
-		buttonRow.setAlignment( Pos.CENTER_RIGHT );
-		grid.add( buttonRow, 1, 4 );
-
-		return grid;
-	}
-
-	/**
-	 * Morph layouts rendering dynamically mapped on target selected Action mode definitions.
-	 */
-	private void renderContextPaths( ScanType type, VBox container, Preference pref, PathContext pathCtx ) {
-		container.getChildren().clear();
-		final GridPane pathsGrid = new GridPane();
-		pathsGrid.setHgap( 12 );
-		pathsGrid.setVgap( 10 );
-
-		final Label title = new Label( "Verzeichnis-Konfiguration (" + type.getDescription() + ")" );
-		title.setStyle( "-fx-font-size: 14px; -fx-font-weight: bold;" );
-		container.getChildren().add( title );
-
-		if( ScanType.SYNCHRONIZE.equals( type ) || ScanType.DUBLICATE_SCAN.equals( type ) ) {
-			final Path initialSrc = ( pref.getSourcePath() != null && !pref.getSourcePath().isEmpty() ) ? pref.getSourcePath().get( 0 ) : null;
-			final TextField srcField = new TextField( initialSrc.toString() );
-			srcField.setPrefWidth( 400 );
-			final Button srcBtn = new Button( "Durchsuchen..." );
-			srcBtn.setOnAction( _ -> {
-				final File f = chooseDirectory( initialSrc.toFile(), "Quellverzeichnis für " + pref.getScanMode().getDescription() );
-				if( f != null ) {
-					srcField.setText( f.getAbsolutePath() );
-					pathCtx.sources.clear();
-					pathCtx.sources.add( Paths.get( f.getAbsolutePath() ) );
-				}
-			} );
-			pathsGrid.add( new Label( ScanType.DUBLICATE_SCAN.equals( type ) ? "Scanverzeichnis:" : "Quellverzeichnis:" ), 0, 0 );
-			pathsGrid.add( new HBox( 8, srcField, srcBtn ), 1, 0 );
-		}
-
-		if( ScanType.SYNCHRONIZE.equals( type ) ) {
-			final Path initialDest = ( pref.getDestPath() != null && !pref.getDestPath().isEmpty() ) ? pref.getDestPath().get( 0 ) : null;
-			final TextField destField = new TextField( initialDest.toString() );
-			destField.setPrefWidth( 400 );
-			final Button destBtn = new Button( "Durchsuchen..." );
-			destBtn.setOnAction( _ -> {
-				final File f = chooseDirectory( initialDest.toFile(), "Zielverzeichnis für " + pref.getScanMode().getDescription() );
-				if( f != null ) {
-					destField.setText( f.getAbsolutePath() );
-					pathCtx.destinations.clear();
-					pathCtx.destinations.add( Paths.get( f.getAbsolutePath() ) );
-				}
-			} );
-			pathsGrid.add( new Label( "Zielverzeichnis:" ), 0, 1 );
-			pathsGrid.add( new HBox( 8, destField, destBtn ), 1, 1 );
-		}
-
-		if( ScanType.FLAT_SCAN.equals( type ) || ScanType.DEEP_SCAN.equals( type ) ) {
-			final VBox multiSrcBox = new VBox( 6 );
-			final Label multiLabel = new Label( "Quellverzeichnisse (Multi-Source Pathing):" );
-			multiLabel.setStyle( "-fx-font-weight: bold;" );
-
-			final ObservableList<String> backupPaths = FXCollections.observableArrayList();
-			for( final Path p : pathCtx.sources ) {
-				backupPaths.add( p.toString() );
-			}
-
-			final ListView<String> pathsListView = new ListView<>( backupPaths );
-			pathsListView.setPrefHeight( 100 );
-			final Button add = new Button( "Verzeichnis hinzufügen", Gui.createIcon( MaterialDesignP.PLUS ) );
-			add.setOnAction( _ -> {
-				final File f = chooseDirectory( pathCtx.sources.getLast().toFile(), "Quellverzeichnis für " + pref.getScanMode().getDescription() );
-				if( f != null && !backupPaths.contains( f.getAbsolutePath() ) ) {
-					backupPaths.add( f.getAbsolutePath() );
-					pathCtx.sources.add( Paths.get( f.getAbsolutePath() ) );
-				}
-			} );
-			final Button rem = new Button( "Entfernen", Gui.createIcon( MaterialDesignD.DELETE ) );
-			rem.setOnAction( _ -> {
-				final String sel = pathsListView.getSelectionModel().getSelectedItem();
-				if( sel != null ) {
-					backupPaths.remove( sel );
-					pathCtx.sources.remove( Paths.get( sel ) );
-				}
-			} );
-
-			multiSrcBox.getChildren().addAll( multiLabel, pathsListView, new HBox( 8, add, rem ) );
-			pathsGrid.add( multiSrcBox, 0, 0, 2, 1 );
-
-			final GridPane destGrid = new GridPane();
-			destGrid.setHgap( 12 );
-			final String initialDest = ( pref.getDestPath() != null && !pref.getDestPath().isEmpty() ) ? pref.getDestPath().get( 0 ).toString() : "";
-			final TextField destField = new TextField( initialDest );
-			destField.setPrefWidth( 400 );
-			final Button destBtn = new Button( "Durchsuchen..." );
-			destBtn.setOnAction( _ -> {
-				final File f = chooseDirectory( pathCtx.destinations.getFirst().toFile(), "Ziielverzeichnis für " + pref.getScanMode().getDescription() );
-				if( f != null ) {
-					destField.setText( f.getAbsolutePath() );
-					pathCtx.destinations.clear();
-					pathCtx.destinations.add( Paths.get( f.getAbsolutePath() ) );
-				}
-			} );
-			destGrid.add( new Label( "Zielverzeichnis:" ), 0, 0 );
-			destGrid.add( new HBox( 8, destField, destBtn ), 1, 0 );
-			pathsGrid.add( new VBox( 10, new Separator(), destGrid ), 0, 1, 2, 1 );
-		}
-
-		container.getChildren().add( pathsGrid );
-	}
-
-	private File chooseDirectory( File initialDir, String title ) {
-		final DirectoryChooser chooser = new DirectoryChooser();
-		if( initialDir != null && initialDir.exists() ) chooser.setInitialDirectory( initialDir );
-		chooser.setTitle( title );
-		return chooser.showDialog( mainGui.getWindowStage() );
-	}
-
-	/**
-	 * Simple structural model container mirroring active paths modifications
-	 * decoupled from underlying live Node hierarchies.
-	 */
-	private static final class PathContext {
-		private final ArrayList<Path> sources = new ArrayList<>();
-		private final ArrayList<Path> destinations = new ArrayList<>();
 	}
 }

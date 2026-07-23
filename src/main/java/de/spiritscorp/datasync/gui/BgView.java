@@ -29,31 +29,33 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.Objects;
 
-import javax.imageio.ImageIO;
-
-import de.spiritscorp.datasync.Main;
-import de.spiritscorp.datasync.controller.BgController;
-import de.spiritscorp.datasync.io.Debug;
 import javafx.application.Platform;
 
+import javax.imageio.ImageIO;
+
+import de.spiritscorp.datasync.controller.BgController;
+import de.spiritscorp.datasync.controller.MainViewController;
+import de.spiritscorp.datasync.io.Debug;
+
 /**
- * Encapsulated system tray presenter.
- * Bridges native AWT desktop toolkit hooks securely onto JavaFX platform thread loops.
+ * Encapsulated system tray presenter. Bridges native AWT desktop toolkit hooks securely onto JavaFX platform thread loops.
  *
  * @author Tom Spirit
  */
 public class BgView {
 
+	/** The native system tray integration handle managing background execution presence, taskbar context menus, and platform notifications. */
 	private TrayIcon trayIcon;
-	private final BgController controller;
+	/** The execution controller overseeing scheduled background worker threads and daemon interval routines. */
+	private final BgController bgController;
 
 	/**
 	 * Create the SystemTrayIcon
 	 *
-	 * @param controller The controller
+	 * @param bgController The bgController
 	 */
-	public BgView( BgController controller ) {
-		this.controller = controller;
+	public BgView( final BgController bgController ) {
+		this.bgController = bgController;
 		if( SystemTray.isSupported() ) {
 			initTray();
 		}else {
@@ -68,13 +70,11 @@ public class BgView {
 		final MenuItem openItem = new MenuItem( "öffnen" );
 		openItem.setFont( font );
 		// CRITICAL: Bridge AWT event into the JavaFX Application Thread context safely
-		openItem.addActionListener( e -> Platform.runLater( () -> {
-			controller.interruptBgJob( Main.BACKGROUND_THREAD_TIMEOUT );
-		} ) );
+		openItem.addActionListener( _ -> Platform.runLater( () -> bgController.interruptBgJob( MainViewController.BG_TIMEOUT ) ) );
 
 		final MenuItem closeItem = new MenuItem( "schließen" );
 		closeItem.setFont( font );
-		closeItem.addActionListener( e -> Platform.runLater( controller::requestApplicationShutdown ) );
+		closeItem.addActionListener( _ -> Platform.runLater( bgController::requestApplicationShutdown ) );
 
 		popup.add( openItem );
 		popup.addSeparator();
@@ -84,7 +84,7 @@ public class BgView {
 		BufferedImage trayImage;
 		try {
 			trayImage = ImageIO.read( getClass().getResourceAsStream( "/icons/16x16.png" ) );
-		}catch( final IOException e ) {
+		}catch( IOException _ ) {
 			Debug.printError( "[DataSync] Tray-Icon nicht gefunden, erstelle Fallback-Pixel." );
 			trayImage = new BufferedImage( 16, 16, BufferedImage.TYPE_INT_ARGB );
 		}
@@ -93,7 +93,7 @@ public class BgView {
 		this.trayIcon.setImageAutoSize( true );
 
 		// Doppel-Klick auf das Icon öffnet die App direkt
-		this.trayIcon.addActionListener( e -> Platform.runLater( () -> controller.interruptBgJob( Main.BACKGROUND_THREAD_TIMEOUT ) ) );
+		this.trayIcon.addActionListener( _ -> Platform.runLater( () -> bgController.interruptBgJob( MainViewController.BG_TIMEOUT ) ) );
 	}
 
 	/**
@@ -103,7 +103,7 @@ public class BgView {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash( controller, trayIcon );
+		return Objects.hash( bgController, trayIcon );
 	}
 
 	@Override
@@ -112,6 +112,6 @@ public class BgView {
 		if( obj == null ) { return false; }
 		if( getClass() != obj.getClass() ) { return false; }
 		final BgView other = (BgView) obj;
-		return Objects.equals( controller, other.controller ) && Objects.equals( trayIcon, other.trayIcon );
+		return Objects.equals( bgController, other.bgController ) && Objects.equals( trayIcon, other.trayIcon );
 	}
 }

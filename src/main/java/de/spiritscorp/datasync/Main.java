@@ -1,11 +1,12 @@
 package de.spiritscorp.datasync;
+
 /*
 	Data Sync
 		Application to synchronize your data
 
 	@author Tom Spirit
 	@date 16.12.2021
-	@version	1.1.0.0-alpha
+	@version	1.1.0.0-beta
 	@email tomspirit@spiritscorp.network
 
 	Copyright ©
@@ -31,10 +32,11 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 import java.util.Locale;
 
+import javafx.application.Application;
+
 import de.spiritscorp.datasync.gui.Gui;
 import de.spiritscorp.datasync.io.Debug;
 import de.spiritscorp.datasync.io.PreferenceManager;
-import javafx.application.Application;
 
 /**
  * Main application entry point responsible for runtime arguments parsing,
@@ -42,49 +44,12 @@ import javafx.application.Application;
  *
  * @author Tom Spirit
  */
-@SuppressWarnings( { "PMD.LongVariable" } )
 public final class Main { // NOPMD ShortClassName
 
 	/**
-	 * The current version of the application in semantic format,
-	 * including the development stage (e.g., alpha).
+	 * The current version of the application in semantic format, including the development stage.
 	 */
-	public static final String VERSION = "V 1.1.0.0-alpha";
-
-	/**
-	 * The timeout limit in milliseconds for regular, worker threads
-	 * before a forced termination is triggered.
-	 */
-	public static final int EXIT_THREAD_TIMEOUT = 10_000;
-
-	/**
-	 * The timeout limit in milliseconds for asynchronous background processes
-	 * (e.g., automated file or task scans).
-	 */
-	public static final int BACKGROUND_THREAD_TIMEOUT = 20_000;
-
-	/**
-	 * The delay time in seconds used for displaying or fading out
-	 * status and informational messages within the GUI.
-	 */
-	public static final int INFO_DELAY = 4;
-
-	/** Config folder flag long */
-	public static final String CONFIG_DIR_LONG = "--config-dir";
-	/** Config folder flag short */
-	public static final String CONFIG_DIR_SHORT = "-c";
-	/** Boot delay flag long */
-	public static final String BOOT_DELAY_LONG = "--boot-delay";
-	/** Boot Delay flag short */
-	public static final String BOOT_DELAY_SHORT = "-b";
-	/** Debug flag long */
-	public static final String DEBUG_LONG = "--debug";
-	/** Debug flag short */
-	public static final String DEBUG_SHORT = "-d";
-	/** Debug to file flag long */
-	public static final String DEBUG_TO_FILE_LONG = "--debug-to-file";
-	/** Debug to file flag short */
-	public static final String DEBUG_TO_FILE_SHORT = "-f";
+	public static final String VERSION = "V1.1.0.0-beta";
 
 	/** Debug mode */
 	private static boolean debug;
@@ -99,14 +64,15 @@ public final class Main { // NOPMD ShortClassName
 	 * Application entry point. Orchestrates the initial boot sequence by parsing
 	 * command-line options and bootstrapping the underlying JavaFX application subsystem.
 	 * <p>
-	 * This method delegates argument parsing to {@link #parseArguments(String[])} before
-	 * handing over control to the JavaFX application lifecycle via {@link Application#launch(Class, String...)}.
+	 * This method delegates argument parsing to {@link #parseArguments(String [] args)} before
+	 * handing over control to the JavaFX application lifecycle via {@link Application#launch(Class, String [] )}.
 	 * </p>
 	 *
 	 * @param args Runtime command-line execution flags and configuration parameters.
 	 */
-	public static void main( final String[] args ) {
+	public static void main( final String... args ) {
 		parseArguments( args );
+		Locale.setDefault( Locale.GERMANY );
 		Application.launch( Gui.class, args );
 	}
 
@@ -153,7 +119,7 @@ public final class Main { // NOPMD ShortClassName
 	 * @param args An array of string arguments passed to the application upon startup.
 	 *             Null elements within the array are safely ignored.
 	 */
-	/*package*/ static void parseArguments( final String... args ) {
+	static void parseArguments( final String... args ) {
 
 		final PreferenceManager manager = PreferenceManager.getInstance();
 
@@ -179,7 +145,7 @@ public final class Main { // NOPMD ShortClassName
 	 * between consecutive test executions and guarantee a deterministic environment.
 	 * </p>
 	 */
-	/*package*/ static void resetForTesting() {
+	static void resetForTesting() {
 		debug = false;
 		firstStart = false;
 	}
@@ -189,24 +155,15 @@ public final class Main { // NOPMD ShortClassName
 	 */
 	private static void evaluateArgumentFlags( final String[] args, final int currentIndex, final PreferenceManager manager ) {
 		final String arg = args[currentIndex].trim();
-		final String generalArg = arg.toLowerCase( Locale.ROOT );
-		switch( generalArg ) {
-			// Modern multi-labels: replaces the logical OR (||) chains
-			case BOOT_DELAY_LONG, BOOT_DELAY_SHORT ->
-				firstStart = true;
-
-			case DEBUG_LONG, DEBUG_SHORT ->
-				debug = true;
-
-			case DEBUG_TO_FILE_LONG, DEBUG_TO_FILE_SHORT -> {
+		final CLIFlags flag = CLIFlags.fromArgument( arg );
+		switch( flag ) {
+			case CONFIG_DIR -> handleConfigDirectoryArgument( args, currentIndex, manager );
+			case BOOT_DELAY -> firstStart = true;
+			case DEBUG -> debug = true;
+			case DEBUG_TO_FILE -> {
 				toFile = true;
 				debug = true;
 			}
-
-			// Pattern Matching with a 'when' guard to handle the .startsWith() logic
-			case final String genArg when genArg.startsWith( CONFIG_DIR_LONG ) || genArg.startsWith( CONFIG_DIR_SHORT ) ->
-				handleConfigDirectoryArgument( args, currentIndex, manager );
-
 			default -> {
 				// No match found, skip silently
 			}
@@ -248,5 +205,4 @@ public final class Main { // NOPMD ShortClassName
 		Debug.printDebug( "[Info] Data Sync Application initialized. Beginning system initialization." );
 		Debug.printDebug( "[Setup] Set config root path -> %s", configPath.toString() );
 	}
-
 }

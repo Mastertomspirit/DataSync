@@ -25,10 +25,10 @@ jobs:
 
     env:
       MAVEN_OPTS: "-Dgpg.skip=true -Djdk.io.File.allowDeleteReadOnlyFiles=true --enable-native-access=ALL-UNNAMED"
-      NO_AT_BRIDGE: '1'
+ 
     steps: 
     - name: Checkout repository
-      uses: actions/checkout@v7
+      uses: actions/checkout@v5
       
     - name: Setup Java JDK
       uses: actions/setup-java@v5

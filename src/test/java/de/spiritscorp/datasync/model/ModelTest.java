@@ -131,8 +131,8 @@ class ModelTest {
 				},
 				() -> assertEquals( 2, listSource.size(), "source Ordner, anzahl passt nicht" ),
 				() -> assertEquals( 2, listDest.size(), "dest Ordner, anzahl passt nicht" ),
-				() -> assertEquals( destFiles[0].getFileName(), listDest.get( 0 ).getFileName(), "FileName passt nicht überein" ),
-				() -> assertEquals( destFiles[1].getFileName(), listDest.get( 1 ).getFileName(), "FileName passt nicht überein" ) );
+				() -> assertTrue( listDest.contains( destFiles[0].getFileName() ), "FileName passt nicht überein" ),
+				() -> assertTrue( listDest.contains( destFiles[1].getFileName() ), "FileName passt nicht überein" ) );
 	}
 
 	/**

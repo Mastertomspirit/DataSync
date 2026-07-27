@@ -97,7 +97,7 @@
 		<pl_assembly.version>3.8.0</pl_assembly.version>
 		<pl_jxr.version>3.6.0</pl_jxr.version>
 		<pl_checkstyle.version>3.6.0</pl_checkstyle.version>
-		<pl_checkstyle_puppycrawl.version>13.8.0</pl_checkstyle_puppycrawl.version>
+		<pl_checkstyle_puppycrawl.version>13.9.0</pl_checkstyle_puppycrawl.version>
 		<pl_pmd.version>3.28.0</pl_pmd.version>
 		<pl_release>3.3.1</pl_release>
 		<pl_source>3.4.0</pl_source>

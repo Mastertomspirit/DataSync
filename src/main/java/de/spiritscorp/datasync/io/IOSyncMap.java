@@ -30,8 +30,8 @@ import java.nio.file.attribute.FileTime;
 import java.util.HashMap;
 import java.util.Map;
 
-import de.spiritscorp.datasync.model.FileAttributes;
 import jakarta.json.Json;
+import jakarta.json.JsonException;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 import jakarta.json.JsonReader;
@@ -40,22 +40,35 @@ import jakarta.json.JsonWriter;
 import jakarta.json.JsonWriterFactory;
 import jakarta.json.stream.JsonGenerator;
 
+import de.spiritscorp.datasync.model.FileAttributes;
+
 /**
  * Isolated binary mapping engine handling structural cache entries matching runtime properties.
  * * @author Tom Spirit
  */
 class IOSyncMap {
 
+	/** Individual path to the sync map */
 	private final Path jobSyncMapPath;
 
 	/**
 	 * Binds tracking matrices to unique physical layout footprints.
 	 */
-	IOSyncMap( String jobName ) {
+	IOSyncMap( final String jobName ) {
 		this.jobSyncMapPath = PreferenceManager.getInstance().getConfigPath().getParent().resolve( "syncMap_" + jobName + ".json" );
 	}
 
-	boolean loadSyncMap( Map<Path, FileAttributes> syncMap ) {
+	/**
+	 * Deserializes the structural file-tracking registry from disk and hydrates the provided synchronization mapping.
+	 * Enforces strict pre-conditions ensuring the destination container is empty and the source checkpoint file
+	 * exists prior to execution. Intercepts and logs file-system access errors, JSON syntax malformations,
+	 * and internal parser state conflicts gracefully.
+	 *
+	 * @param syncMap The target destination map to be populated with path keys and their associated tracking metadata.
+	 * @return true if the persistence store was parsed successfully and the map state was fully hydrated;<br>
+	 *         false if pre-conditions failed or an internal parsing/IO exception occurred.
+	 */
+	boolean loadSyncMap( final Map<Path, FileAttributes> syncMap ) {
 		if( !syncMap.isEmpty() || !Files.exists( jobSyncMapPath ) ) { return false; }
 		try( JsonReader jsonReader = Json.createReader( Files.newInputStream( jobSyncMapPath, StandardOpenOption.READ ) ) ) {
 			final JsonObject jsonObject = jsonReader.readObject();
@@ -75,43 +88,81 @@ class IOSyncMap {
 			return true;
 		}catch( final IllegalArgumentException | UnsupportedOperationException | SecurityException | IOException e ) {
 			// Block 1: IO & File System Operations (Options, Permissions, Missing Files)
-			Debug.printDebug( "[Error] File system or configuration failure while opening stream: %s", e.getMessage() );
+			Debug.printDebug( "[IO Sync Map Error] File system or configuration failure while opening stream: %s", e.getMessage() );
 			Debug.printException( this.getClass(), e );
 			return false;
 
-		}catch( final jakarta.json.JsonException e ) {
+		}catch( final JsonException exception ) {
 			// Block 2: JSON Processing (Deals with both syntax/parsing and structural creation errors)
-			Debug.printDebug( "[Error] JSON processing or syntax error: %s", e.getMessage() );
-			Debug.printException( this.getClass(), e );
+			Debug.printDebug( "[IO Sync Map Error] JSON processing or syntax error: %s", exception.getMessage() );
+			Debug.printException( this.getClass(), exception );
 			return false;
 
-		}catch( final IllegalStateException e ) {
+		}catch( final IllegalStateException exception ) {
 			// Block 3: Reader State Management (Reader already closed or multi-call violation)
-			Debug.printDebug( "[Error] Parser state conflict: %s", e.getMessage() );
-			Debug.printException( this.getClass(), e );
+			Debug.printDebug( "[IO Sync Map Error] Parser state conflict: %s", exception.getMessage() );
+			Debug.printException( this.getClass(), exception );
 			return false;
 		}
 	}
 
-	void writeSyncMap( Map<Path, FileAttributes> syncMap ) {
-		try( OutputStream os = Files.newOutputStream( jobSyncMapPath, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING ) ) {
+	/**
+	 * Serializes the active in-memory file synchronization snapshot and flushes the state to disk.
+	 * Compiles the tracking dataset into a formatted JSON structure utilizing pretty-printing layout rules,
+	 * completely truncating any pre-existing target file to establish a clean persistence baseline.
+	 *
+	 * @param syncMap The source state map containing the path-to-attribute records to be persisted.
+	 */
+	void writeSyncMap( final Map<Path, FileAttributes> syncMap ) {
+		try( OutputStream outputStream = Files.newOutputStream( jobSyncMapPath, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING ) ) {
 			final HashMap<String, Boolean> config = new HashMap<>();
 			config.put( JsonGenerator.PRETTY_PRINTING, true );
-			final JsonWriterFactory jwf = Json.createWriterFactory( config );
+			final JsonWriterFactory jWriterFactory = Json.createWriterFactory( config );
 
-			final JsonObject jobObj = createSyncMap( syncMap );
-			final JsonWriter jw = jwf.createWriter( os );
-			jw.write( jobObj );
-			jw.close();
-		}catch( final IOException e ) {
-			Debug.printException( this.getClass(), e );
+			final JsonObject jsonObject = createJsonObject( syncMap );
+			final JsonWriter jsonWriter = jWriterFactory.createWriter( outputStream );
+			jsonWriter.write( jsonObject );
+			jsonWriter.close();
+		}catch( final IOException exception ) {
+			Debug.printDebug( "[IO Sync Map Error] File system or configuration failure while writing file: %s", exception.getMessage() );
+			Debug.printException( this.getClass(), exception );
 		}
 	}
 
-	private JsonObject createSyncMap( Map<Path, FileAttributes> syncMap ) {
-		final JsonObjectBuilder jo = Json.createObjectBuilder();
+	/**
+	 * Deletes the persisted file synchronization snapshot from disk.
+	 * <p>
+	 * Removes the tracking dataset file if it exists, effectively clearing the persistence
+	 * baseline and forcing a full scan or re-initialization upon the next execution.
+	 *
+	 * @return {@code true} if the file was successfully deleted or did not exist;
+	 *         {@code false} if a file system failure occurred.
+	 */
+	boolean deleteSyncMap() {
+		try {
+			if( Files.deleteIfExists( jobSyncMapPath ) ) {
+				Debug.printDebug( "[IO Sync Map] Successfully deleted sync map file: %s", jobSyncMapPath.getFileName().toString() );
+			}
+			return true;
+		}catch( final IOException exception ) {
+			Debug.printDebug( "[IO Sync Map Error] File system failure while deleting file: %s", exception.getMessage() );
+			Debug.printException( this.getClass(), exception );
+			return false;
+		}
+	}
+
+	/**
+	 * Translates the raw in-memory domain mapping of file metadata into a structured JSON object tree.
+	 * Iterates through the tracking entries, maps file primitives and specialized timestamps into a
+	 * unified object blueprint, and indexes each sub-block by its relative file identifier path string.
+	 *
+	 * @param syncMap The raw file attribute domain dataset to convert.
+	 * @return An immutable structural JSON representation ready for serialization to the persistence layer.
+	 */
+	private JsonObject createJsonObject( final Map<Path, FileAttributes> syncMap ) {
+		final JsonObjectBuilder joBuilder = Json.createObjectBuilder();
 		for( final Map.Entry<Path, FileAttributes> entry : syncMap.entrySet() ) {
-			final JsonObject jo2 = Json.createObjectBuilder()
+			final JsonObject jsonObject = Json.createObjectBuilder()
 					.add( "relativeFilePath", entry.getValue().getRelativeFilePath().toString() )
 					.add( "fileHash", entry.getValue().getFileHash() )
 					.add( "modTimeString", entry.getValue().getModTimeString() )
@@ -120,8 +171,8 @@ class IOSyncMap {
 					.add( "size", entry.getValue().getSize() )
 					.add( "createTimeString", entry.getValue().getCreateTimeString() )
 					.build();
-			jo.add( entry.getValue().getRelativeFilePath().toString(), jo2 );
+			joBuilder.add( entry.getValue().getRelativeFilePath().toString(), jsonObject );
 		}
-		return jo.build();
+		return joBuilder.build();
 	}
 }

@@ -21,9 +21,7 @@ package de.spiritscorp.datasync.controller;
  */
 
 import de.spiritscorp.datasync.gui.Gui;
-import de.spiritscorp.datasync.io.Preference;
 import de.spiritscorp.datasync.theme.AppTheme;
-import javafx.scene.control.ListCell;
 
 /**
  * Core architectural interface decoupling user interface interactions from business logic orchestration.
@@ -33,9 +31,51 @@ import javafx.scene.control.ListCell;
 public interface ViewController {
 
 	/**
-	 * Registers a native host operating system runtime shutdown hook to capture external termination signals.
+	 * Registers a native host operating system runtime shutdown hook within the virtual machine
+	 * to intercept external termination signals.
+	 * <br>
+	 * This hook acts as a defensive fallback mechanism that catches OS-level interrupts such as
+	 * SIGTERM, unexpected system logoffs, or manual console terminations (e.g., Ctrl+C). Upon
+	 * interception, it ensures a controlled transition to essential cleanup routines, allowing the
+	 * application to preserve data integrity, flush pending transaction logs, and prevent file
+	 * system corruption before the JVM process is completely killed by the host environment.
+	 *
 	 */
 	void registerNativeShutdownHook();
+
+	/**
+	 * Requests an orderly, programmatic termination of the entire application ecosystem.
+	 * <br>
+	 * Unlike defensive signal trapping, this method orchestrates the intentional, graceful shutdown
+	 * lifecycle of active runtime components. It systematically cancels active synchronization tasks,
+	 * halts scheduled background thread daemons, safely releases locked file descriptors, persists
+	 * outstanding preference states to disk, and ultimately triggers a clean exit of the JavaFX
+	 * platform runtime environment.
+	 *
+	 */
+	void handleApplicationShutdown();
+
+	/**
+	 * Asynchronously dispatches the orchestration engine onto a background worker thread.
+	 * Optionally defers the initial execution sequence to accommodate bootstrap stabilization,
+	 * dependency initialization, or throttling requirements during application startup.
+	 *
+	 * @param bootDelay true to enforce an initial structural delay prior to thread execution;
+	 *                  false for immediate background execution.
+	 */
+	void runInBackground( boolean bootDelay );
+
+	/**
+	 * Handles the configuration update for the application's operating system autostart behavior.
+	 * <br>
+	 * This method is triggered upon user interaction with the global autostart controls. It delegates
+	 * the registration or removal of the application's boot-time execution hooks to the system
+	 * integration layer, enabling the application to load minimized during system startup.
+	 *
+	 * @param autostart {@code true} to register the application for automatic launch on system boot;
+	 *                  {@code false} to remove the autostart registration hook
+	 */
+	void handleAutostart( boolean autostart );
 
 	/**
 	 * Handles switching between different primary view layers within the main viewport.
@@ -45,16 +85,6 @@ public interface ViewController {
 	void handleNavigate( Gui.ViewState state );
 
 	/**
-	 * Requests termination of the entire application environment, safely stopping background hooks.
-	 */
-	void handleApplicationShutdown();
-
-	/**
-	 * Load the whole jobList from the Preferences.
-	 */
-//	void loadInitialJobList();
-
-	/**
 	 * Handles the creation and append workflow for a new managed task synchronization context instance.
 	 */
 	void handleCreateNewJob();
@@ -62,9 +92,9 @@ public interface ViewController {
 	/**
 	 * Triggers the specialized configuration context dialog to change a job instance identification label.
 	 *
-	 * @param cell The graphical ListCell context container hosting the target model entity.
+	 * @param job The source configuration instance payload.
 	 */
-	void handleRenameJob( ListCell<SyncJobContext> cell );
+	void handleRenameJob( SyncJobContext job );
 
 	/**
 	 * Creates an independent copy of the currently selected task parameters profile mapping.
@@ -74,11 +104,30 @@ public interface ViewController {
 	void handleDuplicateJob( SyncJobContext job );
 
 	/**
+	 * Triggers a destructive purging routine to eliminate identified duplicate entities
+	 * within the scope of the given synchronization task context.
+	 * Mutates the active memory allocation state and immediately persists structural changes.
+	 *
+	 * @param job The specific synchronization runtime context targeting duplicate remediation.
+	 */
+	void deleteSelectedDuplicates( SyncJobContext job );
+
+	/**
 	 * Permanently removes a task entity context from the global orchestrator matrix tracking layer.
 	 *
 	 * @param job The target configuration instance to wipe.
 	 */
 	void handleDeleteJob( SyncJobContext job );
+
+	/**
+	 * Coordinates and processes drag-and-drop reordering requests originating from the job list.
+	 * Acts as the bridge to pass index mutations from the view architecture back to the
+	 * underlying sequential model registries.
+	 *
+	 * @param thisIdx    The destination target index where the dragged element is dropped.
+	 * @param draggedIdx The original source index where the drag gesture was initiated.
+	 */
+	void handleDragJob( int thisIdx, int draggedIdx );
 
 	/**
 	 * Initiates execution of processing operations based on active configuration parameters.
@@ -97,13 +146,7 @@ public interface ViewController {
 	/**
 	 * Commits altered orchestration state variables using the encapsulated properties entity carrier.
 	 *
-	 * @param localPreferences Altered context data parameters container reference.
-	 * @param targetTheme      Visual presentation theme strategy selection.
+	 * @param targetTheme Visual presentation theme strategy selection.
 	 */
-	void handleSaveSettings( Preference localPreferences, AppTheme targetTheme );
-
-	void runInBackground( boolean firstStart );
-
-	void deleteSelectedDuplicates( SyncJobContext jobContext );
-
+	void handleSaveSettings( AppTheme targetTheme );
 }

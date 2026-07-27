@@ -52,7 +52,7 @@ class FileScan implements Runnable {
 	 * @param map
 	 * @param scanType
 	 */
-	FileScan( Path path, Path startPath, Map<Path, FileAttributes> map, ScanType scanType, BasicFileAttributes bfa ) {
+	FileScan( final Path path, final Path startPath, final Map<Path, FileAttributes> map, final ScanType scanType, final BasicFileAttributes bfa ) {
 		this.path = path;
 		this.startPath = startPath;
 		this.map = map;

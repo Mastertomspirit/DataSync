@@ -8,7 +8,7 @@
 
 DataSync is an enterprise-grade, highly parallelized file synchronization, backup, and duplicate analysis application engineered on top of a modern, fully modular Java platform. Operating natively within the system architecture, DataSync runs quietly inside the OS system tray to manage complex, multi-source storage Topologies concurrently. By utilizing transaction-safe file operations, the application guarantees zero data corruption during unexpected halts, ensuring your files remain structurally sound at all times.
 
-> **Important Compatibility Note (Version 1.1.0.0-alpha):** This release introduces a fundamental overhaul of the persistent configuration storage layout. Because of these deep structural mutations, the core storage layer **is not backward compatible with legacy versions (e.g., v1.0.0.0)**. Upon initial initialization, the application's configuration parser automatically detects mismatched or legacy pre-alpha schemas and seamlessly sanitizes the environment back to safe system defaults without interrupting the runtime execution.
+> **Important Compatibility Note (Version 1.1.0.0-alpha):** This release introduces a fundamental overhaul of the persistent configuration storage layout. Because of these deep structural mutations, the core storage layer **is not backward compatible with legacy versions (e.g., v0.9.6.0)**. Upon initial initialization, the application's configuration parser automatically detects mismatched or legacy pre-alpha schemas and seamlessly sanitizes the environment back to safe system defaults without interrupting the runtime execution.
 
 ---
 
@@ -45,8 +45,14 @@ When running a profile manually to audit your data boundaries, DataSync supports
 * **Interactive Querying (Flags Disabled):** If these options are unchecked, the engine behaves purely as a non-destructive analysis tool. It compiles a comprehensive structural delta report and explicitly prompts the user via an interactive dialog to approve or reject the calculated file operations before a single byte is altered on disk.
 * *Constraint:* Automated background automation is omitted from the pure **Sync** and **Duplicate** modes, where blind destructive runs are inherently unsafe.
 
-### Structured Machine-Readable JSON Logging
-Every filesystem interaction, checksum calculation, and profile state transition is pushed simultaneously to a standard console log and a structured, machine-readable JSON log file. This allows standard system administrators to seamlessly ingest DataSync performance metrics into enterprise log aggregation pipelines (such as Grafana Loki or ELK stacks) for real-time remote monitoring.
+### Structured Machine-Readable JSON Logging & Automatic Rotation
+
+Every filesystem interaction, checksum calculation, and profile state transition is pushed simultaneously to a standard console log and a structured, machine-readable JSON log file. This allows system administrators to seamlessly ingest DataSync performance metrics into enterprise log aggregation pipelines (such as Grafana Loki or ELK stacks) for real-time remote monitoring.
+
+To safeguard storage infrastructure during high-throughput synchronization tasks, the logging engine features an **integrated log rotation subsystem (`Logrotater`)**. This prevents disk space exhaustion by automatically managing the lifecycle of active and historical log files based on strict, configurable boundaries:
+
+*   **Size-Based Triggers (`maxFileSize`):** Automatically cuts and rotates the active log file the exact moment it breaches the configured byte threshold, keeping the active log footprint predictable.
+*   **Archival Retention Policies (`maxBackupIndex`):** Automatically coordinates index shifting for historical log files and enforces a strict capacity limit, purging the oldest backup segments once the maximum history depth is reached.
 
 ### Dynamic Configuration Routing (`--configPath` Bootstrap Flag)
 The application lifecycle can be dynamically re-routed during execution initialization by utilizing the new `--configPath <path>` CLI bootstrap argument. Passing this specific operational flag overrides the standard application directory layout ( at `${user.home}/DataSync}`):
@@ -60,7 +66,7 @@ The application lifecycle can be dynamically re-routed during execution initiali
 To balance raw execution speed against absolute cryptographic data integrity across different storage mediums (such as local NVMe arrays versus high-latency network NAS shares), DataSync provides four distinct operational execution modes:
 
 ### Synchronize (Standard Sync)
-Provides direct, real-time synchronization between targeted directory sectors. Its operational scope regarding structural directory pruning and depth limitations adapts dynamically to the profile's specialized UI constraints.
+Provides automated, scheduled synchronization between targeted directory structures, operating at configurable intervals with a minimum frequency of one minute. Its operational scope regarding structural directory pruning and depth limitations adapts dynamically to the profile's specialized UI constraints.
 
 ### Flat Scan (Metadata Backup)
 An ultra-fast, IO-efficient delta computation engine designed for frequent backups. The system checks filesystem metadata snapshots instantly, evaluating changes based on file size boundaries, absolute file paths, creation epochs, and modification timestamps. This delivers rapid sync speeds without taxing storage controllers.

@@ -20,6 +20,22 @@ package de.spiritscorp.datasync.gui;
  * 		along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+import javafx.geometry.Insets;
+import javafx.scene.control.Button;
+import javafx.scene.control.ContextMenu;
+import javafx.scene.control.Label;
+import javafx.scene.control.ListCell;
+import javafx.scene.control.ListView;
+import javafx.scene.control.MenuButton;
+import javafx.scene.control.MenuItem;
+import javafx.scene.control.SeparatorMenuItem;
+import javafx.scene.control.Tooltip;
+import javafx.scene.input.ClipboardContent;
+import javafx.scene.input.Dragboard;
+import javafx.scene.input.TransferMode;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
+
 import org.kordamp.ikonli.javafx.FontIcon;
 import org.kordamp.ikonli.materialdesign2.MaterialDesignC;
 import org.kordamp.ikonli.materialdesign2.MaterialDesignD;
@@ -31,28 +47,23 @@ import org.kordamp.ikonli.materialdesign2.MaterialDesignS;
 
 import de.spiritscorp.datasync.controller.SyncJobContext;
 import de.spiritscorp.datasync.controller.ViewController;
-import javafx.geometry.Insets;
-import javafx.scene.control.Button;
-import javafx.scene.control.ContextMenu;
-import javafx.scene.control.Label;
-import javafx.scene.control.ListCell;
-import javafx.scene.control.ListView;
-import javafx.scene.control.MenuButton;
-import javafx.scene.control.MenuItem;
-import javafx.scene.control.SeparatorMenuItem;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.VBox;
 
 /**
- * Sidebar Navigation panel hosting the main execution links,
- * managed tasks instances, and dynamic manipulation actions via context menus.
- * * @author Tom Spirit
+ * Sidebar Navigation panel hosting the main execution links, managed tasks instances, and dynamic manipulation actions via context menus.
+ *
+ * @author Tom Spirit
  */
-public final class SidebarView extends VBox {
+final class SidebarView extends VBox {
 
 	private final ListView<SyncJobContext> sidebarListView;
 	private final Gui mainGui;
 	private final ViewController controller;
+
+	private static final String CSS_MENU_ICON = "menu-icon";
+	private static final String CSS_JOB_ICON = "job-icon";
+	private static final String CSS_DRAG = "drag-over-target";
+
+	private boolean dragAndDropEnabled = true;
 
 	/**
 	 * Constructs the graphical container and links action events directly into specified controllers interfaces.
@@ -60,7 +71,7 @@ public final class SidebarView extends VBox {
 	 * @param mainGui    Application root shell container.
 	 * @param controller Associated decoupled interaction pipeline boundary coordinator.
 	 */
-	public SidebarView( Gui mainGui, ViewController controller ) {
+	SidebarView( final Gui mainGui, final ViewController controller ) {
 		this.mainGui = mainGui;
 		this.controller = controller;
 		this.setSpacing( 16 );
@@ -68,23 +79,28 @@ public final class SidebarView extends VBox {
 		this.setPrefWidth( 300 );
 
 		// Initialize application navigation switcher menu
+
 		final MenuButton hamburgerMenu = new MenuButton( "Navigation", Gui.createIcon( MaterialDesignH.HAMBURGER ) );
+		hamburgerMenu.getGraphic().getStyleClass().addAll( CSS_MENU_ICON );
 		hamburgerMenu.setMaxWidth( Double.MAX_VALUE );
 
 		final MenuItem taskViewItem = new MenuItem( "Aktiver Task-Monitor", Gui.createIcon( MaterialDesignF.FOLDER ) );
+		taskViewItem.getGraphic().getStyleClass().addAll( CSS_MENU_ICON );
 		taskViewItem.setOnAction( _ -> controller.handleNavigate( Gui.ViewState.MONITOR ) );
 
 		final MenuItem settingsItem = new MenuItem( "Erweiterte Parameter", Gui.createIcon( MaterialDesignS.STORE_SETTINGS ) );
+		settingsItem.getGraphic().getStyleClass().addAll( CSS_MENU_ICON );
 		settingsItem.setOnAction( _ -> controller.handleNavigate( Gui.ViewState.SETTINGS ) );
 
 		final MenuItem infoItem = new MenuItem( "System-Informationen", Gui.createIcon( MaterialDesignI.INFORMATION ) );
+		infoItem.getGraphic().getStyleClass().addAll( CSS_MENU_ICON );
 		infoItem.setOnAction( _ -> controller.handleNavigate( Gui.ViewState.INFO ) );
 
 		hamburgerMenu.getItems().addAll( taskViewItem, settingsItem, new SeparatorMenuItem(), infoItem );
 
 		// Section header label
-		final Label sidebarHeader = new Label( "VERWALTETE TASK-INSTANZEN" );
-		sidebarHeader.setStyle( "-fx-font-size: 11px; -fx-font-weight: bold; -fx-letter-spacing: 0.8px;" );
+		final Label sidebarTitleLabel = new Label( "VERWALTETE TASK-INSTANZEN" );
+		sidebarTitleLabel.getStyleClass().addAll( "sidebar-title-label" );
 
 		// Main ListView layout for tasks mapping
 		sidebarListView = new ListView<>( mainGui.getJobList() );
@@ -93,37 +109,45 @@ public final class SidebarView extends VBox {
 		// Control operation triggers
 		final Button addJobButton = new Button( "Task hinzufügen", Gui.createIcon( MaterialDesignP.PLUS ) );
 		addJobButton.setMaxWidth( Double.MAX_VALUE );
-		addJobButton.setStyle( "-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 11px;" );
+		addJobButton.getGraphic().getStyleClass().addAll( Gui.CSS_BUTTON_ICON );
+		addJobButton.getStyleClass().addAll( "add-job-button" );
 		addJobButton.setOnAction( _ -> controller.handleCreateNewJob() );
 
-		final Button exitButton = new Button( "Programm beenden", Gui.createIcon( MaterialDesignP.POWER ) );
-		exitButton.getGraphic().setStyle( "-fx-icon-color: white;" );
+		final Button exitButton = new Button( "Programm beenden", Gui.createIcon( MaterialDesignP.POWER_STANDBY ) );
 		exitButton.setMaxWidth( Double.MAX_VALUE );
-		exitButton.setStyle( "-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 11px;" );
+		exitButton.getGraphic().getStyleClass().addAll( Gui.CSS_BUTTON_ICON );
+		exitButton.getStyleClass().addAll( "exit-button" );
 		exitButton.setOnAction( _ -> controller.handleApplicationShutdown() );
 
-		this.getChildren().addAll( hamburgerMenu, sidebarHeader, sidebarListView, addJobButton, exitButton );
-		VBox.setVgrow( sidebarListView, Priority.ALWAYS );
+		this.getChildren().addAll( hamburgerMenu, sidebarTitleLabel, sidebarListView, addJobButton, exitButton );
+		setVgrow( sidebarListView, Priority.ALWAYS );
 	}
 
 	/**
 	 * Builds and styles custom Cell rendering including interactive management items.
 	 */
 	private void setupCellFactory() {
-		sidebarListView.setCellFactory( lv -> {
+		sidebarListView.setCellFactory( _ -> {
+			@SuppressWarnings( { "PMD.CommentRequired" } )
 			final ListCell<SyncJobContext> cell = new ListCell<>() {
+				private final FontIcon itemIcon = Gui.createIcon( MaterialDesignF.FOLDER );
+				private final Tooltip toolTip = new Tooltip();
+
 				@Override
-				protected void updateItem( SyncJobContext item, boolean empty ) {
+				protected void updateItem( final SyncJobContext item, final boolean empty ) {
 					super.updateItem( item, empty );
 					textProperty().unbind();
+					toolTip.textProperty().unbind();
 					if( empty || item == null ) {
 						setText( "" );
 						setGraphic( null );
+						setTooltip( null );
 					}else {
 						textProperty().bind( item.jobNameProperty() );
-						final FontIcon itemIcon = Gui.createIcon( MaterialDesignF.FOLDER );
-						itemIcon.setStyle( "-fx-icon-color: #3498db;" );
+						itemIcon.getStyleClass().addAll( CSS_JOB_ICON );
 						setGraphic( itemIcon );
+						toolTip.textProperty().bind( item.jobNameProperty() );
+						setTooltip( toolTip );
 					}
 				}
 			};
@@ -131,13 +155,12 @@ public final class SidebarView extends VBox {
 			final ContextMenu contextMenu = new ContextMenu();
 
 			final MenuItem renameItem = new MenuItem( "Task umbenennen", Gui.createIcon( MaterialDesignS.SWAP_HORIZONTAL ) );
-			renameItem.setOnAction( _ -> controller.handleRenameJob( cell ) );
+			renameItem.setOnAction( _ -> controller.handleRenameJob( cell.getItem() ) );
 
 			final MenuItem duplicateItem = new MenuItem( "Task duplizieren", Gui.createIcon( MaterialDesignC.CONTENT_DUPLICATE ) );
 			duplicateItem.setOnAction( _ -> controller.handleDuplicateJob( cell.getItem() ) );
 
 			final MenuItem deleteItem = new MenuItem( "Task löschen", Gui.createIcon( MaterialDesignD.DELETE ) );
-			deleteItem.setStyle( "-fx-text-fill: #c0392b;" );
 			deleteItem.setOnAction( _ -> controller.handleDeleteJob( cell.getItem() ) );
 
 			contextMenu.getItems().addAll( renameItem, duplicateItem, new SeparatorMenuItem(), deleteItem );
@@ -155,16 +178,81 @@ public final class SidebarView extends VBox {
 				event.consume();
 			} );
 
+			// ==========================================
+			// DRAG & DROP IMPLEMENTATION START
+			// ==========================================
+			cell.setOnDragDetected( event -> {
+				// Guard clause: Block gesture if disabled or triggered on an empty row
+				if( cell.isEmpty() || !dragAndDropEnabled ) { return; }
+
+				// Initiate move transfer mode and store the source index inside the dragboard
+				final Dragboard db = cell.startDragAndDrop( TransferMode.MOVE );
+				final ClipboardContent content = new ClipboardContent();
+				content.putString( String.valueOf( cell.getIndex() ) );
+				db.setContent( content );
+
+				event.consume();
+			} );
+
+			cell.setOnDragOver( event -> {
+				// Only accept the move if functionality is enabled and data type matches
+				if( dragAndDropEnabled && event.getDragboard().hasString() ) {
+					event.acceptTransferModes( TransferMode.MOVE );
+				}
+				event.consume();
+			} );
+
+			cell.setOnDragEntered( event -> {
+				// Apply visual feedback style when dragging an item over a valid cell
+				if( dragAndDropEnabled && !cell.isEmpty() && event.getDragboard().hasString() ) {
+					cell.getStyleClass().add( CSS_DRAG );
+				}
+				event.consume();
+			} );
+
+			cell.setOnDragExited( event -> {
+				// Clear visual feedback style immediately when leaving the cell area
+				cell.getStyleClass().remove( CSS_DRAG );
+				event.consume();
+			} );
+
+			cell.setOnDragDropped( event -> {
+				// Ensure style cleanup before processing data logic
+				cell.getStyleClass().remove( CSS_DRAG );
+
+				if( !dragAndDropEnabled ) { return; }
+
+				final Dragboard db = event.getDragboard();
+				if( db.hasString() ) {
+					final int draggedIdx = Integer.parseInt( db.getString() );
+
+					// Fall back to last list index if item dropped onto an empty trailing cell
+					int thisIdx = cell.isEmpty() ? sidebarListView.getItems().size() - 1 : cell.getIndex();
+					if( thisIdx < 0 ) thisIdx = 0;
+					if( draggedIdx < thisIdx ) thisIdx -= 1;
+					if( draggedIdx != thisIdx && draggedIdx >= 0 ) {
+						controller.handleDragJob( thisIdx, draggedIdx );
+						// Immediately restore focus and selection onto the moved element
+						sidebarListView.getSelectionModel().select( thisIdx );
+						event.setDropCompleted( true );
+					}
+				}
+				event.consume();
+			} );
+			// ==========================================
+			// DRAG & DROP IMPLEMENTATION END
+			// ==========================================
+
 			return cell;
 		} );
 
-		sidebarListView.getSelectionModel().selectedItemProperty().addListener( ( obs, oldVal, newVal ) -> {
-			if( newVal != null ) mainGui.setCurrentActiveJob( newVal );
+		sidebarListView.getSelectionModel().selectedItemProperty().addListener( ( _, oldVal, newVal ) -> {
+			if( newVal != null && !newVal.equals( oldVal ) ) mainGui.setCurrentActiveJob( newVal );
 		} );
 	}
 
 	/**
 	 * @return The underlying task selection view platform.
 	 */
-	public ListView<SyncJobContext> getSidebarListView() { return sidebarListView; }
+	ListView<SyncJobContext> getSidebarListView() { return sidebarListView; }
 }

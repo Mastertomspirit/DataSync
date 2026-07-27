@@ -32,6 +32,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import javafx.application.Platform;
+
+import de.spiritscorp.datasync.CLIFlags;
 import de.spiritscorp.datasync.Main;
 import de.spiritscorp.datasync.gui.DialogService;
 import de.spiritscorp.datasync.io.Debug;
@@ -40,7 +43,6 @@ import de.spiritscorp.datasync.io.Preference;
 import de.spiritscorp.datasync.io.PreferenceManager;
 import de.spiritscorp.datasync.model.FileAttributes;
 import de.spiritscorp.datasync.model.Model;
-import javafx.application.Platform;
 
 /**
  * Orchestrates background thread processing for synchronization, backup,
@@ -58,17 +60,17 @@ public class SyncJobService {
 	/**
 	 * Formatter utility responsible for converting raw sync metrics into human-readable UI logs.
 	 */
-	private final UiLogFormatter uiLog;
+	private final LogFormatter logFormatter;
 
 	/**
 	 * Constructs a new {@code SyncJobService} with the required UI and logging dependencies.
 	 *
 	 * @param dialogService the service provider for user interaction dialogs
-	 * @param uiLog         the formatter instance used to compile text summaries for the UI
+	 * @param logFormatter  the formatter instance used to compile text summaries for the UI
 	 */
-	public SyncJobService( DialogService dialogService, UiLogFormatter uiLog ) {
+	public SyncJobService( final DialogService dialogService, final LogFormatter logFormatter ) {
 		this.dialogService = dialogService;
-		this.uiLog = uiLog;
+		this.logFormatter = logFormatter;
 	}
 
 	/**
@@ -76,7 +78,7 @@ public class SyncJobService {
 	 *
 	 * @param context Target environment details providing task variables
 	 */
-	public void startSynchronize( SyncJobContext context ) {
+	public void startSynchronize( final SyncJobContext context ) {
 		if( context.isRunning() ) return;
 
 		context.setRunning( true );
@@ -93,35 +95,35 @@ public class SyncJobService {
 		final Thread worker = new Thread( () -> {
 			long startTime = System.nanoTime();
 			try {
-				final Path startDestPath = pref.getStartDestPath();
-				final Path startSourcePath = pref.getStartSourcePath();
+				final Path startDestPath = pref.getDestPaths().get( 0 );
+				final Path startSourcePath = pref.getSourcePaths().get( 0 );
 
 				if( startDestPath == null || !Files.exists( startDestPath ) ) {
 					updateUIStatus( context, false, "Kein Ziellaufwerk vorhanden" );
 					return;
 				}
 
-				if( pref.getSourcePath().size() > 1 ) {
+				if( pref.getSourcePaths().size() > 1 ) {
 					updateUIStatus( context, false, "Die Synchronisierung funktioniert nur mit einem Quellordner!" );
 					return;
 				}
 
-				failMap.putAll( model.scanSyncFiles( pref.getSourcePath(), pref.getDestPath(), stats, pref.getScanMode(), false, false ) );
+				failMap.putAll( model.scanSyncFiles( pref.getSourcePaths(), pref.getDestPaths(), stats, pref.getScanMode(), false, false ) );
 				if( Thread.currentThread().isInterrupted() ) throw new InterruptedException();
 
 				final ArrayList<Map<Path, FileAttributes>> result = model.getSyncFiles( pref.getSyncMap(), startSourcePath, startDestPath );
-				final String scanTimeFormatted = uiLog.getEndTimeFormatted( System.nanoTime() - startTime ) + " für das Scannen";
+				final String scanTimeFormatted = logFormatter.getTimeFormatted( System.nanoTime() - startTime ) + " Laufzeit für das Scannen";
 
 				if( Thread.currentThread().isInterrupted() ) throw new InterruptedException();
 
-				appendLogData( context, uiLog.formatMaps( pref.getScanMode(), sourceMap, destMap, failMap ) );
+				appendLogData( context, logFormatter.formatMaps( pref.getScanMode(), result.get( 0 ), result.get( 1 ), result.get( 2 ) ) );
 				appendLogData( context, String.format( "Quelldateien: %d Stück und Zieldateien: %d Stück", stats[0], stats[1] ) );
-				appendLogData( context, String.format( "Größe aller Quelldateien: %s | Größe aller Zieldateien: %s", uiLog.getReadableBytes( stats[2] ), uiLog.getReadableBytes( stats[3] ) ) );
-				appendLogData( context, String.format( "Fehlerhafter Zugriff: %d", failMap.size() ) );
-
+				appendLogData( context, String.format( "Zu löschende Dateien: %d", result.get( 2 ).size() ) );
+				appendLogData( context,
+						String.format( "Größe aller Quelldateien: %s | Größe aller Zieldateien: %s", logFormatter.getReadableBytes( stats[2] ), logFormatter.getReadableBytes( stats[3] ) ) );
 				startTime = System.nanoTime();
 				final boolean success = model.syncFiles( context, result, pref.getSyncMap(), startSourcePath, startDestPath, false );
-				final String syncTimeFormatted = uiLog.getEndTimeFormatted( System.nanoTime() - startTime ) + " für das Synchronisieren";
+				final String syncTimeFormatted = logFormatter.getTimeFormatted( System.nanoTime() - startTime ) + " Laufzeit für das Synchronisieren";
 
 				if( success ) {
 					pref.saveLastScanTime();
@@ -158,7 +160,7 @@ public class SyncJobService {
 	 *
 	 * @param context Target environment details providing task variables
 	 */
-	public void startBackup( SyncJobContext context ) {
+	public void startBackup( final SyncJobContext context ) {
 		if( context.isRunning() ) return;
 
 		context.setRunning( true );
@@ -175,32 +177,37 @@ public class SyncJobService {
 		final Thread worker = new Thread( () -> {
 			long startTime = System.nanoTime();
 			try {
-				final Path startDestPath = pref.getStartDestPath();
+				final Path startDestPath = pref.getDestPaths().get( 0 );
 				if( startDestPath == null || !Files.exists( startDestPath ) ) {
 					updateUIStatus( context, false, "Kein Ziellaufwerk vorhanden" );
 					return;
 				}
 
-				failMap.putAll( model.scanSyncFiles( pref.getSourcePath(), pref.getDestPath(), stats, pref.getScanMode(), pref.isSubDir(), pref.isTrashbin() ) );
-				model.getEqualsFiles();
-				final String scanTimeFormatted = uiLog.getEndTimeFormatted( System.nanoTime() - startTime ) + " für das Scannen";
+				failMap.putAll( model.scanSyncFiles( pref.getSourcePaths(), pref.getDestPaths(), stats, pref.getScanMode(), pref.isSubDir(), pref.isTrashbin() ) );
+				model.compareEqualsFiles();
+				final String scanTimeFormatted = logFormatter.getTimeFormatted( System.nanoTime() - startTime ) + " Laufzeit für das Scannen";
 				Debug.printDebug( "[Controller Helper]  sourceMap size = %d, destMap size = %d, failtures = %d", stats[0], stats[1], failMap.size() );
 
 				if( Thread.currentThread().isInterrupted() ) throw new InterruptedException();
 
-				appendLogData( context, uiLog.formatMaps( pref.getScanMode(), sourceMap, destMap, failMap ) );
+				appendLogData( context, logFormatter.formatMaps( pref.getScanMode(), sourceMap, destMap, failMap ) );
 				appendLogData( context, String.format( "Quelldateien: %d Stück und Zieldateien: %d Stück", stats[0], stats[1] ) );
-				appendLogData( context, String.format( "Größe aller Quelldateien: %s | Größe aller Zieldateien: %s", uiLog.getReadableBytes( stats[2] ), uiLog.getReadableBytes( stats[3] ) ) );
+				appendLogData( context,
+						String.format( "Größe aller Quelldateien: %s | Größe aller Zieldateien: %s", logFormatter.getReadableBytes( stats[2] ), logFormatter.getReadableBytes( stats[3] ) ) );
 				appendLogData( context, String.format( "Fehlerhafter Zugriff: %d", failMap.size() ) );
 
 				boolean success = false;
 				String backupTimeFormatted = "";
 
-				final int del = ( pref.isAutoDel() || dialogService.askUser( "Dateien löschen", "Löschen bestätigen?", "Alle gelöschten Dateien auch im Zielverzeichnis löschen?" ) ) ? 0 : 1;
-				if( pref.isAutoSync() || dialogService.askUser( "Dateien sichern", "Kopieren bestätigen?", "Alle neuen Dateien in  das Zielverzeichnis kopieren?" ) ) {
+				boolean delete = true;
+				if( !pref.isAutoDel() ) {
+					delete = dialogService.promptYesNo( "Dateien löschen", "Löschen bestätigen?", "Alle gelöschten Dateien auch im Zielverzeichnis löschen?" );
+				}
+
+				if( pref.isAutoSync() || dialogService.promptYesNo( "Dateien sichern", "Kopieren bestätigen?", "Alle neuen Dateien in  das Zielverzeichnis kopieren?" ) ) {
 					startTime = System.nanoTime();
-					success = model.backupFiles( del, pref.isLogOn(), startDestPath, pref.isTrashbin(), pref.getTrashbinPath() );
-					backupTimeFormatted = uiLog.getEndTimeFormatted( System.nanoTime() - startTime ) + " für das Synchronisieren";
+					success = model.backupFiles( delete, pref.isLogOn(), startDestPath, pref.isTrashbin(), pref.getTrashbinPath() );
+					backupTimeFormatted = logFormatter.getTimeFormatted( System.nanoTime() - startTime ) + " Laufzeit für das Synchronisieren";
 				}
 //				TODO output at manual abort
 				if( success ) {
@@ -254,8 +261,8 @@ public class SyncJobService {
 		final Thread worker = new Thread( () -> {
 			final long startTime = System.nanoTime();
 			try {
-				final Map<Path, FileAttributes> duplicateMap = model.scanDublicates( pref.getSourcePath(), stats );
-				final String scanTimeFormatted = uiLog.getEndTimeFormatted( System.nanoTime() - startTime );
+				final Map<Path, FileAttributes> duplicateMap = model.scanDublicates( pref.getSourcePaths(), stats );
+				final String scanTimeFormatted = logFormatter.getTimeFormatted( System.nanoTime() - startTime ) + "Laufzeit ";
 
 				if( Thread.currentThread().isInterrupted() ) throw new InterruptedException( "Manual abort ..." );
 
@@ -265,7 +272,7 @@ public class SyncJobService {
 						preparedRows.add( new SyncJobContext.FileRow(
 								entry.getKey(),
 								entry.getValue(),
-								uiLog.getReadableBytes( entry.getValue().getSize() ) ) );
+								logFormatter.getReadableBytes( entry.getValue().getSize() ) ) );
 					}
 				}
 
@@ -298,7 +305,7 @@ public class SyncJobService {
 	 *
 	 * @param context Target environment details providing task variables
 	 */
-	public void deleteSelectedDuplicates( SyncJobContext context ) {
+	public void deleteSelectedDuplicates( final SyncJobContext context ) {
 		final ArrayList<SyncJobContext.FileRow> toDelete = new ArrayList<>();
 		for( final SyncJobContext.FileRow row : context.getDuplicateFiles() ) {
 			if( row.isSelected() ) {
@@ -310,7 +317,7 @@ public class SyncJobService {
 			context.setStatusMessage( "Keine Dateien zum Löschen ausgewählt." );
 			return;
 		}
-		if( !dialogService.askUser( "Duplikate entfernen", "Löschen bestätigen?", "Alle ausgewählten Dateien wirklich löschen?" ) ) return;
+		if( !dialogService.promptYesNo( "Duplikate entfernen", "Löschen bestätigen?", "Alle ausgewählten Dateien wirklich löschen?" ) ) return;
 
 		context.setRunning( true );
 		context.setStatusMessage( "Lösche ausgewählte Duplikate..." );
@@ -335,6 +342,7 @@ public class SyncJobService {
 				updateUIStatus( context, false, "Löschvorgang unterbrochen." );
 				Debug.printDebug( "[Controller Helper Error] Duplicate deletion aborted: %s", e.getMessage() );
 				Debug.printException( this.getClass(), e );
+				Thread.currentThread().interrupt();
 			}catch( final Exception e ) {
 				updateUIStatus( context, false, "Fehler beim Löschen: " + e.getMessage() );
 				Debug.printDebug( "[Controller Helper Error] Duplicate deletion failed: %s", e.getMessage() );
@@ -355,24 +363,24 @@ public class SyncJobService {
 	 * @param set Target flag to dictate whether to register or clear system integration entries.
 	 * @return true if the underlying system environment sub-process sequences executed without exceptions.
 	 */
-	public boolean setOSAutostart( boolean set ) {
+	public boolean setOSAutostart( final boolean set ) {
 		final String javaPath = System.getProperty( "sun.boot.library.path" );
 		final String exePath = System.getProperty( "jpackage.app-path" );
 		final String datei = System.getProperty( "sun.java.command" );
 		final String fullPath = Paths.get( "" ).toAbsolutePath().toString() + System.getProperty( "file.separator" ) + datei;
 		final String possibleOS = System.getProperty( "os.name" );
-		String os = "";
-		if( possibleOS != null ) os = possibleOS.toLowerCase( Locale.ROOT );
+		String operatingSystem = "";
+		if( possibleOS != null ) operatingSystem = possibleOS.toLowerCase( Locale.ROOT );
 		final String flags = computeBootFlags();
 
-		if( os.contains( "win" ) ) {
+		if( operatingSystem.contains( "win" ) ) {
 			final String regCmd = "HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run";
 			try {
 				if( set ) {
 					// No literal interior quote escapes required; ProcessBuilder insulates whitespaces
 					final String dataPayload = ( exePath == null )
-							? String.format( "%s\\javaw.exe -Xmx200m -jar %s %s %s", javaPath, datei, Main.BOOT_DELAY_LONG, flags )
-							: String.format( "%s %s %s", exePath, Main.BOOT_DELAY_LONG, flags );
+							? String.format( "%s\\javaw.exe -Xmx200m -jar %s %s %s", javaPath, datei, CLIFlags.BOOT_DELAY.getLongFlag(), flags )
+							: String.format( "%s %s %s", exePath, CLIFlags.BOOT_DELAY.getLongFlag(), flags );
 
 					final ProcessBuilder pb = new ProcessBuilder( "reg", "add", regCmd, "/v", "DataSync", "/t", "REG_SZ", "/d", dataPayload, "/f" );
 					pb.start();
@@ -385,13 +393,13 @@ public class SyncJobService {
 				Debug.printException( getClass(), e );
 				return false;
 			}
-		}else if( os.contains( "nix" ) || os.contains( "aix" ) || os.contains( "nux" ) ) {
+		}else if( operatingSystem.contains( "nix" ) || operatingSystem.contains( "aix" ) || operatingSystem.contains( "nux" ) ) {
 			final String crontab = "crontab";
 			try {
 				if( set ) {
 					final String cronPayload = ( exePath == null )
-							? String.format( "@reboot %s/java -jar %s %s %s", javaPath, fullPath, Main.BOOT_DELAY_LONG, flags )
-							: String.format( "@reboot %s %s %s", exePath, Main.BOOT_DELAY_LONG, flags );
+							? String.format( "@reboot %s/java -jar %s %s %s", javaPath, fullPath, CLIFlags.BOOT_DELAY.getLongFlag(), flags )
+							: String.format( "@reboot %s %s %s", exePath, CLIFlags.BOOT_DELAY.getLongFlag(), flags );
 
 					// Feed crontab structural inputs directly via process input stream pipelining
 					final ProcessBuilder pb = new ProcessBuilder( crontab, "-" );
@@ -423,23 +431,22 @@ public class SyncJobService {
 		final StringBuilder stringBuilder = new StringBuilder();
 		final PreferenceManager manager = PreferenceManager.getInstance();
 		if( Main.isDebugToFile() ) {
-			stringBuilder.append( " " + Main.DEBUG_TO_FILE_LONG );
+			stringBuilder.append( String.format( " %s", CLIFlags.DEBUG_TO_FILE.getLongFlag() ) );
 		}
 		if( manager.isCustomConfigDir() ) {
-			stringBuilder.append( " " + Main.CONFIG_DIR_LONG );
-			stringBuilder.append( " " + manager.getConfigPath().getParent().toString() );
+			stringBuilder.append( String.format( " %s %s", CLIFlags.CONFIG_DIR.getLongFlag(), manager.getConfigPath().getParent().toString() ) );
 		}
 		return stringBuilder.toString();
 	}
 
-	private void updateUIStatus( SyncJobContext context, boolean running, String message ) {
+	private void updateUIStatus( final SyncJobContext context, final boolean running, final String message ) {
 		Platform.runLater( () -> {
 			context.setRunning( running );
 			context.setStatusMessage( message );
 		} );
 	}
 
-	private void appendLogData( SyncJobContext context, String line ) {
+	private void appendLogData( final SyncJobContext context, final String line ) {
 		Platform.runLater( () -> context.appendLog( line ) );
 	}
 }

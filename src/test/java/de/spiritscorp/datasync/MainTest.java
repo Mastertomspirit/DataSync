@@ -25,8 +25,11 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.nio.file.Path;
 import java.util.stream.Stream;
@@ -40,7 +43,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.MockedStatic;
-import org.mockito.Mockito;
 
 import de.spiritscorp.datasync.io.Debug;
 import de.spiritscorp.datasync.io.PreferenceManager;
@@ -80,11 +82,11 @@ class MainTest {
 	void setUp() {
 		Main.resetForTesting();
 
-		mockPrefManager = Mockito.mockStatic( PreferenceManager.class );
-		mockDebug = Mockito.mockStatic( Debug.class );
+		mockPrefManager = mockStatic( PreferenceManager.class );
+		mockDebug = mockStatic( Debug.class );
 
-		mockInstance = Mockito.mock( PreferenceManager.class );
-		Mockito.when( mockInstance.getConfigPath() ).thenReturn( Path.of( "/mock/default/path" ) );
+		mockInstance = mock( PreferenceManager.class );
+		when( mockInstance.getConfigPath() ).thenReturn( Path.of( "/mock/default/path" ) );
 		mockPrefManager.when( PreferenceManager::getInstance ).thenReturn( mockInstance );
 	}
 

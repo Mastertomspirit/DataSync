@@ -32,25 +32,25 @@ package de.spiritscorp.datasync;
 public enum BgTime {
 
 	/** Execution interval of 1 minute. */
-	MIN_1( 60_000L, "1 Minute", 5_000L),
+	MIN_1( 60_000L, "1 Minute", 5_000L ),
 
 	/** Execution interval of 5 minutes. */
-	MIN_5( 300_000L, "5 Minuten", 10_000L),
+	MIN_5( 300_000L, "5 Minuten", 10_000L ),
 
 	/** Execution interval of 30 minutes. */
-	MIN_30( 1_800_000L, "30 Minuten", 60_000L),
+	MIN_30( 1_800_000L, "30 Minuten", 60_000L ),
 
 	/** Execution interval set to occur hourly. */
-	HOURLY( 3_600_000L, "Stündlich", 300_000L),
+	HOURLY( 3_600_000L, "Stündlich", 300_000L ),
 
 	/** Execution interval set to occur daily. */
-	DAYLY( 86_400_000L, "Täglich", 1_800_000L),
+	DAYLY( 86_400_000L, "Täglich", 1_800_000L ),
 
 	/** Execution interval set to occur weekly. */
-	WEEKLY( 604_800_000L, "Wöchentlich", 1_800_000L),
+	WEEKLY( 604_800_000L, "Wöchentlich", 1_800_000L ),
 
 	/** Execution interval set to occur monthly. */
-	MONTHLY( 2_592_000_000L, "Monatlich", 1_800_000L);
+	MONTHLY( 2_592_000_000L, "Monatlich", 1_800_000L );
 
 	/**
 	 * The intervall for execute a Job

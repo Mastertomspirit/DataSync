@@ -1,4 +1,4 @@
-package de.spiritscorp.datasync.io;
+package de.spiritscorp.datasync.gui;
 
 /*-
  * 		Data Sync
@@ -20,18 +20,16 @@ package de.spiritscorp.datasync.io;
  * 		along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-final class ConfigException extends Exception {
+public enum NotifyStatus {
+	SUCCESS( "status-success" ),
+	ERROR( "status-error" ),
+	WARNING( "status-warning" );
 
-	private static final long serialVersionUID = -1857563011203287809L;
+	private final String cssClass;
 
-	ConfigException( final String failture, final Object... args ) {
-		super(
-				String.format( failture, args ) );
+	NotifyStatus( final String cssClass ) {
+		this.cssClass = cssClass;
 	}
 
-	ConfigException( final String failture, final Throwable throwable ) {
-		super(
-				failture,
-				throwable );
-	}
+	String getCssClass() { return cssClass; }
 }

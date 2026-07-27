@@ -36,11 +36,18 @@ import java.awt.TrayIcon;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.stage.Stage;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,15 +57,11 @@ import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
 import de.spiritscorp.datasync.BgTime;
-import de.spiritscorp.datasync.Main;
 import de.spiritscorp.datasync.gui.BgView;
 import de.spiritscorp.datasync.gui.Gui;
 import de.spiritscorp.datasync.io.Debug;
 import de.spiritscorp.datasync.io.Logger;
 import de.spiritscorp.datasync.io.Preference;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
-import javafx.stage.Stage;
 
 /**
  * Integration test suite for {@link BgController}.
@@ -69,7 +72,7 @@ import javafx.stage.Stage;
  * </p>
  *
  * @author Tom Spirit
- * @version 1.0.0
+ * @version 1.1.0
  * @see BgController
  */
 //@DisplayName( "BgController Integration Test Suite" )
@@ -132,7 +135,7 @@ class BgControllerIT {
 		if( controller != null ) {
 			try {
 				controller.requestApplicationShutdown();
-			}catch( final Exception ignored ) {
+			}catch( final Exception _ ) {
 				// Prevent teardown faults from masking compilation errors
 			}
 		}
@@ -151,9 +154,13 @@ class BgControllerIT {
 	@DisplayName( "01: End-to-End Execution - Live scheduler loop triggers overdue job and transitions states" )
 	void testEndToEndSchedulerTriggersJob() throws Exception {
 		// Arrange: Create an overdue task using an accelerated execution multiplier
-		final long overdueTimestamp = System.currentTimeMillis() - BgTime.MIN_30.getTime();
+		final long overdueTimestamp = System.currentTimeMillis() - BgTime.HOURLY.getTime();
 		final SyncJobContext liveJob = createIntegrationJob( "Live-Integration-Task", true, BgTime.MIN_30, overdueTimestamp );
 		final CountDownLatch jobStartedLatch = new CountDownLatch( 1 );
+
+		controller = new BgController( mockGui, mockViewController, integrationJobList, mockLogger );
+		// Accelerate time bounds via reflection: Scale interval down dramatically for rapid ticking
+		injectMockExecutors( controller, 0.0001 );
 
 		// Intercept the execution hook on the live job to signal our test thread when it running state changes
 		doAnswer( invocation -> {
@@ -165,16 +172,13 @@ class BgControllerIT {
 		} ).when( liveJob ).setRunning( anyBoolean() );
 		integrationJobList.add( liveJob );
 
-		controller = new BgController( mockGui, mockViewController, integrationJobList, mockLogger );
-		// Accelerate time bounds via reflection: Scale interval down dramatically for rapid ticking
-		injectMockExecutors( controller, 0.0001 );
-
 		// Act: Start the engine
 		controller.startBgJob( false );
 
 		// Assert: Verify that the background thread engine actually processed the job within a safe timeout
-		final boolean executedSuccessfully = jobStartedLatch.await( 2000, TimeUnit.MILLISECONDS );
+		final boolean executedSuccessfully = jobStartedLatch.await( 1000, TimeUnit.MILLISECONDS );
 		assertTrue( executedSuccessfully, "The asynchronous integration pipeline failed to execute the task queue loop." );
+
 	}
 
 	/**
@@ -261,7 +265,7 @@ class BgControllerIT {
 		assertFalse( realWorkerQueue.isShutdown(), "The live worker queue was pre-terminated before the interrupt test sequence began." );
 
 		// Act: Trigger an explicit user interrupt sequence (e.g., maximizing the GUI back from tray)
-		assertDoesNotThrow( () -> controller.interruptBgJob( Main.BACKGROUND_THREAD_TIMEOUT ) );
+		assertDoesNotThrow( () -> controller.interruptBgJob( MainViewController.BG_TIMEOUT ) );
 
 		// Assert: Verify the real JDK worker thread pool is dead
 		assertTrue( realWorkerQueue.isShutdown(), "The live worker executor pool failed to enter a shutdown state after an interrupt signal." );
@@ -302,7 +306,7 @@ class BgControllerIT {
 			assertFalse( workerGen.isShutdown(), "Worker queue generation " + generation + " died prematurely." );
 
 			// Dismantle this generation (simulates user maximizing the GUI or closing the context)
-			controller.interruptBgJob( Main.BACKGROUND_THREAD_TIMEOUT );
+			controller.interruptBgJob( MainViewController.BG_TIMEOUT );
 
 			// Guarantee that the native OS thread pool frames were successfully dissolved
 			assertTrue( schedulerGen.isShutdown(), "Scheduler generation " + generation + " failed to shutdown." );
@@ -313,10 +317,11 @@ class BgControllerIT {
 	/**
 	 * Factory helper to assemble operational sync jobs using real configuration models.
 	 */
-	private SyncJobContext createIntegrationJob( String name, boolean bgSync, BgTime bgTime, long lastScan ) {
+	private SyncJobContext createIntegrationJob( final String name, final boolean bgSync, final BgTime bgTime, final long lastScan ) {
 		final SyncJobContext job = mock( SyncJobContext.class );
 		final Preference pref = mock( Preference.class );
 
+		when( pref.getDestPaths() ).thenReturn( new ArrayList<>( List.of( Path.of( "." ) ) ) );
 		when( job.getJobName() ).thenReturn( name );
 		when( job.getPreference() ).thenReturn( pref );
 		when( pref.isBgSync() ).thenReturn( bgSync );
@@ -331,11 +336,11 @@ class BgControllerIT {
 	 *
 	 * @throws ExecutionException
 	 */
-	private void injectMockExecutors( BgController controller, double multiplier ) throws ExecutionException {
+	private void injectMockExecutors( final BgController controller, final double multiplier ) throws ExecutionException {
 		try {
 			final Method setEnvironment = BgController.class.getDeclaredMethod( "setEnvironment", double.class, BgView.class, ScheduledExecutorService.class, ExecutorService.class );
 			setEnvironment.setAccessible( true );
-			setEnvironment.invoke( controller, multiplier, mockBgView, null, null );
+			setEnvironment.invoke( controller, multiplier, mockBgView, null, mock( ExecutorService.class ) );
 		}catch( IllegalAccessException | NoSuchMethodException | SecurityException e ) {
 			throw new ExecutionException( "Failed to inject architectural test values via reflection.", e );
 		}catch( final InvocationTargetException e ) {

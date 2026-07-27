@@ -23,6 +23,7 @@ package de.spiritscorp.datasync.model;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -34,12 +35,14 @@ import de.spiritscorp.datasync.io.Logger;
 /**
  * Core controller class responsible for managing high-performance file synchronization,
  * directory scanning, and backup operations.
- * <p>
+ * <br>
+ * <br>
  * This class orchestrates the synchronization pipeline by utilizing multi-threaded
  * file traversals to process source and destination structures simultaneously. It tracks
  * file attributes, evaluates state deltas to isolate unique changes, detects duplicate
  * files based on sizes or checksum configurations, and handles safe file transfers.
- * <p>
+ * <br>
+ * <br>
  * To ensure data integrity, structural backups are handled via a strict two-phase execution
  * model: clearing obsolete files first (with optional local trashbin staging) before transferring
  * new payloads. Internal storage maps are wrapped in synchronized structures to maintain
@@ -48,13 +51,19 @@ import de.spiritscorp.datasync.io.Logger;
  */
 public class Model {
 
+	/** Internal lookup registry mapping absolute source paths to their metadata profiles. */
 	private final Map<Path, FileAttributes> sourceMap;
+	/** Internal lookup registry mapping absolute destination paths to their metadata profiles. */
 	private final Map<Path, FileAttributes> destMap;
+	/** Analytical core component tasked with deep directory evaluations and delta state indexing. */
+	private final FileAnalyzer analyzer;
+	/** Operational synchronization engine executing low-level deployment and file erasure routines. */
 	private final FileHandler handler;
 
 	/**
 	 * Constructs a new Model controller instance and sets up the central tracking components.
-	 * <p>
+	 * <br>
+	 * <br>
 	 * Initializes the internal system logger for transaction auditing and binds the
 	 * reference maps used for storing file attribute states on the source and destination sides.
 	 *
@@ -62,15 +71,17 @@ public class Model {
 	 * @param sourceMap the tracking map used to store and evaluate source file attributes
 	 * @param destMap   the tracking map used to store and evaluate destination file attributes
 	 */
-	public Model( Logger logger, Map<Path, FileAttributes> sourceMap, Map<Path, FileAttributes> destMap ) {
+	public Model( final Logger logger, final Map<Path, FileAttributes> sourceMap, final Map<Path, FileAttributes> destMap ) {
 		this.sourceMap = sourceMap;
 		this.destMap = destMap;
-		handler = new FileHandler( logger );
+		this.analyzer = new FileAnalyzer();
+		this.handler = new FileHandler( logger );
 	}
 
 	/**
 	 * Creates a thread-safe, synchronized sorted map backed by a standard TreeMap.
-	 * <p>
+	 * <br>
+	 * <br>
 	 * This helper method is crucial for concurrent environments where multiple threads
 	 * need to read and write to the file mapping without risking memory corruption.
 	 *
@@ -84,10 +95,12 @@ public class Model {
 
 	/**
 	 * Lists all files in both source and destination directories concurrently using dedicated threads.
-	 * <p>
+	 * <br>
+	 * <br>
 	 * To maximize performance on multi-core systems, this method spawns two parallel threads:
 	 * One for the source path scanning and one for the destination path scanning.
-	 * <p>
+	 * <br>
+	 * <br>
 	 * After both threads have finished execution, the provided statistics array is populated
 	 * with the size and byte metrics of both maps.
 	 *
@@ -103,17 +116,19 @@ public class Model {
 	 * @param trashbin     true to enable trashbin retention logic, false to bypass it
 	 * @return a Map containing all paths where failures, permission issues, or structural conflicts occurred
 	 */
-	public Map<Path, FileAttributes> scanSyncFiles( ArrayList<Path> sourcePathes, ArrayList<Path> destPathes, Long[] stats, ScanType deepScan, boolean subDir, boolean trashbin ) {
+	public Map<Path, FileAttributes> scanSyncFiles( final List<Path> sourcePathes, final List<Path> destPathes, final Long[] stats, final ScanType deepScan, final boolean subDir,
+			final boolean trashbin ) {
 		Debug.printDebug( "[Model] list start" );
-		final Thread t1 = new Thread( () -> handler.listFiles( sourcePathes, sourceMap, deepScan, subDir ) );
-		final Thread t2 = new Thread( () -> handler.listFiles( destPathes, destMap, deepScan, subDir ) );
-		t1.start();
-		t2.start();
+		final Thread thread1 = new Thread( () -> handler.listFiles( sourcePathes, sourceMap, deepScan, subDir ) );
+		final Thread thread2 = new Thread( () -> handler.listFiles( destPathes, destMap, deepScan, subDir ) );
+		thread1.start();
+		thread2.start();
 		try {
-			t1.join();
-			t2.join();
-		}catch( final InterruptedException e ) {
-			Debug.printException( this.getClass(), e );
+			thread1.join();
+			thread2.join();
+		}catch( final InterruptedException exception ) {
+			Debug.printException( this.getClass(), exception );
+			Thread.currentThread().interrupt();
 		}
 		stats[0] = (long) sourceMap.size();
 		stats[1] = (long) destMap.size();
@@ -125,20 +140,22 @@ public class Model {
 
 	/**
 	 * Compares the pre-loaded source and destination maps to isolate identical files.
-	 * <p>
+	 * <br>
+	 * <br>
 	 * This method triggers the internal handlers to filter out matching files from both
 	 * maps. After execution, both maps will only contain unique entries that require
 	 * synchronization actions like copy, update, or delete.
 	 */
-	public void getEqualsFiles() {
+	public void compareEqualsFiles() {
 		Debug.printDebug( "[Model] getEqualsFiles start" );
-		handler.equalsFiles( sourceMap, destMap );
+		analyzer.equalsFiles( sourceMap, destMap );
 		Debug.printDebug( "[Model] getEqualsFiles ready" );
 	}
 
 	/**
 	 * Analyzes the file state differentials to categorize synchronization requirements.
-	 * <p>
+	 * <br>
+	 * <br>
 	 * Evaluates file modification dates, sizes, or checksums between the source and destination
 	 * targets. The results are split into three structural hitlists returned as an indexed list.
 	 *
@@ -150,21 +167,22 @@ public class Model {
 	 *         index 1 (copyDestHitList): Files to be copied back from destination to source,
 	 *         index 2 (delHitList): Files marked for deletion from the target directory
 	 */
-	public ArrayList<Map<Path, FileAttributes>> getSyncFiles( Map<Path, FileAttributes> syncMap, Path sourcePath, Path destPath ) {
+	public ArrayList<Map<Path, FileAttributes>> getSyncFiles( final Map<Path, FileAttributes> syncMap, final Path sourcePath, final Path destPath ) {
 		Debug.printDebug( "[Model] getSyncFiles start" );
-		final ArrayList<Map<Path, FileAttributes>> result = handler.getSyncFiles( sourceMap, destMap, sourcePath, destPath, syncMap );
+		final ArrayList<Map<Path, FileAttributes>> result = analyzer.getSyncFiles( sourceMap, destMap, sourcePath, destPath, syncMap );
 		Debug.printDebug( "[Model] getSyncFiles ready" );
 		return result;
 	}
 
 	/**
 	 * Executes the physical file backup sequence on the local storage system.
-	 * <p>
+	 * <br>
+	 * <br>
 	 * To ensure a clean and predictable operation, this method enforces a strict two-phase execution order:
 	 * Phase 1 (Purge) clears obsolete files from the target directory first, and
 	 * Phase 2 (Transfer) physically copies new or updated files into the destination path.
 	 *
-	 * @param del          the mode flag determining deletions (processed exclusively if set to 0)
+	 * @param delete       the mode flag determining deletions (processed exclusively if set to 0)
 	 * @param logOn        true to output detailed file paths and transaction logs to the system logger
 	 * @param destPath     the absolute path to the target directory where files will be transferred to
 	 * @param trashbin     true to move deleted files safely into a local trash bin structure
@@ -172,15 +190,16 @@ public class Model {
 	 * @return true if all file entries inside the tracking maps were successfully processed and cleared,
 	 *         false if unprocessed files remain due to operational faults or file system errors
 	 */
-	public boolean backupFiles( int del, boolean logOn, Path destPath, boolean trashbin, Path trashbinPath ) {
-		if( del == 0 && !destMap.isEmpty() ) handler.deleteFiles( destMap, logOn, trashbin, trashbinPath );
+	public boolean backupFiles( final boolean delete, final boolean logOn, final Path destPath, final boolean trashbin, final Path trashbinPath ) {
+		if( delete && !destMap.isEmpty() ) handler.deleteFiles( destMap, logOn, trashbin, trashbinPath );
 		if( !sourceMap.isEmpty() ) handler.copyFiles( sourceMap, logOn, destPath );
 		return sourceMap.isEmpty() && destMap.isEmpty();
 	}
 
 	/**
 	 * Synchronizes files bi-directionally between the configured directories.
-	 * <p>
+	 * <br>
+	 * <br>
 	 * This function consumes the pre-calculated multi-hitlist results, transfers the newest file states,
 	 * and structurally synchronizes both directories to reach an identical file state.
 	 *
@@ -192,17 +211,19 @@ public class Model {
 	 * @return true if the entire synchronization pipeline completed without unexpected exceptions,
 	 *         false if errors occurred during file interaction
 	 */
-	public boolean syncFiles( SyncJobContext ctx, ArrayList<Map<Path, FileAttributes>> result, Map<Path, FileAttributes> syncMap, Path sourcePath, Path destPath, boolean testOn ) {
-		if( !result.get( 0 ).isEmpty() ) handler.copyFiles( result.get( 0 ), false, destPath );
-		if( !result.get( 1 ).isEmpty() ) handler.copyFiles( result.get( 1 ), false, sourcePath );
-		if( !result.get( 2 ).isEmpty() ) handler.deleteFiles( result.get( 2 ), false, false, null );
+	public boolean syncFiles( final SyncJobContext ctx, final ArrayList<Map<Path, FileAttributes>> result, final Map<Path, FileAttributes> syncMap, final Path sourcePath, final Path destPath,
+			final boolean testOn ) {
+		final boolean logOn = ctx.getPreference().isLogOn();
+		if( !result.get( 0 ).isEmpty() ) handler.copyFiles( result.get( 0 ), logOn, destPath );
+		if( !result.get( 1 ).isEmpty() ) handler.copyFiles( result.get( 1 ), logOn, sourcePath );
+		if( !result.get( 2 ).isEmpty() ) handler.deleteFiles( result.get( 2 ), logOn, false, null );
 
 		sourceMap.clear();
 		destMap.clear();
 		syncMap.clear();
 		if( !testOn ) {
 			final Map<Path, FileAttributes> tempMap = createMap();
-			handler.listFiles( ctx.getPreference().getSourcePath(), tempMap, ScanType.SYNCHRONIZE, false );
+			handler.listFiles( ctx.getPreference().getSourcePaths(), tempMap, ScanType.SYNCHRONIZE, false );
 			for( final Map.Entry<Path, FileAttributes> entry : tempMap.entrySet() ) {
 				syncMap.put( entry.getValue().getRelativeFilePath(), entry.getValue() );
 			}
@@ -213,8 +234,9 @@ public class Model {
 
 	/**
 	 * Scans the selected target paths to locate and extract duplicate file structures.
-	 * <p>
-	 * Utilizes a specialized duplicate scan handler that matches files based on identical
+	 * <br>
+	 * <br>
+	 * Utilizes a specialized duplicate scan analyzer that matches files based on identical
 	 * parameters like sizing blocks or checksums. Any errors encountered during the filesystem
 	 * traversal are collected and merged into the final state mapping.
 	 *
@@ -223,7 +245,7 @@ public class Model {
 	 */
 	public Map<Path, FileAttributes> scanDublicates( final ArrayList<Path> paths, final Long... stats ) {
 		handler.listFiles( paths, sourceMap, ScanType.DUBLICATE_SCAN, false );
-		final Map<Path, FileAttributes> duplicateMap = handler.findDuplicates( sourceMap );
+		final Map<Path, FileAttributes> duplicateMap = analyzer.findDuplicates( sourceMap );
 		stats[0] = (long) sourceMap.size();
 		stats[1] = (long) getFailtures( sourceMap, destMap ).size();
 		stats[2] = 0L;
@@ -233,7 +255,8 @@ public class Model {
 
 	/**
 	 * Aggregates processing errors, missing file attributes, or permission blocks into a dedicated failure tracking map.
-	 * <p>
+	 * <br>
+	 * <br>
 	 * This private utility evaluates the unresolved differences between the source and destination maps
 	 * after an operation has completed, isolating paths that caused structural system errors.
 	 *
@@ -241,18 +264,19 @@ public class Model {
 	 * @param destMap   the tracking map containing the current destination file information
 	 * @return a filtered Map detailing all elements that failed to process correctly
 	 */
-	private Map<Path, FileAttributes> getFailtures( Map<Path, FileAttributes> sourceMap, Map<Path, FileAttributes> destMap ) {
+	private Map<Path, FileAttributes> getFailtures( final Map<Path, FileAttributes> sourceMap, final Map<Path, FileAttributes> destMap ) {
 		final Map<Path, FileAttributes> failMap = createMap();
+		final String failture = "Failed";
 		if( sourceMap != null ) {
 			for( final Map.Entry<Path, FileAttributes> entry : sourceMap.entrySet() ) {
-				if( entry.getValue().getFileHash().equals( "Failed" ) ) {
+				if( failture.equals( entry.getValue().getFileHash() ) ) {
 					failMap.put( entry.getKey(), entry.getValue() );
 				}
 			}
 		}
 		if( destMap != null ) {
 			for( final Map.Entry<Path, FileAttributes> entry : destMap.entrySet() ) {
-				if( entry.getValue().getFileHash().equals( "Failed" ) ) {
+				if( failture.equals( entry.getValue().getFileHash() ) ) {
 					failMap.put( entry.getKey(), entry.getValue() );
 				}
 			}
@@ -269,7 +293,7 @@ public class Model {
 	 * @param map the tracking map containing the file paths and their associated attributes
 	 * @return the total size of all files combined, represented in bytes
 	 */
-	private Long getBytes( Map<Path, FileAttributes> map ) {
+	private Long getBytes( final Map<Path, FileAttributes> map ) {
 		long allBytes = 0;
 		for( final FileAttributes p : map.values() ) {
 			allBytes += p.getSize();

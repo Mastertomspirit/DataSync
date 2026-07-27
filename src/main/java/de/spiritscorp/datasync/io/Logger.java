@@ -24,7 +24,6 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -34,11 +33,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.locks.ReentrantLock;
 
-import de.spiritscorp.datasync.model.FileAttributes;
 import jakarta.json.Json;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonException;
 import jakarta.json.JsonObject;
+
+import de.spiritscorp.datasync.model.FileAttributes;
 
 /**
  * High-performance background logger using JSON Lines format (NDJSON).
@@ -53,12 +53,6 @@ public class Logger {
 	/** The absolute destination path of the active log file. */
 	private final Path baseLogPath;
 
-	/** The maximum threshold size in bytes before a file rotation is enforced. */
-	private final long maxFileSize;
-
-	/** The capacity limit of historical backup archives to keep on disk. */
-	private final int maxBackupIndex;
-
 	/** Thread-safe internal memory cache containing unwritten log entries. */
 	private final List<JsonArray> logCache = new ArrayList<>();
 
@@ -72,8 +66,9 @@ public class Logger {
 	public Logger() {
 		this(
 				PreferenceManager.getInstance().getLogPath(),
-				10_485_760, // 10 MB
-				5 );
+				new Logrotater(
+						10_485_760L, // 10 MB
+						5 ) );
 	}
 
 	/**
@@ -84,12 +79,10 @@ public class Logger {
 	 * @param maxBackupIndex The maximum number of archived log files to retain
 	 * @throws NullPointerException if baseLogPath is null
 	 */
-	/* package */ Logger( final Path baseLogPath, final long maxFileSize, final int maxBackupIndex ) {
+	Logger( final Path baseLogPath, final Logrotater rotater ) {
 		this.baseLogPath = Objects.requireNonNull( baseLogPath, "baseLogPath must not be null" );
-		this.maxFileSize = maxFileSize;
-		this.maxBackupIndex = maxBackupIndex;
 
-		executeLogRotationIfNeeded();
+		rotater.executeLogRotationIfNeeded( baseLogPath );
 	}
 
 	/**
@@ -143,9 +136,9 @@ public class Logger {
 				}
 
 				logCache.clear();
-			}catch( final IOException e ) {
+			}catch( final IOException exception ) {
 				Debug.printDebug( "[Logger] can´t write log file at -> %s", baseLogPath );
-				Debug.printException( this.getClass(), e );
+				Debug.printException( this.getClass(), exception );
 			}
 		}finally {
 			threadLock.unlock();
@@ -172,54 +165,15 @@ public class Logger {
 				if( currentLine.isEmpty() ) continue;
 				invertedGuiList.add( Json.createArrayBuilder().add( currentLine ).build() );
 			}
-		}catch( final JsonException e ) {
+		}catch( final JsonException exception ) {
 			Debug.printDebug( "[Logger] Invalid JSON in log line: %s", currentLine );
-			Debug.printException( this.getClass(), e );
-		}catch( final IOException e ) {
+			Debug.printException( this.getClass(), exception );
+		}catch( final IOException exception ) {
 			Debug.printDebug( "[Logger] can´t read log file at -> %s", baseLogPath );
-			Debug.printException( this.getClass(), e );
+			Debug.printException( this.getClass(), exception );
 		}finally {
 			threadLock.unlock();
 		}
 		return invertedGuiList;
-	}
-
-	/**
-	 * Evaluates the size of the primary log file on startup and initiates a cascading shift
-	 * of backup history files if the configured size threshold is exceeded.
-	 */
-	private void executeLogRotationIfNeeded() {
-		if( !Files.exists( baseLogPath ) ) { return; }
-
-		try {
-			if( Files.size( baseLogPath ) < maxFileSize ) { return; }
-
-			// Cascade existing backups downwards (e.g., log.4 -> log.5)
-			for( int i = maxBackupIndex - 1; i >= 1; i-- ) {
-				final Path sourceBackup = resolveBackupPath( i );
-				if( Files.exists( sourceBackup ) ) {
-					final Path targetBackup = resolveBackupPath( i + 1 );
-					Files.move( sourceBackup, targetBackup, StandardCopyOption.REPLACE_EXISTING );
-				}
-			}
-
-			// Move the current active log file to index 1 (e.g., log -> log.1)
-			final Path firstBackup = resolveBackupPath( 1 );
-			Files.move( baseLogPath, firstBackup, StandardCopyOption.REPLACE_EXISTING );
-
-		}catch( final IOException e ) {
-			Debug.printDebug( "[Logger] Execution of log rotation failed at -> %s", baseLogPath );
-			Debug.printException( this.getClass(), e );
-		}
-	}
-
-	/**
-	 * Resolves the system path for an archived backup file based on its history index.
-	 *
-	 * @param index The history index marker
-	 * @return Path representing the target location of the historical log file
-	 */
-	private Path resolveBackupPath( final int index ) {
-		return baseLogPath.resolveSibling( baseLogPath.getFileName().toString() + "." + index );
 	}
 }

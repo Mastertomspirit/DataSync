@@ -31,16 +31,16 @@ package de.spiritscorp.datasync;
 public enum ScanType {
 
 	/** Standard synchronization mode comparing file metadata between targets. */
-	SYNCHRONIZE( "Synchronisieren"),
+	SYNCHRONIZE( "Synchronisieren" ),
 
 	/** Shallow scan mode that only evaluates root level or basic file availability. */
-	FLAT_SCAN( "flacher Scan"),
+	FLAT_SCAN( "flacher Scan" ),
 
 	/** Intensive scan mode processing deep file structures, modification timestamps, or checksums. */
-	DEEP_SCAN( "tiefer Scan"),
+	DEEP_SCAN( "tiefer Scan" ),
 
 	/** Dedicated analysis mode used exclusively to detect and aggregate identical file duplicates. */
-	DUBLICATE_SCAN( "Dublikate suchen");
+	DUBLICATE_SCAN( "Dublikate suchen" );
 
 	/**
 	 * The description about a scan type

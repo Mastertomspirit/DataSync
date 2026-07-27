@@ -43,7 +43,7 @@ class FileVisit implements FileVisitor<Path> {
 	 * @param map
 	 * @param deepScan
 	 */
-	FileVisit( ExecutorService executor, Path path, Map<Path, FileAttributes> map, ScanType deepScan ) {
+	FileVisit( final ExecutorService executor, final Path path, final Map<Path, FileAttributes> map, final ScanType deepScan ) {
 		this.executor = executor;
 		this.path = path;
 		this.map = map;
@@ -51,37 +51,34 @@ class FileVisit implements FileVisitor<Path> {
 	}
 
 	@Override
-	public FileVisitResult preVisitDirectory( Path dir, BasicFileAttributes attrs ) throws IOException {
+	public FileVisitResult preVisitDirectory( final Path dir, final BasicFileAttributes attrs ) throws IOException {
 		if( dir != null ) {
 			if( dir.endsWith( "$RECYCLE.BIN" ) ||
 					dir.endsWith( "Papierkorb" ) ||
 					attrs.isSymbolicLink() ||
-					attrs.isOther() ) {
-//					Debug.PRINT_DEBUG("Skip_preVisitDirectory -> " + dir);
-				return FileVisitResult.SKIP_SUBTREE;
-			}
+					attrs.isOther() ) { return FileVisitResult.SKIP_SUBTREE; }
 		}
 		return FileVisitResult.CONTINUE;
 	}
 
 	@Override
-	public FileVisitResult visitFile( Path file, BasicFileAttributes attrs ) throws IOException {
+	public FileVisitResult visitFile( final Path file, final BasicFileAttributes attrs ) throws IOException {
 		if( attrs.isSymbolicLink() || !attrs.isRegularFile() ) {
-			Debug.printDebug( "[FileVisit] Skip_VisitFile -> " + file );
+			Debug.printDebug( "[File Visit] Skip_VisitFile -> " + file );
 			return FileVisitResult.CONTINUE;
 		}
-		executor.execute( new FileScan( file, path, map, deepScan, attrs ) );
+		executor.execute( new FileScan( file.normalize(), path.normalize(), map, deepScan, attrs ) );
 		return FileVisitResult.CONTINUE;
 	}
 
 	@Override
 	public FileVisitResult visitFileFailed( final Path file, final IOException exc ) throws IOException {
-		Debug.printDebug( "[FileVisit] VisitFileFailed -> " + file );
+		Debug.printDebug( "[File Visit] VisitFileFailed -> " + file );
 		return FileVisitResult.CONTINUE;
 	}
 
 	@Override
-	public FileVisitResult postVisitDirectory( Path dir, IOException exc ) throws IOException {
+	public FileVisitResult postVisitDirectory( final Path dir, final IOException exc ) throws IOException {
 		return FileVisitResult.CONTINUE;
 	}
 

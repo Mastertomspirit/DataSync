@@ -58,7 +58,8 @@ public final class FileAttributes implements Comparable<FileAttributes> {
 	 * @param fileHash         the cryptographic checksum signature (SHA-256 or higher)
 	 * @throws NullPointerException if {@code relativeFilePath} is null
 	 */
-	public FileAttributes( Path relativeFilePath, String createTimeString, FileTime createTime, String modTimeString, FileTime modTime, long size, String fileHash ) {
+	public FileAttributes( final Path relativeFilePath, final String createTimeString, final FileTime createTime, final String modTimeString, final FileTime modTime, final long size,
+			final String fileHash ) {
 
 		// Guard against null paths entering the tracking context
 		this.relativeFilePath = Objects.requireNonNull( relativeFilePath, "Relative file path context cannot be null" );
@@ -82,7 +83,7 @@ public final class FileAttributes implements Comparable<FileAttributes> {
 	 *         is less than, equal to, or greater than the specified object's size
 	 */
 	@Override
-	public int compareTo( FileAttributes o ) {
+	public int compareTo( final FileAttributes o ) {
 		return Long.compare( this.size, o.getSize() );
 	}
 
@@ -99,7 +100,7 @@ public final class FileAttributes implements Comparable<FileAttributes> {
 	}
 
 	@Override
-	public boolean equals( Object obj ) {
+	public boolean equals( final Object obj ) {
 		if( this == obj )
 			return true;
 		if( obj == null )

@@ -20,6 +20,7 @@ package de.spiritscorp.datasync.controller;
  * 		along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -28,20 +29,31 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockConstruction;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.awt.AWTException;
 import java.awt.SystemTray;
 import java.awt.TrayIcon;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+
+import javafx.application.Platform;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.stage.Stage;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -52,20 +64,14 @@ import org.junit.platform.commons.support.ReflectionSupport;
 import org.mockito.ArgumentCaptor;
 import org.mockito.MockedConstruction;
 import org.mockito.MockedStatic;
-import org.mockito.Mockito;
 
 import de.spiritscorp.datasync.BgTime;
-import de.spiritscorp.datasync.Main;
 import de.spiritscorp.datasync.gui.BgView;
 import de.spiritscorp.datasync.gui.Gui;
 import de.spiritscorp.datasync.io.Debug;
 import de.spiritscorp.datasync.io.Logger;
 import de.spiritscorp.datasync.io.Preference;
 import de.spiritscorp.datasync.model.BgModel;
-import javafx.application.Platform;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
-import javafx.stage.Stage;
 
 /**
  * Enterprise-grade lifecycle and concurrency test suite for {@link BgController}.
@@ -75,7 +81,7 @@ import javafx.stage.Stage;
  * <p>
  *
  * @author Tom Spirit
- * @version 1.3.0
+ * @version 1.4.0
  * @see BgController
  */
 //@DisplayName( "Background Controller Engine Test Suite" )
@@ -109,8 +115,8 @@ class BgControllerTest {
 	 */
 	@BeforeEach
 	void setUp() {
-		mockedDebug = Mockito.mockStatic( Debug.class );
-		mockedSystemTray = Mockito.mockStatic( SystemTray.class );
+		mockedDebug = mockStatic( Debug.class );
+		mockedSystemTray = mockStatic( SystemTray.class );
 
 		mockGui = mock( Gui.class );
 		mockStage = mock( Stage.class );
@@ -136,10 +142,8 @@ class BgControllerTest {
 
 	@BeforeAll
 	static void initToolkit() {
-		try {
-			Platform.startup( () -> {
-			} );
-		}catch( IllegalStateException _ ) {}
+		Platform.startup( () -> {
+		} );
 	}
 
 	/**
@@ -153,8 +157,8 @@ class BgControllerTest {
 	 */
 	@AfterEach
 	void tearDown() {
-		mockedDebug.close();
-		mockedSystemTray.close();
+		if( mockedDebug != null ) mockedDebug.close();
+		if( mockedSystemTray != null ) mockedSystemTray.close();
 	}
 
 	/**
@@ -240,8 +244,9 @@ class BgControllerTest {
 
 		controller.startBgJob( false );
 
-		verify( mockStage, times( 1 ) ).hide();
-		verify( spySystemTray, times( 1 ) ).add( mockTrayIcon );
+		assertAll(
+				() -> verify( mockStage, times( 1 ) ).hide(),
+				() -> verify( spySystemTray, times( 1 ) ).add( mockTrayIcon ) );
 	}
 
 	/**
@@ -265,8 +270,11 @@ class BgControllerTest {
 		final Method checkMethod = ReflectionSupport.findMethod( BgController.class, "checkAndQueueJobs" )
 				.orElseThrow( () -> new AssertionError( "Private method context identifier not found." ) );
 
-		// Trigger polling logic inside current execution context
-		ReflectionSupport.invokeMethod( checkMethod, controller );
+		try( MockedStatic<Files> staticFilesMock = mockStatic( Files.class ) ) {
+			staticFilesMock.when( () -> Files.exists( any(), any() ) ).thenReturn( true );
+			// Trigger polling logic inside current execution context
+			ReflectionSupport.invokeMethod( checkMethod, controller );
+		}
 		// Part 1: Verify the job transition state maps to true prior to thread worker handshakes
 		verify( overdueJob, times( 1 ) ).setRunning( true );
 
@@ -310,12 +318,15 @@ class BgControllerTest {
 		injectMockExecutors( controller );
 
 		final Method checkMethod = ReflectionSupport.findMethod( BgController.class, "checkAndQueueJobs" ).orElseThrow();
-		ReflectionSupport.invokeMethod( checkMethod, controller );
+		try( MockedStatic<Files> staticFilesMock = mockStatic( Files.class ) ) {
+			staticFilesMock.when( () -> Files.exists( any(), any() ) ).thenReturn( true );
+			ReflectionSupport.invokeMethod( checkMethod, controller );
+		}
 		final ArgumentCaptor<Runnable> workerCaptor = ArgumentCaptor.forClass( Runnable.class );
 		verify( mockWorkerQueue ).execute( workerCaptor.capture() );
 
 		// Force a runtime exception down the pipeline execution lane
-		try( MockedConstruction<BgModel> mockedModelConstruction = mockConstruction( BgModel.class, ( mock, context ) -> {
+		try( var _ = mockConstruction( BgModel.class, ( mock, _ ) -> { // NOPMD No expizite Types for unnamed values
 			doThrow( new RuntimeException( "Simulated Thread Interruption Fault" ) ).when( mock ).runBgJob();
 		} ) ) {
 			assertDoesNotThrow( () -> workerCaptor.getValue().run() );
@@ -335,19 +346,16 @@ class BgControllerTest {
 		final SyncJobContext activeJob = createMockJob( "Aborted-Process", true, BgTime.MIN_30, System.currentTimeMillis() );
 		testJobList.add( activeJob );
 
-		try {
+		final BgController controller = new BgController( mockGui, mockViewController, testJobList, mockLogger );
+		injectMockExecutors( controller );
+		// Simulate successful framework feedback metrics
+		when( mockWorkerQueue.awaitTermination( anyLong(), any( TimeUnit.class ) ) ).thenReturn( true );
 
-			final BgController controller = new BgController( mockGui, mockViewController, testJobList, mockLogger );
-			injectMockExecutors( controller );
-			// Simulate successful framework feedback metrics
-			when( mockWorkerQueue.awaitTermination( anyLong(), any( TimeUnit.class ) ) ).thenReturn( true );
+		controller.startBgJob( false );
 
-			controller.startBgJob( false );
-
-			Platform.runLater( () -> {
-				controller.interruptBgJob( Main.BACKGROUND_THREAD_TIMEOUT );
-			} );
-		}catch( Exception _ ) {}
+		Platform.runLater( () -> {
+			controller.interruptBgJob( MainViewController.BG_TIMEOUT );
+		} );
 
 		// Part 1: Verify window environment visibility is brought back immediately
 		verify( mockStage, timeout( 400 ).times( 1 ) ).show();
@@ -375,12 +383,13 @@ class BgControllerTest {
 		final BgController controller = new BgController( mockGui, mockViewController, testJobList, mockLogger );
 		injectMockExecutors( controller );
 
-		assertDoesNotThrow( () -> {
-			controller.startBgJob( false );
-			// Instantly teardown concurrent workers right after starting up
-			controller.requestApplicationShutdown();
-		}, "Concurrency pipeline threw an unexpected unhandled exception during immediate system cleanup." );
-		verify( mockViewController, times( 1 ) ).handleApplicationShutdown();
+		assertAll(
+				() -> assertDoesNotThrow( () -> {
+					controller.startBgJob( false );
+					// Instantly teardown concurrent workers right after starting up
+					controller.requestApplicationShutdown();
+				}, "Concurrency pipeline threw an unexpected unhandled exception during immediate system cleanup." ),
+				() -> verify( mockViewController, times( 1 ) ).handleApplicationShutdown() );
 	}
 
 	/**
@@ -393,22 +402,28 @@ class BgControllerTest {
 	@DisplayName( "09: Skip Conditions - Polling routine must ignore jobs where background synchronization is disabled" )
 	void testCheckAndQueueJobsSkipsWhenBgSyncIsDisabled() throws ExecutionException {
 		// Even if the job is heavily overdue, bgSync = false must prevent any queueing actions
-		final long overdueTimestamp = System.currentTimeMillis();
+		final long overdueTimestamp = System.currentTimeMillis() - BgTime.MIN_5.getTime();
 		final SyncJobContext disabledJobMIN30 = createMockJob( "Disabled-Min30", false, BgTime.MIN_30, overdueTimestamp );
 		final SyncJobContext disabledJobHourly = createMockJob( "Disabled-Hourly", false, BgTime.HOURLY, overdueTimestamp );
+		final SyncJobContext enabledJobMIN01 = createMockJob( "Enabled-Min01", true, BgTime.MIN_1, overdueTimestamp );
 
 		testJobList.add( disabledJobMIN30 );
 		testJobList.add( disabledJobHourly );
+		testJobList.add( enabledJobMIN01 );
 
 		final BgController controller = new BgController( mockGui, mockViewController, testJobList, mockLogger );
 		injectMockExecutors( controller );
 		final Method checkMethod = ReflectionSupport.findMethod( BgController.class, "checkAndQueueJobs" ).orElseThrow();
-		assertDoesNotThrow( () -> ReflectionSupport.invokeMethod( checkMethod, controller ) );
 
-		// Assert that the workers were never touched or flagged as running
-		verify( disabledJobMIN30, never() ).setRunning( true );
-		verify( disabledJobHourly, never() ).setRunning( true );
-		verify( mockWorkerQueue, never() ).execute( any( Runnable.class ) );
+		try( MockedStatic<Files> staticFilesMock = mockStatic( Files.class ) ) {
+			staticFilesMock.when( () -> Files.exists( any(), any() ) ).thenReturn( true );
+			assertAll(
+					() -> assertDoesNotThrow( () -> ReflectionSupport.invokeMethod( checkMethod, controller ) ),
+					() -> verify( disabledJobMIN30, never() ).setRunning( true ),
+					() -> verify( disabledJobHourly, never() ).setRunning( true ),
+					() -> verify( enabledJobMIN01, times( 1 ) ).setRunning( true ),
+					() -> verify( mockWorkerQueue, times( 1 ) ).execute( any( Runnable.class ) ) );
+		}
 	}
 
 	/**
@@ -421,13 +436,15 @@ class BgControllerTest {
 	@DisplayName( "10: Boundary Verification - Polling routine must skip executions when intervals are within valid time limits" )
 	void testCheckAndQueueJobsSkipsWhenIntervalHasNotElapsed() throws ExecutionException {
 		// Simulate that all jobs have just been scanned 5 seconds ago (well within any interval limit)
-		final long recentScanTimestamp = System.currentTimeMillis() - 5000;
+		final long recentScanTimestamp = System.currentTimeMillis() - BgTime.MIN_5.getTime();
 
+		final SyncJobContext enabledJobMin1 = createMockJob( "Enabled-Min1", true, BgTime.MIN_1, recentScanTimestamp );
 		final SyncJobContext disabledJobMin1 = createMockJob( "Fresh-Min30", false, BgTime.MIN_1, recentScanTimestamp );
 		final SyncJobContext freshJobMin30 = createMockJob( "Fresh-Min30", true, BgTime.MIN_30, recentScanTimestamp );
 		final SyncJobContext freshJobHourly = createMockJob( "Fresh-Hourly", true, BgTime.HOURLY, recentScanTimestamp );
 		final SyncJobContext freshJobDaily = createMockJob( "Fresh-Daily", true, BgTime.DAYLY, recentScanTimestamp );
 
+		testJobList.add( enabledJobMin1 );
 		testJobList.add( disabledJobMin1 );
 		testJobList.add( freshJobMin30 );
 		testJobList.add( freshJobHourly );
@@ -436,14 +453,20 @@ class BgControllerTest {
 		final BgController controller = new BgController( mockGui, mockViewController, testJobList, mockLogger );
 		injectMockExecutors( controller );
 		final Method checkMethod = ReflectionSupport.findMethod( BgController.class, "checkAndQueueJobs" ).orElseThrow();
-		assertDoesNotThrow( () -> ReflectionSupport.invokeMethod( checkMethod, controller ) );
 
-		// Guarantee that no state mutations or task dispatches were triggered
-		verify( disabledJobMin1, never() ).setRunning( true );
-		verify( freshJobMin30, never() ).setRunning( true );
-		verify( freshJobHourly, never() ).setRunning( true );
-		verify( freshJobDaily, never() ).setRunning( true );
-		verify( mockWorkerQueue, never() ).execute( any( Runnable.class ) );
+		assertAll(
+				() -> assertDoesNotThrow( () -> {
+					try( MockedStatic<Files> staticFilesMock = mockStatic( Files.class ) ) {
+						staticFilesMock.when( () -> Files.exists( any(), any() ) ).thenReturn( true );
+						ReflectionSupport.invokeMethod( checkMethod, controller );
+					}
+				} ),
+				() -> verify( enabledJobMin1, times( 1 ) ).setRunning( true ),
+				() -> verify( disabledJobMin1, never() ).setRunning( true ),
+				() -> verify( freshJobMin30, never() ).setRunning( true ),
+				() -> verify( freshJobHourly, never() ).setRunning( true ),
+				() -> verify( freshJobDaily, never() ).setRunning( true ),
+				() -> verify( mockWorkerQueue, times( 1 ) ).execute( any( Runnable.class ) ) );
 	}
 
 	/**
@@ -456,16 +479,17 @@ class BgControllerTest {
 		final BgController controller = new BgController( mockGui, mockViewController, testJobList, mockLogger );
 		injectMockExecutors( controller );
 
-		// Enforce an AWTException when the controller tries to add the TrayIcon to the OS SystemTray
-		doThrow( new java.awt.AWTException( "Simulated OS Tray Capacity Exhaustion" ) )
-				.when( spySystemTray ).add( any( TrayIcon.class ) );
-		assertDoesNotThrow( () -> controller.startBgJob( false ) );
-		// Part 1: Verify the lifecycle protocol hid the stage initially
-		verify( mockStage, times( 1 ) ).hide();
-		// Part 2: Verify the error fallback immediately forced the stage back to visible
-		verify( mockStage, times( 1 ) ).show();
-		// Part 3: Verify the scheduler registration was completely skipped due to the early return
-		verify( mockScheduler, never() ).scheduleAtFixedRate( any( Runnable.class ), anyLong(), anyLong(), any( TimeUnit.class ) );
+		assertAll(
+				// Enforce an AWTException when the controller tries to add the TrayIcon to the OS SystemTray
+				() -> doThrow( new AWTException( "Simulated OS Tray Capacity Exhaustion" ) )
+						.when( spySystemTray ).add( any( TrayIcon.class ) ),
+				() -> assertDoesNotThrow( () -> controller.startBgJob( false ) ),
+				// Part 1: Verify the lifecycle protocol hid the stage initially
+				() -> verify( mockStage, times( 1 ) ).hide(),
+				// Part 2: Verify the error fallback immediately forced the stage back to visible
+				() -> verify( mockStage, times( 1 ) ).show(),
+				// Part 3: Verify the scheduler registration was completely skipped due to the early return
+				() -> verify( mockScheduler, never() ).scheduleAtFixedRate( any( Runnable.class ), anyLong(), anyLong(), any( TimeUnit.class ) ) );
 	}
 
 	/**
@@ -473,8 +497,9 @@ class BgControllerTest {
 	 */
 	private SyncJobContext createMockJob( final String name, final boolean bgSync, final BgTime bgTime, final long lastScan ) {
 		final SyncJobContext mockJob = mock( SyncJobContext.class );
-		final var mockPref = mock( Preference.class );
+		final Preference mockPref = mock( Preference.class );
 
+		when( mockPref.getDestPaths() ).thenReturn( new ArrayList<>( List.of( Path.of( "test" ) ) ) );
 		when( mockJob.getJobName() ).thenReturn( name );
 		when( mockJob.getPreference() ).thenReturn( mockPref );
 		when( mockPref.isBgSync() ).thenReturn( bgSync );

@@ -113,8 +113,8 @@
 		<dep_ikonli_materialdesign2.version>12.4.0</dep_ikonli_materialdesign2.version>
 		<dep_jakarta.json.api.version>2.1.3</dep_jakarta.json.api.version>
 		<dep_glassfish.jakarta.json.version>2.0.1</dep_glassfish.jakarta.json.version>
-		<dep_junit-jupiter>6.1.2</dep_junit-jupiter>
-		<dep_junit-platform>6.1.2</dep_junit-platform>
+		<dep_junit-jupiter>6.1.3</dep_junit-jupiter>
+		<dep_junit-platform>6.1.3</dep_junit-platform>
 		<dep_mockito>5.23.0</dep_mockito>
 		<dep_bytebuddy>1.18.11</dep_bytebuddy>
 		<dep_jimfs.version>1.3.1</dep_jimfs.version>

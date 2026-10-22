@@ -87,7 +87,7 @@
 		<pl_compiler.version>3.16.0</pl_compiler.version>
 		<pl_jar.version>3.5.1</pl_jar.version>
 		<pl_shade.version>3.6.2</pl_shade.version>
-		<pl_surefire.version>3.6.0-M1</pl_surefire.version>
+		<pl_surefire.version>3.6.0</pl_surefire.version>
 		<pl_dependency.version>3.11.0</pl_dependency.version>
 		<pl_failsafe>3.6.0-M1</pl_failsafe>
 		<pl_jlink.version>3.3.0</pl_jlink.version>

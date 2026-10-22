@@ -158,22 +158,67 @@ class FileHandler {
 			}
 			final FileAttributes fileAttr = entry.getValue();
 			if( fileAttr == null ) continue;
-			final Path path = destPath.resolve( fileAttr.getRelativeFilePath() );
 
-			if( ensureWritable( path ) ) {
-				if( moveFile( entry.getKey(), path, fileAttr.getCreateTime() ) ) {
-					log.setEntry( path.toString(), "kopiert", fileAttr );
+			final Path targetPath = resolveCopyTarget( entry.getKey(), fileAttr, destPath, map );
+			if( ensureWritable( targetPath ) ) {
+				if( moveFile( entry.getKey(), targetPath, fileAttr.getCreateTime() ) ) {
+					log.setEntry( targetPath.toString(), "kopiert", fileAttr );
 				}else {
-					log.setEntry( path.toString(), "FEHLER BEIM KOPIEREN", fileAttr );
-					Debug.printDebug( "[File Handler Error] Copy failed: %s", path.toString() );
+					log.setEntry( targetPath.toString(), "FEHLER BEIM KOPIEREN", fileAttr );
+					Debug.printDebug( "[File Handler Error] Copy failed: %s", targetPath.toString() );
 				}
 			}else {
-				log.setEntry( path.toString(), "SCHREIBSCHUTZ BEIM KOPIEREN", fileAttr );
-				Debug.printDebug( "[File Handler Error] Copy failed, target file is not writable: %s", path.toString() );
+				log.setEntry( targetPath.toString(), "SCHREIBSCHUTZ BEIM KOPIEREN", fileAttr );
+				Debug.printDebug( "[File Handler Error] Copy failed, target file is not writable: %s", targetPath.toString() );
 			}
 		}
 		map.clear();
 		if( logOn ) log.printStatus();
+	}
+
+	Path resolveCopyTarget( final Path sourceFile, final FileAttributes fileAttr, final Path destRoot, final Map<Path, FileAttributes> map ) {
+		final Path defaultTarget = destRoot.resolve( fileAttr.getRelativeFilePath() );
+		if( fileAttr.getRelativeFilePath() == null || fileAttr.getRelativeFilePath().getFileName() == null ) return defaultTarget;
+
+		final int collisionCount = countRelativeMatches( map, fileAttr.getRelativeFilePath() );
+		if( collisionCount <= 1 ) return defaultTarget;
+
+		final String originalFileName = fileAttr.getRelativeFilePath().getFileName().toString();
+		final String sourceSuffix = getStableSourceSuffix( sourceFile );
+		final String newFileName = appendSourceSuffix( originalFileName, sourceSuffix );
+		return destRoot.resolve( fileAttr.getRelativeFilePath().resolveSibling( newFileName ) );
+	}
+
+	private int countRelativeMatches( final Map<Path, FileAttributes> map, final Path relativeFilePath ) {
+		int matches = 0;
+		for( final Map.Entry<Path, FileAttributes> entry : map.entrySet() ) {
+			if( entry.getValue() != null && relativeFilePath.equals( entry.getValue().getRelativeFilePath() ) ) {
+				matches++;
+			}
+		}
+		return matches;
+	}
+
+	private String getStableSourceSuffix( final Path sourceFile ) {
+		final Path sourceParent = sourceFile.getParent();
+		if( sourceParent != null && sourceParent.getFileName() != null ) {
+			final String sourceName = sourceParent.getFileName().toString();
+			final String sanitized = sourceName.replaceAll( "[^A-Za-z0-9_-]", "_" );
+			return sanitized.isBlank() ? createFallbackHash( sourceFile ) : sanitized;
+		}
+		return createFallbackHash( sourceFile );
+	}
+
+	private String createFallbackHash( final Path sourceFile ) {
+		return Integer.toHexString( Math.abs( sourceFile.toAbsolutePath().normalize().hashCode() ) );
+	}
+
+	private String appendSourceSuffix( final String fileName, final String suffix ) {
+		final int lastDot = fileName.lastIndexOf( '.' );
+		if( lastDot > 0 && lastDot < fileName.length() - 1 ) {
+			return fileName.substring( 0, lastDot ) + "_" + suffix + fileName.substring( lastDot );
+		}
+		return fileName + "_" + suffix;
 	}
 
 	/**

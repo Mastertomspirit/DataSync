@@ -92,7 +92,7 @@
 		<pl_failsafe>3.6.0-M1</pl_failsafe>
 		<pl_jlink.version>3.3.0</pl_jlink.version>
 		<pl_jpackage.version>0.1.5</pl_jpackage.version>
-		<pl_jpackage_asm.version>9.11</pl_jpackage_asm.version>
+		<pl_jpackage_asm.version>9.11.1</pl_jpackage_asm.version>
 		<pl_resources.version>3.5.0</pl_resources.version>
 		<pl_assembly.version>3.8.0</pl_assembly.version>
 		<pl_jxr.version>3.6.0</pl_jxr.version>

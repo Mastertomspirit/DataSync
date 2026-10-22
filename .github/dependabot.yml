@@ -1,53 +1,14 @@
 version: 2
 updates:
   # ==========================================================================
-  # 1. MAVEN CONFIGURATION - MAIN BRANCH
-  # ==========================================================================
-  - package-ecosystem: "maven"
-    directory: "/"
-    target-branch: "main"
-    schedule:
-      interval: "daily"
-      time: "08:00"
-      timezone: "Europe/Berlin"
-    
-    # Specifies the GitHub usernames of individuals requested to review the created PRs
-    reviewers:
-      - "mastertomspirit"
-      
-    # Restricts the maximum number of concurrent open Pull Requests to prevent repository clutter
-    open-pull-requests-limit: 5
-
-    # Assigns specific organizational tags to the PRs for easier filtering and automated workflows
-    labels:
-      - "dependencies"
-      - "main-branch"
-
-    # Defines rules to consolidate multiple dependency updates into single, manageable Pull Requests
-    groups:
-      # Combines all non-breaking updates (Minor and Patch) into a single daily PR to reduce noise
-      minor-and-patch-updates:
-        patterns:
-          - "*"
-        update-types:
-          - "minor"
-          - "patch"
-      # Combines critical version bumps (Major) into a dedicated PR, highlighting potential breaking changes
-      major-updates:
-        patterns:
-          - "*"
-        update-types:
-          - "major"
-
-  # ==========================================================================
-  # 2. MAVEN CONFIGURATION - DEV BRANCH
+  # 1. MAVEN CONFIGURATION - DEV BRANCH
   # ==========================================================================
   - package-ecosystem: "maven"
     directory: "/"
     target-branch: "dev"
     schedule:
       interval: "daily"
-      time: "08:30"
+      time: "10:30"
       timezone: "Europe/Berlin"
     
     # Specifies the GitHub usernames of individuals requested to review the created PRs
@@ -62,29 +23,16 @@ updates:
       - "dependencies"
       - "dev-branch"
 
-    # Defines rules to consolidate multiple dependency updates into single, manageable Pull Requests
-    groups:
-      # Combines all non-breaking updates (Minor and Patch) into a single daily PR to reduce noise
-      minor-and-patch-updates:
-        patterns:
-          - "*"
-        update-types:
-          - "minor"
-          - "patch"
-      # Combines critical version bumps (Major) into a dedicated PR, highlighting potential breaking changes
-      major-updates:
-        patterns:
-          - "*"
-        update-types:
-          - "major"
-
   # ==========================================================================
-  # 3. GITHUB ACTIONS CONFIGURATION
+  # 2. GITHUB ACTIONS CONFIGURATION
   # ==========================================================================
   - package-ecosystem: "github-actions"
+    target-branch: "dev"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "daily"
+      time: "10:45"
+      timezone: "Europe/Berlin"
     reviewers:
       - "mastertomspirit"
     labels:

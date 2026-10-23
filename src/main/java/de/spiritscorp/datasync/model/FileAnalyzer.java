@@ -20,13 +20,17 @@ package de.spiritscorp.datasync.model;
  * 		along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -44,6 +48,8 @@ class FileAnalyzer {
 	private final int avgProc;
 	/** The threshold size at which a file list workload is split into sub-tasks for parallel processing. */
 	private static final int THREAD_SPLIT_SIZE = 30_000;
+	/** The deterministic suffix length used for duplicate flat-scan names. */
+	private static final int DUPLICATE_SUFFIX_LENGTH = 8;
 
 	/**
 	 * Constructs a new FileAnalyzer and dynamically calculates the optimal thread pool size
@@ -98,13 +104,14 @@ class FileAnalyzer {
 	}
 
 	/**
-	 * Cleans the maps of identical hits
+	 * Cleans the maps of identical hits.
 	 *
 	 * @param sourceMap
 	 * @param destMap
 	 */
 	void equalsFiles( final Map<Path, FileAttributes> sourceMap, final Map<Path, FileAttributes> destMap ) {
 		Debug.printDebug( "[File Analyzer] max mem: %d, free mem: %d, total mem: %d", Runtime.getRuntime().maxMemory(), Runtime.getRuntime().freeMemory(), Runtime.getRuntime().totalMemory() );
+		normalizeDuplicateFlatNames( sourceMap, destMap );
 		if( sourceMap.size() > 0 && destMap.size() > 0 ) {
 			final Set<Path> sourceHitList = Collections.synchronizedSet( new HashSet<>() );
 			final Set<Path> destHitList = Collections.synchronizedSet( new HashSet<>() );
@@ -169,6 +176,7 @@ class FileAnalyzer {
 	ArrayList<Map<Path, FileAttributes>> getSyncFiles( final Map<Path, FileAttributes> sourceMap, final Map<Path, FileAttributes> destMap, final Path startSourcePath, final Path startDestPath,
 			final Map<Path, FileAttributes> syncMap ) {
 		Debug.printDebug( "[FileAnalyzer] max mem: %d, free mem: %d, total mem: %d", Runtime.getRuntime().maxMemory(), Runtime.getRuntime().freeMemory(), Runtime.getRuntime().totalMemory() );
+		normalizeDuplicateFlatNames( sourceMap, destMap );
 		final ArrayList<Map<Path, FileAttributes>> resultValue = new ArrayList<>();
 		final ArrayList<Map<Path, FileAttributes>> destValue = new ArrayList<>();
 		final Map<Path, FileAttributes> copySourceHitList = Model.createMap();
@@ -213,6 +221,119 @@ class FileAnalyzer {
 		Debug.printDebug( "[File Analyzer] Full copySourceHitList size: %d  && Full copyDestHitList size: %d  && Full delHitList size: %d",
 				copySourceHitList.size(), copyDestHitList.size(), delHitList.size() );
 		return resultValue;
+	}
+
+	/**
+	 * Normalizes duplicate flattened file names before equality checks so files from different sources can coexist
+	 * in merge mode without continuously overwriting each other.
+	 *
+	 * @param sourceMap the current source registry
+	 * @param destMap   the currently scanned destination registry
+	 */
+	private void normalizeDuplicateFlatNames( final Map<Path, FileAttributes> sourceMap, final Map<Path, FileAttributes> destMap ) {
+		if( sourceMap.isEmpty() && destMap.isEmpty() ) { return; }
+
+		final Map<String, Integer> duplicateCounter = new HashMap<>();
+		for( final Map<Path, FileAttributes> map : List.of( sourceMap, destMap ) ) {
+			for( final Map.Entry<Path, FileAttributes> entry : map.entrySet() ) {
+				if( entry.getValue() == null ) { continue; }
+				final Path relative = entry.getValue().getRelativeFilePath();
+				if( relative == null || relative.getFileName() == null ) { continue; }
+				duplicateCounter.merge( relative.getFileName().toString(), 1, Integer::sum );
+			}
+		}
+
+		final Set<String> duplicateNames = new HashSet<>();
+		for( final Map.Entry<String, Integer> entry : duplicateCounter.entrySet() ) {
+			if( entry.getValue() > 1 ) {
+				duplicateNames.add( entry.getKey() );
+			}
+		}
+		if( duplicateNames.isEmpty() ) { return; }
+
+		normalizeMapEntries( sourceMap, duplicateNames );
+		normalizeMapEntries( destMap, duplicateNames );
+	}
+
+	/**
+	 * Renames flattened duplicates with a deterministic source-derived suffix. This keeps the target stable across runs
+	 * without introducing any external state.
+	 *
+	 * @param map           the registry to normalize
+	 * @param duplicateNames the names that collide across multiple roots
+	 */
+	private void normalizeMapEntries( final Map<Path, FileAttributes> map, final Set<String> duplicateNames ) {
+		for( final Map.Entry<Path, FileAttributes> entry : new ArrayList<>( map.entrySet() ) ) {
+			if( entry.getValue() == null ) { continue; }
+			final Path relative = entry.getValue().getRelativeFilePath();
+			if( relative == null || relative.getFileName() == null ) { continue; }
+			final String fileName = relative.getFileName().toString();
+			if( !duplicateNames.contains( fileName ) ) { continue; }
+
+			final FileAttributes renamed = new FileAttributes(
+					buildDuplicateSafeRelativePath( relative, entry.getKey() ),
+					entry.getValue().getCreateTimeString(),
+					entry.getValue().getCreateTime(),
+					entry.getValue().getModTimeString(),
+					entry.getValue().getModTime(),
+					entry.getValue().getSize(),
+					entry.getValue().getFileHash() );
+			map.put( entry.getKey(), renamed );
+		}
+	}
+
+	/**
+	 * Builds a stable flattened target name by including the parent directory token and a deterministic hash.
+	 *
+	 * @param relative The original relative path
+	 * @param absolute The absolute source or destination path for the file
+	 * @return a normalized relative path with a duplicate-safe suffix
+	 */
+	private Path buildDuplicateSafeRelativePath( final Path relative, final Path absolute ) {
+		final String fileName = relative.getFileName().toString();
+		final int lastDot = fileName.lastIndexOf( '.' );
+		final String baseName = ( lastDot > 0 && lastDot < fileName.length() - 1 ) ? fileName.substring( 0, lastDot ) : fileName;
+		final String extension = ( lastDot > 0 && lastDot < fileName.length() - 1 ) ? fileName.substring( lastDot ) : "";
+		final String parentToken = Optional.ofNullable( absolute.getParent() )
+				.map( Path::getFileName )
+				.map( Path::toString )
+				.orElse( "root" );
+		final String hash = shortHash( Optional.ofNullable( absolute.getParent() ).map( Path::toString ).orElse( absolute.toString() ) );
+		return relative.resolveSibling( baseName + "_" + sanitizeFileToken( parentToken ) + "_" + hash + extension );
+	}
+
+	/**
+	 * Sanitizes a directory token into a file-safe suffix fragment.
+	 *
+	 * @param value the raw token
+	 * @return sanitized token
+	 */
+	private String sanitizeFileToken( final String value ) {
+		if( value == null || value.isBlank() ) { return "root"; }
+		String sanitized = value.replaceAll( "[^A-Za-z0-9_-]", "_" );
+		sanitized = sanitized.replaceAll( "_{2,}", "_" );
+		return sanitized;
+	}
+
+	/**
+	 * Generates a deterministic hash prefix used for duplicate-safe flattened targets.
+	 *
+	 * @param value the path value to hash
+	 * @return short, deterministic hash prefix
+	 */
+	private String shortHash( final String value ) {
+		try {
+			final MessageDigest digest = MessageDigest.getInstance( "SHA-256" );
+			final byte[] hash = digest.digest( value.getBytes( StandardCharsets.UTF_8 ) );
+			final StringBuilder builder = new StringBuilder();
+			for( final byte element : hash ) {
+				builder.append( Integer.toHexString( ( element & 0xff ) + 0x100 ).substring( 1 ) );
+			}
+			return builder.substring( 0, DUPLICATE_SUFFIX_LENGTH );
+		}catch( final NoSuchAlgorithmException exception ) {
+			Debug.printDebug( "[File Analyzer] Failed to generate duplicate hash for '%s': %s", value, exception.getMessage() );
+			return "unknown";
+		}
 	}
 
 	/**
@@ -328,7 +449,6 @@ class FileAnalyzer {
 	 * @return true if source modification time is newer
 	 */
 	private boolean isNewer( final FileAttributes source, final FileAttributes dest ) {
-
 		return source.getModTime().toMillis() > dest.getModTime().toMillis();
 	}
 

@@ -107,7 +107,7 @@
 		<pl_site.version>3.22.0</pl_site.version>
 
 		<!-- Dependency versions -->
-		<dep_surefire_tree>1.5.1</dep_surefire_tree>
+		<dep_surefire_tree>2.1.0</dep_surefire_tree>
 		<dep_javafx_controls.version>26.0.2</dep_javafx_controls.version>
 		<dep_ikonli_javafx.version>12.4.0</dep_ikonli_javafx.version>
 		<dep_ikonli_materialdesign2.version>12.4.0</dep_ikonli_materialdesign2.version>

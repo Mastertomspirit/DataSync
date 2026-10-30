@@ -89,7 +89,7 @@
 		<pl_shade.version>3.6.2</pl_shade.version>
 		<pl_surefire.version>3.6.0</pl_surefire.version>
 		<pl_dependency.version>3.11.0</pl_dependency.version>
-		<pl_failsafe>3.6.0</pl_failsafe>
+		<pl_failsafe>3.6.1</pl_failsafe>
 		<pl_jlink.version>3.3.0</pl_jlink.version>
 		<pl_jpackage.version>0.1.5</pl_jpackage.version>
 		<pl_jpackage_asm.version>9.11.1</pl_jpackage_asm.version>
